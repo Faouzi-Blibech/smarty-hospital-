@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "note": "Hard red-flag floor for triage. Matching: lowercase, Latin accents stripped, whitespace collapsed, substring. Not clinically validated.",
+  "flags": [
+    {"id": "chest_pain", "min_urgency": 5, "keywords": ["douleur thoracique", "douleur poitrine", "chest pain", "ألم في الصدر", "وجع في صدري", "waja3 fi sadri", "sadri yoja3ni"]},
+    {"id": "stroke_signs", "min_urgency": 5, "keywords": ["avc", "paralysie", "bouche deviee", "stroke", "شلل", "جلطة", "fama chalal"]},
+    {"id": "severe_bleeding", "min_urgency": 5, "keywords": ["hemorragie", "saignement abondant", "severe bleeding", "نزيف", "dam barcha"]},
+    {"id": "breathing", "min_urgency": 5, "keywords": ["dyspnee", "essoufflement", "difficulty breathing", "ضيق في التنفس", "ma najjamch nitnaffes"]},
+    {"id": "loss_of_consciousness", "min_urgency": 5, "keywords": ["perte de connaissance", "syncope", "fainted", "إغماء", "ghabt"]},
+    {"id": "pregnancy_bleeding", "min_urgency": 5, "keywords": ["enceinte saignement", "pregnant bleeding", "حامل نزيف"]},
+    {"id": "high_fever_child", "min_urgency": 4, "keywords": ["fievre nourrisson", "bebe fievre", "baby fever", "سخانة رضيع"]}
+  ]
+}
