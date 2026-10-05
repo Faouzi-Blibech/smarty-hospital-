@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "note": "Curated demo list, not a clinical reference. Match = case-insensitive substring on active prescription item names.",
+  "pairs": [
+    {"drugs": ["warfarin", "aspirin"], "severity": "high", "note": "bleeding risk"},
+    {"drugs": ["warfarin", "ibuprofen"], "severity": "high", "note": "bleeding risk"},
+    {"drugs": ["lisinopril", "spironolactone"], "severity": "high", "note": "hyperkalaemia"},
+    {"drugs": ["clarithromycin", "simvastatin"], "severity": "high", "note": "myopathy / rhabdomyolysis"},
+    {"drugs": ["metformin", "iodinated contrast"], "severity": "medium", "note": "lactic acidosis; hold metformin around contrast"},
+    {"drugs": ["sertraline", "tramadol"], "severity": "high", "note": "serotonin syndrome"}
+  ]
+}
