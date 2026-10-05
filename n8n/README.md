@@ -31,6 +31,9 @@ docker compose -f infra/docker-compose.yml restart n8n
 ```
 
 Then in the UI → Credentials, create (or edit) **`ward-telegram`** with your bot token. W4's Telegram node points to it.
+If W4's Telegram node shows the credential as missing (a credential created in the UI gets a new ID), open W4 → Telegram node → pick `ward-telegram` → save + publish. One click, once per laptop.
+
+W4's Telegram node uses `onError: continueRegularOutput`: a recipient who never pressed /start on the bot (Telegram 403) doesn't stop the others from getting the alert.
 
 ## Workflows
 

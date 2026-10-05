@@ -6,6 +6,7 @@ Callers catch LLMUnavailable and return their deterministic fallback.
 import base64
 import json
 import re
+import unicodedata
 from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import TypeVar
@@ -24,19 +25,35 @@ class LLMUnavailable(Exception):
     pass
 
 
-_PATTERNS = [
-    (re.compile(r"\b[pu]-\d{4}\b"), "[ID]"),
-    (re.compile(r"\b\d{8}\b"), "[CIN]"),
-    (re.compile(r"(\+216\s?)?\b\d{2}\s?\d{3}\s?\d{3}\b"), "[PHONE]"),
+_PATTERNS = [  # order matters: emails, then international phones, then CIN before local phones
     (re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+"), "[EMAIL]"),
+    (re.compile(r"(?:\+|\b00)216[\s.-]?\d{2}[\s.-]?\d{3}[\s.-]?\d{3}\b"), "[PHONE]"),
+    (re.compile(r"\b\d{8}\b"), "[CIN]"),
+    (re.compile(r"\b\d{2}[\s.-]\d{3}[\s.-]\d{3}\b"), "[PHONE]"),
+    (re.compile(r"\b[a-z]{1,3}-\d{4,6}\b", re.IGNORECASE), "[ID]"),  # p-0001, rx-0001, d-000123, adm-0001
 ]
+
+
+def _fold(text: str) -> str:
+    """Accent-fold character by character so indices still line up with the original text."""
+    return "".join(unicodedata.normalize("NFKD", c)[0] for c in text)
+
+
+def _strip_name(text: str, name: str) -> str:
+    parts = [p for p in re.split(r"[\s-]+", _fold(name).strip()) if p]
+    if not parts:
+        return text
+    rx = re.compile(r"\b" + r"[\s-]+".join(map(re.escape, parts)) + r"\b", re.IGNORECASE)
+    for m in reversed(list(rx.finditer(_fold(text)))):
+        text = text[:m.start()] + "[NAME]" + text[m.end():]
+    return text
 
 
 def strip_pii(text: str, names: Iterable[str] = ()) -> str:
     for rx, rep in _PATTERNS:  # structured identifiers first (emails contain names)
         text = rx.sub(rep, text)
-    for n in sorted((n for n in names if n), key=len, reverse=True):
-        text = re.sub(re.escape(n), "[NAME]", text, flags=re.IGNORECASE)
+    for n in sorted((str(n) for n in names if n), key=len, reverse=True):
+        text = _strip_name(text, n)
     return text
 
 

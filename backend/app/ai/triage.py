@@ -6,6 +6,7 @@ Falls back to rules only when the LLM is unavailable. A human always confirms th
 import json
 import re
 import unicodedata
+from collections.abc import Iterable
 from functools import lru_cache
 from pathlib import Path
 
@@ -29,27 +30,34 @@ class _LlmTriage(BaseModel):
     red_flags: list[str]
 
 
+_ARABIC_VARIANTS = str.maketrans({"ى": "ي", "ة": "ه", "ـ": None})
+
+
 @lru_cache
 def _flags() -> list[dict]:
     flags = json.loads(RULES.read_text(encoding="utf-8"))["flags"]
     for f in flags:
-        f["norm_keywords"] = [_normalize(k) for k in f["keywords"]]
+        # Each keyword becomes a tuple of terms that must all appear; a plain string is a one-term tuple.
+        f["norm_keywords"] = [tuple(_normalize(t) for t in (k["all"] if isinstance(k, dict) else [k]))
+                              for k in f["keywords"]]
     return flags
 
 
 def _normalize(text: str) -> str:
     # Drop every combining mark (French accents, Arabic harakat/hamza marks); keywords get the same treatment.
     decomposed = unicodedata.normalize("NFKD", text.lower())
-    kept = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    kept = "".join(ch for ch in decomposed if not unicodedata.combining(ch)).translate(_ARABIC_VARIANTS)
     return re.sub(r"\s+", " ", kept).strip()
 
 
 def match_red_flags(text: str) -> list[dict]:
     t = _normalize(text)
-    return [f for f in _flags() if any(k in t for k in f["norm_keywords"])]
+    return [f for f in _flags() if any(all(term in t for term in k) for k in f["norm_keywords"])]
 
 
-def triage(referral_text: str, symptoms: list[str], age: int | None, history: str = "") -> TriageResult:
+def triage(referral_text: str, symptoms: list[str], age: int | None, history: str = "",
+           names: Iterable[str] = ()) -> TriageResult:
+    """`names`: the patient's first/last names, stripped before any cloud LLM call."""
     full_text = " ".join([referral_text, *symptoms])
     matched = match_red_flags(full_text)
     floor = max((f["min_urgency"] for f in matched), default=1)
@@ -58,7 +66,7 @@ def triage(referral_text: str, symptoms: list[str], age: int | None, history: st
     user_text = (f"Referral / complaint: {referral_text}\nSymptoms: {', '.join(symptoms) or 'none listed'}\n"
                  f"Age: {age if age is not None else 'unknown'}\nHistory: {history or 'none given'}")
     try:
-        out = complete_json("triage", user_text, _LlmTriage)
+        out = complete_json("triage", user_text, _LlmTriage, names=list(names))
     except LLMUnavailable:
         urgency = max(floor, 2 if (age or 0) >= 75 else 1)
         reasons = [f"Red flag: {i.replace('_', ' ')}" for i in flag_ids] or ["No red flag found; routine priority"]

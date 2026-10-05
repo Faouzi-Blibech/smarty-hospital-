@@ -35,3 +35,27 @@ def test_triage_fallback_when_llm_unavailable(monkeypatch):
 def test_no_flag_keeps_llm_score(monkeypatch):
     monkeypatch.setattr(T, "complete_json", fake_llm(4))
     assert T.triage("toux légère", [], 30).urgency == 4
+
+
+@pytest.mark.parametrize("text,flag", [
+    ("douleurs thoraciques depuis hier", "chest_pain"),
+    ("ضيق التنفس شديد", "breathing"),
+    ("ألم فى الصدر", "chest_pain"),
+    ("enceinte et saignement depuis ce matin", "pregnancy_bleeding"),
+    ("fièvre du nourrisson 39.5", "high_fever_child"),
+    ("ma nnajjamch nitnaffes", "breathing"),
+])
+def test_red_flag_common_phrasings(text, flag):
+    assert flag in [f["id"] for f in T.match_red_flags(text)]
+
+
+def test_triage_passes_names_for_pii_stripping(monkeypatch):
+    seen = {}
+
+    def capture(prompt_name, user_text, schema, **kw):
+        seen.update(kw)
+        return schema(urgency=2, reasons=["x"], red_flags=[])
+
+    monkeypatch.setattr(T, "complete_json", capture)
+    T.triage("Je suis Amira, toux", [], 30, names=["Amira", "Ben Salah"])
+    assert list(seen["names"]) == ["Amira", "Ben Salah"]
