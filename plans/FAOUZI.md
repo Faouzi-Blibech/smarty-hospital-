@@ -440,11 +440,13 @@ def test_patient_cannot_confirm(client):
 - [ ] `routers/integrations.py`:
   - `X-N8N-Secret` check
   - `appointment-reply`
-  - `backfill-accept`
-  - `daily-digest` (re-uses `daily_summary`)
+  - `backfill-accept` (409 `slot_taken` / `not_waiting`, per n8n-webhooks v1.2)
+  - `daily-digest` (list of doctors with email; re-uses `daily_summary`)
+  - `follow-up` (creates a `requested` post-discharge appointment through normal triage)
+  - In `POST /appointments/{id}/cancel`: compute `candidate` with Hedi's `rank_backfill` and put it in the `appointment.cancelled` event
 - [ ] Afternoon stretch, in order:
   1. W2 backfill (uses Hedi's `rank_backfill`)
-  2. W6 discharge follow-up (books via the `n8n@ward.tn` service account)
+  2. W6 discharge follow-up (books via the `follow-up` callback)
   3. W5 digest
 
 ### Task 11 (stretch): Patient assistant

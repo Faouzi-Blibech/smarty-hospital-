@@ -1,6 +1,6 @@
 # n8n contract — v1.0
 
-> **Version:** 1.1 (2026-10-05) · **Owners:** Faouzi (workflows + callbacks), Wali (event emitter in the backend)
+> **Version:** 1.2 (2026-10-05) · **Owners:** Faouzi (workflows + callbacks), Wali (event emitter in the backend)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Rules (locked)
@@ -39,21 +39,23 @@ def emit(event: str, data: dict) -> None:
 | Event | Fired when | `data` | Workflow |
 |---|---|---|---|
 | `appointment.confirmed` | `POST /appointments/{id}/confirm` | `{appointment_id, patient_first_name, patient_telegram_chat_id, patient_email, slot_at, doctor_name}` | W1 schedules the 24 h reminder |
-| `appointment.cancelled` | `POST /appointments/{id}/cancel` or a W1 "cancel" reply | `{appointment_id, slot_at, doctor_id}` | W2 backfill |
+| `appointment.cancelled` | `POST /appointments/{id}/cancel` or a W1 "cancel" reply | `{appointment_id, slot_at, doctor_id, doctor_name, candidate}`. `candidate` is the best waiting patient for the freed slot (ranked by `rank_backfill`: urgency desc, no-show probability asc, oldest first): `{appointment_id, patient_first_name, patient_telegram_chat_id, patient_email}`, or `null` when `slot_at` is null or nobody is waiting | W2 backfill |
 | `dose.missed` | `events/dose_missed` ingested | `{dose_id, patient_id, patient_first_name, bed, meds[], scheduled_at, nurse_chat_ids[], doctor_chat_id, doctor_email}` | W3 |
 | `alert.critical` | alert with severity `high` or `critical` | `{alert_id, patient_first_name, bed, kind, news2, message, nurse_chat_ids[], doctor_chat_id}` | W4 |
 | `patient.discharged` | `POST /admissions/{id}/discharge` | `{patient_id, patient_first_name, patient_email, patient_telegram_chat_id, doctor_id, discharged_at}` | W6 |
 
 W5 (daily digest) is cron-driven inside n8n and pulls from `GET /integrations/n8n/daily-digest`.
 
+n8n's public base URL (used in W2's accept links, which phones open) comes from `N8N_PUBLIC_URL` in `.env`. Set it to the laptop's LAN IP for the demo, e.g. `http://192.168.1.10:5678/`.
+
 ## Callbacks (n8n → backend)
 
 | Callback | Used by | Body |
 |---|---|---|
 | `POST /integrations/n8n/appointment-reply` | W1 stretch (Telegram inline button via tunnel) | `{"appointment_id","reply":"confirm\|cancel"}` |
-| `POST /integrations/n8n/backfill-accept` | W2 | `{"appointment_id","slot_at"}` |
-| `GET /integrations/n8n/daily-digest?doctor_id=` | W5 | → `{"doctor","patients":[...]}` |
-| `POST /appointments` (with a service JWT) | W6 | books the follow-up as `requested` with `referral_text: "Post-discharge follow-up"` |
+| `POST /integrations/n8n/backfill-accept` | W2 | `{"appointment_id","slot_at"}` → 200 `{"status":"confirmed"}`, or 409 `{"code":"slot_taken"}` if the slot was filled meanwhile, or 409 `{"code":"not_waiting"}` if the appointment is no longer `requested` |
+| `GET /integrations/n8n/daily-digest[?doctor_id=]` | W5 | → `[{"doctor":{"id","name","email"},"patients":[{"name","bed","news2","summary"}]}]`: one entry per doctor with at least one admitted patient; `doctor_id` filters to that doctor (still a list) |
+| `POST /integrations/n8n/follow-up` | W6 | `{"patient_id","days":14}` → `{"appointment_id","status":"requested"}`. Creates a `requested` appointment with `referral_text: "Post-discharge follow-up in {days} days"` that goes through normal triage; an admin confirms the date (which then triggers W1) |
 
 The backend base URL from inside Docker is `http://api:8000`.
 
@@ -64,11 +66,13 @@ The backend base URL from inside Docker is `http://api:8000`.
 | W4 | Critical-alert fan-out | **core, Day 1** | event `alert.critical` → Telegram message to each `nurse_chat_ids` + `doctor_chat_id`: "🚨 Bed {bed} · {patient_first_name} · NEWS2 {news2}: {message}" |
 | W3 | Missed-dose escalation | **core, Day 2** | event `dose.missed` → Telegram to the ward nurses ("💊 Missed dose · Bed {bed} · {meds}") + email to the attending doctor |
 | W1 | Appointment reminder | **core, Day 2** | event `appointment.confirmed` → Wait until `slot_at − 24h` → Telegram + email with two links to the web app: `${WEB_URL}/patient/appointments/{appointment_id}?action=confirm\|cancel` (the patient view calls the API). *Demo trick:* if `slot_at` is < 24 h away, send immediately. *Stretch:* Telegram inline buttons → `appointment-reply` callback (needs a public HTTPS tunnel such as `cloudflared` because Telegram triggers are webhooks) |
-| W2 | Slot backfill | stretch | event `appointment.cancelled` → GET waitlist → offer the slot to the top patient → on accept, callback `backfill-accept` |
-| W5 | Doctor daily digest | stretch | Cron 07:30 → GET daily-digest → email |
-| W6 | Discharge follow-up | stretch | event `patient.discharged` → book the follow-up (+14 days) → Telegram/email to the patient |
+| W2 | Slot backfill | stretch | event `appointment.cancelled` with a `candidate` → Telegram + email offer with an **accept link** (n8n Wait-node resume URL, valid 2 h) → on click, callback `backfill-accept` → confirmation message to the patient (or "slot already taken"). No click within 2 h: nothing happens; staff can still offer the slot by hand |
+| W5 | Doctor daily digest | stretch | Cron 07:30 Africa/Tunis → GET daily-digest → one email per doctor listing each admitted patient (bed, latest NEWS2, AI summary marked as needing review) |
+| W6 | Discharge follow-up | stretch | event `patient.discharged` → callback `follow-up` (14 days) → Telegram + email to the patient: "your follow-up visit has been requested; the hospital will confirm the date" |
 
 ## Changelog
+
+- **1.2** (2026-10-05): W2/W5/W6 made buildable. `appointment.cancelled` adds `doctor_name` + `candidate`; `backfill-accept` defines its responses; `daily-digest` returns a list with doctor email; W6 books through the new `follow-up` callback instead of a service JWT; `N8N_PUBLIC_URL`. Backend side of all of these: Faouzi (appointments + integrations routers).
 
 - **1.1** (2026-10-05): `dose.missed` adds `doctor_chat_id` and `doctor_email` (attending doctor) so W3 can reach the doctor. Emitter side: Wali.
 
