@@ -130,6 +130,27 @@
           "waitForSubWorkflow": false
         }
       }
+    },
+    {
+      "id": "4f0c2a8e-1b1a-4c55-9d0e-000000000008",
+      "name": "W6 discharge follow-up",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        760,
+        360
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "wardFollowUpW6xx"
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
     }
   ],
   "connections": {
@@ -185,7 +206,13 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "W6 discharge follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
