@@ -27,7 +27,7 @@
 - **Every AI module has a deterministic fallback.** The full demo must run with `LLM_PROVIDER=fallback` and no internet.
 - All LLM calls go through `backend/app/ai/llm.py`. Prompts live in `backend/app/ai/prompts/<name>.v1.md`, rules in `backend/app/ai/rules/*.v1.json`; never inline them.
 - PII stripping before any cloud call: patient names, phone numbers, emails, `p-\d{4}`-style IDs, 8-digit Tunisian CIN numbers.
-- UI copy never claims medical-grade sensors or clinically validated AI. Pitch framing: "automates the patient process; shorter waits are a result".
+- UI copy never claims medical-grade sensing or clinically validated AI; vitals are simulated (the bedside unit has no sensors since PR #13). Pitch framing: "automates the patient process; shorter waits are a result".
 - Model: `claude-opus-5-5` (default in `.env.example` → `LLM_MODEL`).
 - No AI attribution in commits/PRs. Branches: `faouzi/<feature>`. Conventional Commits.
 - Your lane is the widest. **Cut order if you fall behind:** patient assistant → W6 → W5 → W2 → patient view polish. Then hand the patient view to Hedi and `routers/integrations.py` to Wali (`TEAM_PLAN.md` §7).
@@ -455,7 +455,12 @@ Built ahead against the contracts (all DB-free and tested): `app/services/appoin
 
 - [ ] `routers/appointments.py`: `POST /appointments` (`new_appointment_fields` → row via `new_id(db, "a")`), `GET /appointments/waitlist` (`waitlist`), `GET /appointments`, `PATCH /appointments/{id}` (`apply_override`), `POST .../confirm` (`apply_confirm` → `emit("appointment.confirmed", confirmed_event(...))`), `POST .../cancel` (`apply_cancel` → `emit("appointment.cancelled", cancelled_event(..., waiting=requested appointments + patients))`), `POST .../reply` (`apply_reply`). `Conflict` → 409 `{"detail","code"}`; `ValueError` → 422.
 - [ ] `routers/integrations.py`: dependency that 401s unless `callback_secret_ok(request.headers.get("X-N8N-Secret"))`; `appointment-reply` (`apply_reply`), `backfill-accept` (`slot_taken` = another confirmed appointment with the same `doctor_id` + `slot_at`, `doctor_id` from the cancelled appointment; `apply_backfill_accept`), `daily-digest` (`digest_entries` over active admissions, latest `news2`, `copilot` summary), `follow-up` (`follow_up_fields`).
-- [ ] `routers/ai.py`: `POST /ai/triage`, `GET /ai/summary/{patient_id}` (+ `ai_summaries` cache 10 min), `POST /ai/summary/{patient_id}/review`, `POST /ai/digitize` (MinIO `ward-docs`) + `/approve`.
+- [ ] `routers/ai.py`:
+  - `POST /ai/triage` (`triage`, preview only)
+  - `GET /ai/summary/{patient_id}`: `summary_inputs` over the last 24 h, `is_fresh` cache, else `summarize` + new `ai_summaries` row, `summary_payload`
+  - `POST /ai/summary/{patient_id}/review` (`apply_review`)
+  - `POST /ai/digitize`: `documents.validate_upload` → `put_document` → `digitizer.digitize` → `documents` row; `/approve` sets `approved_fields` + `human_confirmed_by`
+  - `POST /ai/assistant` (patient): the caller's own today's doses, next appointment, latest vital → `assistant.answer(q, assistant_context(...))`
 - [ ] Mount the three routers in `app/main.py` (one-line PR to Wali, he owns `main.py`).
 - [ ] API tests with Wali's `client` fixture and `tests/helpers.login` for each route above, including the 403s from the role matrix and the 409s.
 - [ ] Run W2/W5/W6 against the real API (no stub): `WARD_API_URL` back to the default.
@@ -468,7 +473,7 @@ Built ahead against the contracts (all DB-free and tested): `app/services/appoin
 
 - [ ] Verify the whole demo with `LLM_PROVIDER=fallback` and the Wi-Fi off (local stack only).
 - [ ] Record the **backup demo video** of the full golden path.
-- [ ] Pitch deck (≤ 10 slides): problem → Ward (one line) → the live demo → architecture → AI with a human in the loop → privacy (self-hosted, audit, anonymised LLM, INPDP Law 2004-63) → honesty slide (prototype sensors, AI not clinically validated, production path) → impact metrics we'd track (no-show rate, time-to-appointment for urgency ≥ 4, paper hours saved) → team.
+- [ ] Pitch deck (≤ 10 slides): problem → Ward (one line) → the live demo → architecture → AI with a human in the loop → privacy (self-hosted, audit, anonymised LLM, INPDP Law 2004-63) → honesty slide (vitals simulated, AI not clinically validated, production path) → impact metrics we'd track (no-show rate, time-to-appointment for urgency ≥ 4, paper hours saved) → team.
 - [ ] Rehearse ×3 with a timer. Q&A prep: cost per bed, scaling to a hospital, data residency, what if the LLM is wrong (rules floor + human confirm), and offline behaviour.
 
 **Day 4 done when:** the backup video is recorded, the deck is done, and the team has rehearsed three times.
