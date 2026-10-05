@@ -1,32 +1,27 @@
 # Hardware — Smart Bedside Unit (owner: Wali)
 
-Wiring photos, enclosure notes and the carousel build log go here. The pin map lives in `firmware/PINMAP.md`.
+The bedside unit is a **listener**: it receives the medication schedule and commands over MQTT, shows them on an OLED,
+and turns a servo to the dose's pill slot. It has **no vital-sign sensors**; vitals, nurse taps and call-nurse come
+from `simulator/`. It is developed in **Wokwi** (`firmware/diagram.json`) and built on a real board last, if time allows.
+The pin map lives in `firmware/PINMAP.md`.
 
-## Bill of materials (Option A: with pill carousel)
+## Bill of materials
 
 | Part | Qty | Interface | Have? | Notes |
 |---|---|---|---|---|
 | ESP32 DevKit V1 | 1 (+1 spare) | — | ☐ | |
-| 2.8" ILI9341 touch TFT (XPT2046) | 1 | SPI | ☐ | |
-| MAX30102 | 1 | I2C 0x57 | ☐ | HR + SpO2 |
-| MLX90614 | 1 | I2C 0x5A | ☐ | non-contact temperature |
-| DS3231 RTC + CR2032 | 1 | I2C 0x68 | ☐ | check for the EEPROM at 0x57 |
-| RC522 RFID + 2 cards/tags | 1 | SPI | ☐ | nurse badge, wristband |
-| Push button + 10 kΩ | 1 | GPIO | ☐ | call nurse |
-| Buzzer + LED + 220 Ω + NPN | 1 | PWM/GPIO | ☐ | |
-| 28BYJ-48 stepper + ULN2003 | 1 | 4 GPIO | ☐ | carousel |
-| IR obstacle sensor module | 1 | GPIO | ☐ | pill pickup in tray |
-| Round rotating pill organizer (7–8 slots) | 1 | — | ☐ | or a foam-board build |
-| 5 V 2 A USB supply + cable | 1 | — | ☐ | |
-| 18650 + holder + TP4056 + 5 V boost | 1 | — | ☐ | backup power |
-| Breadboard / perfboard, jumpers, headers | — | — | ☐ | |
+| 0.96" SSD1306 OLED 128×64 | 1 | I2C 0x3C | ☐ | |
+| DS1307 RTC module + coin cell | 1 | I2C 0x68 | ☐ | a DS3231 also works (one-line firmware change) |
+| SG90 micro servo | 1 | GPIO 13 (PWM) | ☐ | 5 V rail |
+| Small pill holder (4 compartments on a disc or arc) | 1 | — | ☐ | cardboard / foam-board build on the servo horn |
+| 5 V 1 A+ USB supply + cable | 1 | — | ☐ | |
+| Breadboard, jumpers | — | — | ☐ | |
 
-Estimated total ≈ $45–70. Tick the boxes on Day 0, and order anything missing that day. The simulator covers missing parts until they arrive.
+Wokwi needs none of these. Tick the boxes on Day 0 only if the real board is planned.
 
-## Carousel mechanism
+## Servo dispenser
 
-- The stepper shaft is coupled to the organizer's centre (hot glue + a 3D-free adapter: bottle cap / wooden dowel).
-- The base has **one drop hole** under slot position 0. The tray under it holds the IR sensor.
-- 28BYJ-48 = 2048 steps/rev (half-step 4096). For N slots, one slot = 2048/N steps.
-- **Homing:** with no endstop, `rotate_home` assumes slot 0 is aligned at boot (manual alignment mark on the base).
-- **Go/no-go:** Day 2 at 18:00. Criterion: 10/10 correct single-slot rotations and drops. If it fails, the demo uses the "Taken" button.
+- The servo horn carries a disc or arc with up to **4 pill compartments**.
+- Slot angles: slot 0 = 0° (home), 1 = 45°, 2 = 90°, 3 = 135°, 4 = 180°. A fixed opening over the arc shows the active compartment.
+- `rotate_home` sends it back to 0°. The firmware detaches the servo after each move to stop jitter.
+- A dose with `slot: null` is reminder-only (no move).
