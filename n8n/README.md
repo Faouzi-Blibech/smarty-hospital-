@@ -23,10 +23,10 @@ The compose file mounts `n8n/workflows/` read-only at `/ward-workflows`. Workflo
 ```bash
 # Git Bash on Windows: export MSYS_NO_PATHCONV=1 first, or the container paths get rewritten
 C="docker compose -f infra/docker-compose.yml exec -T n8n"
-for f in W4-critical-alert W3-missed-dose W1-appointment-reminder W2-slot-backfill W6-discharge-follow-up W0-router; do   # sub-workflows first
+for f in W4-critical-alert W3-missed-dose W1-appointment-reminder W2-slot-backfill W6-discharge-follow-up W5-doctor-daily-digest W0-router; do   # sub-workflows first
   $C n8n import:workflow --input=/ward-workflows/$f.json
 done
-for id in wardCritAlertW04 wardMissedDoseW3 wardApptRemindW1 wardBackfillW2xx wardFollowUpW6xx wardRouterW00000; do
+for id in wardCritAlertW04 wardMissedDoseW3 wardApptRemindW1 wardBackfillW2xx wardFollowUpW6xx wardDigestW5xxxx wardRouterW00000; do
   $C n8n publish:workflow --id=$id
 done
 docker compose -f infra/docker-compose.yml restart n8n
@@ -47,6 +47,7 @@ Every Telegram/Email node uses `onError: continueRegularOutput`: one bad recipie
 | `W1-appointment-reminder.json` | `wardApptRemindW1` | ✅ waits until `slot_at − 24h` (sends at once if the slot is sooner: demo trick), then Telegram + email to the patient with confirm/cancel links to `${WEB_URL}/patient/appointments/{id}?action=…` |
 | `W2-slot-backfill.json` | `wardBackfillW2xx` | Offers a freed slot to the event's `candidate` (Telegram + email, link previews off) with an accept link valid 2 h (n8n resume URL under `N8N_PUBLIC_URL`). On click: `backfill-accept` → HTML result page + confirmation, or "slot already taken" on 409. A used link answers 409. |
 | `W6-discharge-follow-up.json` | `wardFollowUpW6xx` | Calls `follow-up` (14 days) and, only if the backend created the appointment, tells the patient over Telegram + email that the follow-up is requested and the hospital will confirm the date. |
+| `W5-doctor-daily-digest.json` | `wardDigestW5xxxx` | Every day at 07:30 Africa/Tunis (or on demand via its "Run now" trigger): `GET daily-digest`, then one email per doctor with an address and at least one admitted patient. Patients are listed by bed, highest NEWS2 first, with NEWS2 >= 5 flagged "review first" and summaries labelled as AI suggestions to review. Not called by the router. |
 
 ## Test
 
@@ -78,6 +79,15 @@ W6 (discharge follow-up):
 ```bash
 curl -X POST localhost:5678/webhook/ward-events -H "X-Ward-Secret: change-me-event" -H "Content-Type: application/json" -d '{"event":"patient.discharged","ts":"x","data":{"patient_id":"p-0001","patient_first_name":"Amira","patient_email":"<you@mail>","patient_telegram_chat_id":"<chat id>","doctor_id":"u-0001","discharged_at":"2026-10-08T10:00:00Z"}}'
 ```
+
+W5 (doctor digest) on demand, without waiting for 07:30:
+
+```bash
+# N8N_RUNNERS_BROKER_PORT avoids a port clash with the running n8n
+docker compose -f infra/docker-compose.yml exec -e N8N_RUNNERS_BROKER_PORT=5690 n8n n8n execute --id=wardDigestW5xxxx
+```
+
+Or open W5 in the UI and click "Execute workflow". Note: in `n8n execute` (CLI) mode the Email node fails with "license provider has not been set", a CLI-only limitation. Use the UI to actually send the digest.
 
 ## Testing workflows without the backend
 
