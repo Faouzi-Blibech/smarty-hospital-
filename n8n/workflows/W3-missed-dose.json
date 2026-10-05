@@ -1,0 +1,78 @@
+{
+  "id": "wardMissedDoseW3",
+  "name": "W3 · Missed-dose escalation",
+  "nodes": [
+    {
+      "id": "b3a0c1d2-0000-4000-8000-000000000301",
+      "name": "From router",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 0],
+      "parameters": { "inputSource": "passthrough" }
+    },
+    {
+      "id": "b3a0c1d2-0000-4000-8000-000000000302",
+      "name": "Telegram messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, -120],
+      "parameters": {
+        "jsCode": "// event dose.missed (contract v1.1): {dose_id, patient_first_name, bed, meds[], scheduled_at, nurse_chat_ids[], doctor_chat_id, doctor_email}\nconst out = [];\nfor (const item of $input.all()) {\n  const d = item.json.data || {};\n  const at = d.scheduled_at ? DateTime.fromISO(d.scheduled_at).setZone('Africa/Tunis').toFormat('HH:mm') : '?';\n  const text = `💊 Missed dose · Bed ${d.bed ?? '?'} · ${d.patient_first_name ?? 'Patient'} · ${(d.meds || []).join(', ') || 'meds'} (due ${at})`;\n  const ids = [...(d.nurse_chat_ids || []), d.doctor_chat_id].filter(Boolean).map(String);\n  for (const chat_id of [...new Set(ids)]) out.push({ json: { chat_id, text, dose_id: d.dose_id } });\n}\nreturn out;"
+      }
+    },
+    {
+      "id": "b3a0c1d2-0000-4000-8000-000000000303",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [480, -120],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": { "appendAttribution": false }
+      },
+      "credentials": { "telegramApi": { "id": "wardTelegramCred", "name": "ward-telegram" } }
+    },
+    {
+      "id": "b3a0c1d2-0000-4000-8000-000000000304",
+      "name": "Doctor email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 120],
+      "parameters": {
+        "jsCode": "const out = [];\nfor (const item of $input.all()) {\n  const d = item.json.data || {};\n  if (!d.doctor_email) continue;\n  const at = d.scheduled_at ? DateTime.fromISO(d.scheduled_at).setZone('Africa/Tunis').toFormat('dd/LL HH:mm') : '?';\n  out.push({ json: {\n    to: d.doctor_email,\n    subject: `Missed dose · Bed ${d.bed ?? '?'} · ${d.patient_first_name ?? 'Patient'}`,\n    text: `The dose due at ${at} (${(d.meds || []).join(', ')}) was not taken within 30 minutes.\\nBed ${d.bed ?? '?'} · ${d.patient_first_name ?? 'Patient'} · dose ${d.dose_id ?? ''}.\\nThe ward nurses were notified on Telegram.\\n\\n— Ward`,\n  } });\n}\nreturn out;"
+      }
+    },
+    {
+      "id": "b3a0c1d2-0000-4000-8000-000000000305",
+      "name": "Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [480, 120],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "fromEmail": "={{ $env.WARD_MAIL_FROM }}",
+        "toEmail": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": { "appendAttribution": false }
+      },
+      "credentials": { "smtp": { "id": "wardSmtpCred0001", "name": "ward-smtp" } }
+    }
+  ],
+  "connections": {
+    "From router": {
+      "main": [[
+        { "node": "Telegram messages", "type": "main", "index": 0 },
+        { "node": "Doctor email", "type": "main", "index": 0 }
+      ]]
+    },
+    "Telegram messages": { "main": [[{ "node": "Telegram", "type": "main", "index": 0 }]] },
+    "Doctor email": { "main": [[{ "node": "Email", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "Africa/Tunis" },
+  "pinData": {},
+  "tags": []
+}

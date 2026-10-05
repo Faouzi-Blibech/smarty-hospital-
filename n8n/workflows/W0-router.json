@@ -7,7 +7,10 @@
       "name": "Ward events",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 0],
+      "position": [
+        0,
+        0
+      ],
       "webhookId": "7d3f5a10-9c2e-4b8a-a1f4-3c9e5b2d7a10",
       "parameters": {
         "httpMethod": "POST",
@@ -21,7 +24,10 @@
       "name": "Check secret + route",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [240, 0],
+      "position": [
+        240,
+        0
+      ],
       "parameters": {
         "jsCode": "// Contract: docs/contracts/n8n-webhooks.md v1.0. Unknown events or a bad secret are dropped.\nconst SECRET = $env.N8N_EVENT_SECRET;\nconst ROUTES = {\n  'alert.critical': 0,\n  'dose.missed': 1,\n  'appointment.confirmed': 2,\n  'appointment.cancelled': 3,\n  'patient.discharged': 4,\n};\nconst out = [];\nfor (const item of $input.all()) {\n  const headers = item.json.headers || {};\n  const body = item.json.body || {};\n  if (!SECRET || headers['x-ward-secret'] !== SECRET) continue;\n  if (!(body.event in ROUTES)) continue;\n  out.push({ json: { event: body.event, ts: body.ts, data: body.data || {}, route: ROUTES[body.event] } });\n}\nreturn out;"
       }
@@ -31,7 +37,10 @@
       "name": "By event",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
-      "position": [480, 0],
+      "position": [
+        480,
+        0
+      ],
       "parameters": {
         "mode": "expression",
         "numberOutputs": 5,
@@ -43,28 +52,120 @@
       "name": "W4 critical alert",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [760, -200],
+      "position": [
+        760,
+        -200
+      ],
       "parameters": {
         "source": "database",
-        "workflowId": { "__rl": true, "mode": "id", "value": "wardCritAlertW04" },
-        "options": { "waitForSubWorkflow": false }
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "wardCritAlertW04"
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    },
+    {
+      "id": "4f0c2a8e-1b1a-4c55-9d0e-000000000005",
+      "name": "W3 missed dose",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        760,
+        -60
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "wardMissedDoseW3"
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    },
+    {
+      "id": "4f0c2a8e-1b1a-4c55-9d0e-000000000006",
+      "name": "W1 appointment reminder",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        760,
+        80
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "wardApptRemindW1"
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
       }
     }
   ],
   "connections": {
-    "Ward events": { "main": [[{ "node": "Check secret + route", "type": "main", "index": 0 }]] },
-    "Check secret + route": { "main": [[{ "node": "By event", "type": "main", "index": 0 }]] },
+    "Ward events": {
+      "main": [
+        [
+          {
+            "node": "Check secret + route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check secret + route": {
+      "main": [
+        [
+          {
+            "node": "By event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "By event": {
       "main": [
-        [{ "node": "W4 critical alert", "type": "main", "index": 0 }],
-        [],
-        [],
+        [
+          {
+            "node": "W4 critical alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "W3 missed dose",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "W1 appointment reminder",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [],
         []
       ]
     }
   },
-  "settings": { "executionOrder": "v1", "timezone": "Africa/Tunis" },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Tunis"
+  },
   "pinData": {},
   "tags": []
 }

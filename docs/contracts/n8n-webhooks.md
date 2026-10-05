@@ -1,6 +1,6 @@
 # n8n contract — v1.0
 
-> **Version:** 1.0 (frozen 2026-10-05) · **Owners:** Faouzi (workflows + callbacks), Wali (event emitter in the backend)
+> **Version:** 1.1 (2026-10-05) · **Owners:** Faouzi (workflows + callbacks), Wali (event emitter in the backend)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Rules (locked)
@@ -40,7 +40,7 @@ def emit(event: str, data: dict) -> None:
 |---|---|---|---|
 | `appointment.confirmed` | `POST /appointments/{id}/confirm` | `{appointment_id, patient_first_name, patient_telegram_chat_id, patient_email, slot_at, doctor_name}` | W1 schedules the 24 h reminder |
 | `appointment.cancelled` | `POST /appointments/{id}/cancel` or a W1 "cancel" reply | `{appointment_id, slot_at, doctor_id}` | W2 backfill |
-| `dose.missed` | `events/dose_missed` ingested | `{dose_id, patient_id, patient_first_name, bed, meds[], scheduled_at, nurse_chat_ids[]}` | W3 |
+| `dose.missed` | `events/dose_missed` ingested | `{dose_id, patient_id, patient_first_name, bed, meds[], scheduled_at, nurse_chat_ids[], doctor_chat_id, doctor_email}` | W3 |
 | `alert.critical` | alert with severity `high` or `critical` | `{alert_id, patient_first_name, bed, kind, news2, message, nurse_chat_ids[], doctor_chat_id}` | W4 |
 | `patient.discharged` | `POST /admissions/{id}/discharge` | `{patient_id, patient_first_name, patient_email, patient_telegram_chat_id, doctor_id, discharged_at}` | W6 |
 
@@ -69,5 +69,7 @@ The backend base URL from inside Docker is `http://api:8000`.
 | W6 | Discharge follow-up | stretch | event `patient.discharged` → book the follow-up (+14 days) → Telegram/email to the patient |
 
 ## Changelog
+
+- **1.1** (2026-10-05): `dose.missed` adds `doctor_chat_id` and `doctor_email` (attending doctor) so W3 can reach the doctor. Emitter side: Wali.
 
 - **1.0** (2026-10-05): initial freeze. W1 replies go through web-app links (Telegram buttons need a public tunnel). Adds the single-webhook envelope, the secrets and the core/stretch split.
