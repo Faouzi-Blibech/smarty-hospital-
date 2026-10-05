@@ -23,10 +23,10 @@ The compose file mounts `n8n/workflows/` read-only at `/ward-workflows`. Workflo
 ```bash
 # Git Bash on Windows: export MSYS_NO_PATHCONV=1 first, or the container paths get rewritten
 C="docker compose -f infra/docker-compose.yml exec -T n8n"
-for f in W4-critical-alert W3-missed-dose W1-appointment-reminder W0-router; do   # sub-workflows first
+for f in W4-critical-alert W3-missed-dose W1-appointment-reminder W2-slot-backfill W0-router; do   # sub-workflows first
   $C n8n import:workflow --input=/ward-workflows/$f.json
 done
-for id in wardCritAlertW04 wardMissedDoseW3 wardApptRemindW1 wardRouterW00000; do
+for id in wardCritAlertW04 wardMissedDoseW3 wardApptRemindW1 wardBackfillW2xx wardRouterW00000; do
   $C n8n publish:workflow --id=$id
 done
 docker compose -f infra/docker-compose.yml restart n8n
@@ -41,10 +41,11 @@ Every Telegram/Email node uses `onError: continueRegularOutput`: one bad recipie
 
 | File | ID | Status |
 |---|---|---|
-| `W0-router.json` | `wardRouterW00000` | ✅ checks `X-Ward-Secret`, drops unknown events, routes `alert.critical` → W4, `dose.missed` → W3, `appointment.confirmed` → W1 (outputs 3 appointment.cancelled → W2, 4 patient.discharged → W6: stretch, not wired) |
+| `W0-router.json` | `wardRouterW00000` | ✅ checks `X-Ward-Secret`, drops unknown events, routes `alert.critical` → W4, `dose.missed` → W3, `appointment.confirmed` → W1, `appointment.cancelled` → W2 (output 4 patient.discharged → W6: not wired yet) |
 | `W4-critical-alert.json` | `wardCritAlertW04` | ✅ one Telegram message per nurse + doctor chat ID |
 | `W3-missed-dose.json` | `wardMissedDoseW3` | ✅ Telegram to ward nurses + attending doctor, email to the doctor (contract v1.1 fields `doctor_chat_id`, `doctor_email`) |
 | `W1-appointment-reminder.json` | `wardApptRemindW1` | ✅ waits until `slot_at − 24h` (sends at once if the slot is sooner: demo trick), then Telegram + email to the patient with confirm/cancel links to `${WEB_URL}/patient/appointments/{id}?action=…` |
+| `W2-slot-backfill.json` | `wardBackfillW2xx` | Offers a freed slot to the event's `candidate` (Telegram + email, link previews off) with an accept link valid 2 h (n8n resume URL under `N8N_PUBLIC_URL`). On click: `backfill-accept` → HTML result page + confirmation, or "slot already taken" on 409. A used link answers 409. |
 
 ## Test
 
@@ -64,3 +65,17 @@ curl -X POST localhost:5678/webhook/ward-events -H "X-Ward-Secret: change-me-eve
 ```
 
 A far-away `slot_at` parks the W1 execution in **Waiting** until 24 h before the slot (visible under Executions).
+
+W2 (slot backfill): send the event, then open the `accept_url` (Executions → the waiting W2 run → "Plan offer" output, or the link in the Telegram/email):
+
+```bash
+curl -X POST localhost:5678/webhook/ward-events -H "X-Ward-Secret: change-me-event" -H "Content-Type: application/json" -d '{"event":"appointment.cancelled","ts":"x","data":{"appointment_id":"a-0003","slot_at":"<ISO slot>","doctor_id":"u-0001","doctor_name":"Dr Trabelsi","candidate":{"appointment_id":"a-0007","patient_first_name":"Sami","patient_telegram_chat_id":"<chat id>","patient_email":"<you@mail>"}}}'
+```
+
+## Testing workflows without the backend
+
+Point n8n at any stub that implements the `/integrations/n8n/*` callbacks:
+
+```bash
+WARD_API_URL=http://host.docker.internal:8099 docker compose -f infra/docker-compose.yml up -d --force-recreate n8n
+```
