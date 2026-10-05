@@ -1,0 +1,44 @@
+{
+  "id": "wardCritAlertW04",
+  "name": "W4 · Critical-alert fan-out",
+  "nodes": [
+    {
+      "id": "8a1d7c3b-2e44-4f10-8b6a-000000000401",
+      "name": "From router",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 0],
+      "parameters": { "inputSource": "passthrough" }
+    },
+    {
+      "id": "8a1d7c3b-2e44-4f10-8b6a-000000000402",
+      "name": "One message per recipient",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0],
+      "parameters": {
+        "jsCode": "// event alert.critical: {alert_id, patient_first_name, bed, kind, news2, message, nurse_chat_ids[], doctor_chat_id}\nconst out = [];\nfor (const item of $input.all()) {\n  const d = item.json.data || {};\n  const ids = [...(d.nurse_chat_ids || []), d.doctor_chat_id].filter(Boolean).map(String);\n  const text = `🚨 Bed ${d.bed ?? '?'} · ${d.patient_first_name ?? 'Patient'} · NEWS2 ${d.news2 ?? '-'}: ${d.message ?? ''}`;\n  for (const chat_id of [...new Set(ids)]) out.push({ json: { chat_id, text, alert_id: d.alert_id } });\n}\nreturn out;"
+      }
+    },
+    {
+      "id": "8a1d7c3b-2e44-4f10-8b6a-000000000403",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [480, 0],
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": { "appendAttribution": false }
+      },
+      "credentials": { "telegramApi": { "id": "wardTelegramCred", "name": "ward-telegram" } }
+    }
+  ],
+  "connections": {
+    "From router": { "main": [[{ "node": "One message per recipient", "type": "main", "index": 0 }]] },
+    "One message per recipient": { "main": [[{ "node": "Telegram", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "Africa/Tunis" },
+  "pinData": {},
+  "tags": []
+}

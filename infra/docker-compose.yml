@@ -43,6 +43,7 @@ services:
       GENERIC_TIMEZONE: Africa/Tunis
       TZ: Africa/Tunis
       N8N_SECURE_COOKIE: "false"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"   # Code nodes read N8N_EVENT_SECRET (n8n 2.x blocks $env by default)
       WEBHOOK_URL: http://localhost:5678/
       WARD_API_URL: http://api:8000
       WEB_URL: ${WEB_URL:-http://localhost:3000}
@@ -51,6 +52,7 @@ services:
     ports: ["5678:5678"]
     volumes:
       - n8n-data:/home/node/.n8n
+      - ../n8n/workflows:/ward-workflows:ro
 
   api:
     build: ../backend
