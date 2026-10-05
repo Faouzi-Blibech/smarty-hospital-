@@ -27,7 +27,7 @@
 - **Every AI module has a deterministic fallback.** The full demo must run with `LLM_PROVIDER=fallback` and no internet.
 - All LLM calls go through `backend/app/ai/llm.py`. Prompts live in `backend/app/ai/prompts/<name>.v1.md`, rules in `backend/app/ai/rules/*.v1.json`; never inline them.
 - PII stripping before any cloud call: patient names, phone numbers, emails, `p-\d{4}`-style IDs, 8-digit Tunisian CIN numbers.
-- UI copy never claims medical-grade sensors or clinically validated AI. Pitch framing: "automates the patient process; shorter waits are a result".
+- UI copy never claims medical-grade sensing or clinically validated AI; vitals are simulated (the bedside unit has no sensors since PR #13). Pitch framing: "automates the patient process; shorter waits are a result".
 - Model: `claude-opus-5-5` (default in `.env.example` → `LLM_MODEL`).
 - No AI attribution in commits/PRs. Branches: `faouzi/<feature>`. Conventional Commits.
 - Your lane is the widest. **Cut order if you fall behind:** patient assistant → W6 → W5 → W2 → patient view polish. Then hand the patient view to Hedi and `routers/integrations.py` to Wali (`TEAM_PLAN.md` §7).
@@ -473,7 +473,7 @@ Built ahead against the contracts (all DB-free and tested): `app/services/appoin
 
 - [ ] Verify the whole demo with `LLM_PROVIDER=fallback` and the Wi-Fi off (local stack only).
 - [ ] Record the **backup demo video** of the full golden path.
-- [ ] Pitch deck (≤ 10 slides): problem → Ward (one line) → the live demo → architecture → AI with a human in the loop → privacy (self-hosted, audit, anonymised LLM, INPDP Law 2004-63) → honesty slide (prototype sensors, AI not clinically validated, production path) → impact metrics we'd track (no-show rate, time-to-appointment for urgency ≥ 4, paper hours saved) → team.
+- [ ] Pitch deck (≤ 10 slides): problem → Ward (one line) → the live demo → architecture → AI with a human in the loop → privacy (self-hosted, audit, anonymised LLM, INPDP Law 2004-63) → honesty slide (vitals simulated, AI not clinically validated, production path) → impact metrics we'd track (no-show rate, time-to-appointment for urgency ≥ 4, paper hours saved) → team.
 - [ ] Rehearse ×3 with a timer. Q&A prep: cost per bed, scaling to a hospital, data residency, what if the LLM is wrong (rules floor + human confirm), and offline behaviour.
 
 **Day 4 done when:** the backup video is recorded, the deck is done, and the team has rehearsed three times.
