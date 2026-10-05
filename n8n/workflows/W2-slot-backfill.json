@@ -1,0 +1,433 @@
+{
+  "id": "wardBackfillW2xx",
+  "name": "W2 · Slot backfill offer",
+  "nodes": [
+    {
+      "id": "d2c0e1f2-0000-4000-8000-000000000201",
+      "name": "From router",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "d2c0e1f2-0000-4000-8000-000000000202",
+      "name": "Plan offer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// event appointment.cancelled (contract v1.2): {appointment_id, slot_at, doctor_id, doctor_name, candidate}\n// candidate: {appointment_id, patient_first_name, patient_telegram_chat_id, patient_email} or null\nconst out = [];\nfor (const item of $input.all()) {\n  const d = item.json.data || {};\n  const c = d.candidate;\n  if (!c || !d.slot_at || !c.appointment_id) continue;   // nobody waiting, or no slot to give away\n  const when = DateTime.fromISO(d.slot_at).setZone('Africa/Tunis').toFormat(\"cccc d LLL 'at' HH:mm\");\n  const accept = `${$execution.resumeUrl}?accept=1`;\n  const text = `Hi ${c.patient_first_name ?? ''}, an earlier appointment just became free: ${when} with ${d.doctor_name ?? 'your doctor'}.\\nTake it: ${accept}\\n(The offer is valid for 2 hours. Ignore this message to keep your current request.)`;\n  out.push({ json: {\n    candidate_appointment_id: c.appointment_id,\n    slot_at: d.slot_at,\n    when,\n    doctor_name: d.doctor_name ?? 'your doctor',\n    chat_id: c.patient_telegram_chat_id ? String(c.patient_telegram_chat_id) : null,\n    email: c.patient_email || null,\n    subject: `An earlier appointment is available: ${when}`,\n    text,\n    accept_url: accept,\n  } });\n}\nreturn out;"
+      }
+    },
+    {
+      "id": "d2c0e1f2-0000-4000-8000-000000000203",
+      "name": "Has Telegram",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        -160
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().filter(i => i.json.chat_id);"
+      }
+    },
+    {
+      "id": "d2c0e1f2-0000-4000-8000-000000000204",
+      "name": "Telegram offer",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        -160
+      ],
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true
+        }
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "telegramApi": {
+          "id": "wardTelegramCred",
+          "name": "ward-telegram"
+        }
+      }
+    },
+    {
+      "id": "d2c0e1f2-0000-4000-8000-000000000205",
+      "name": "Has email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().filter(i => i.json.email);"
+      }
+    },
+    {
+      "id": "d2c0e1f2-0000-4000-8000-000000000206",
+      "name": "Email offer",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "fromEmail": "={{ $env.WARD_MAIL_FROM }}",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "smtp": {
+          "id": "wardSmtpCred0001",
+          "name": "ward-smtp"
+        }
+      }
+    },
+    {
+      "id": "d2c0e1f2-0000-4000-8000-000000000207",
+      "name": "Wait for accept (2 h)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        220
+      ],
+      "parameters": {
+        "resume": "webhook",
+        "httpMethod": "GET",
+        "responseMode": "responseNode",
+        "limitWaitTime": true,
+        "limitType": "afterTimeInterval",
+        "resumeAmount": 2,
+        "resumeUnit": "hours",
+        "options": {}
+      },
+      "webhookId": "8e4c2b17-6f3a-4d29-b5e0-1a7c9d3f2e40"
+    },
+    {
+      "id": "d2c0e1f2-0000-4000-8000-000000000208",
+      "name": "Clicked?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        220
+      ],
+      "parameters": {
+        "jsCode": "// Wait resumes either because the patient opened the link (webhook data has `query`) or because 2 h passed.\nconst clicked = $input.all().filter(i => i.json.query !== undefined);\nif (!clicked.length) return [];          // timed out: nothing to do, staff can still offer the slot by hand\nconst offer = $('Plan offer').first().json;\nreturn [{ json: { appointment_id: offer.candidate_appointment_id, slot_at: offer.slot_at } }];"
+      }
+    },
+    {
+      "id": "d2c0e1f2-0000-4000-8000-000000000209",
+      "name": "backfill-accept",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        220
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WARD_API_URL }}/integrations/n8n/backfill-accept",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Secret",
+              "value": "={{ $env.N8N_CALLBACK_SECRET }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "d2c0e1f2-0000-4000-8000-000000000210",
+      "name": "Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        220
+      ],
+      "parameters": {
+        "jsCode": "const offer = $('Plan offer').first().json;\nconst res = $input.first().json;            // full response: {statusCode, body}\nconst code = res.body?.code;\nlet page, text;\nif (res.statusCode === 200) {\n  page = `Your appointment is booked: ${offer.when} with ${offer.doctor_name}.`;\n  text = `Confirmed: your appointment is on ${offer.when} with ${offer.doctor_name}. See you then.`;\n} else if (code === 'slot_taken' || code === 'not_waiting') {\n  page = 'Sorry, this slot has already been taken. Your original request is still on the list.';\n  text = page;\n} else {\n  page = 'Something went wrong while booking. Please contact the hospital reception.';\n  text = page;\n}\nconst html = `<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Ward</title></head><body style=\"font-family:system-ui,sans-serif;max-width:32rem;margin:3rem auto;padding:0 1rem\"><h1 style=\"font-size:1.4rem\">Ward</h1><p>${page}</p></body></html>`;\nreturn [{ json: { status: res.statusCode, html, text, subject: 'Your appointment', chat_id: offer.chat_id, email: offer.email } }];"
+      }
+    },
+    {
+      "id": "d2c0e1f2-0000-4000-8000-000000000211",
+      "name": "Show result page",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1440,
+        100
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "d2c0e1f2-0000-4000-8000-000000000212",
+      "name": "Has Telegram (result)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        240
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().filter(i => i.json.chat_id);"
+      }
+    },
+    {
+      "id": "d2c0e1f2-0000-4000-8000-000000000213",
+      "name": "Telegram result",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1680,
+        240
+      ],
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true
+        }
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "telegramApi": {
+          "id": "wardTelegramCred",
+          "name": "ward-telegram"
+        }
+      }
+    },
+    {
+      "id": "d2c0e1f2-0000-4000-8000-000000000214",
+      "name": "Has email (result)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        380
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().filter(i => i.json.email);"
+      }
+    },
+    {
+      "id": "d2c0e1f2-0000-4000-8000-000000000215",
+      "name": "Email result",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1680,
+        380
+      ],
+      "parameters": {
+        "fromEmail": "={{ $env.WARD_MAIL_FROM }}",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "smtp": {
+          "id": "wardSmtpCred0001",
+          "name": "ward-smtp"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "From router": {
+      "main": [
+        [
+          {
+            "node": "Plan offer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan offer": {
+      "main": [
+        [
+          {
+            "node": "Has Telegram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Has email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait for accept (2 h)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Telegram": {
+      "main": [
+        [
+          {
+            "node": "Telegram offer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has email": {
+      "main": [
+        [
+          {
+            "node": "Email offer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for accept (2 h)": {
+      "main": [
+        [
+          {
+            "node": "Clicked?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clicked?": {
+      "main": [
+        [
+          {
+            "node": "backfill-accept",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "backfill-accept": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Result": {
+      "main": [
+        [
+          {
+            "node": "Show result page",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Has Telegram (result)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Has email (result)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Telegram (result)": {
+      "main": [
+        [
+          {
+            "node": "Telegram result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has email (result)": {
+      "main": [
+        [
+          {
+            "node": "Email result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Tunis"
+  },
+  "pinData": {},
+  "tags": []
+}
