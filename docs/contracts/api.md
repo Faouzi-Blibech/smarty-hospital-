@@ -1,6 +1,6 @@
 # REST + WebSocket contract — v1.0
 
-> **Version:** 1.0 (frozen 2026-10-05) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations)
+> **Version:** 1.1 (2026-10-05) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Conventions
@@ -21,7 +21,7 @@
 | `POST /auth/login` | public | `{"email","password"}` → `{"access_token","token_type":"bearer","user":{"id","name","role","patient_id"}}` |
 | `GET /me` | any | → `{"id","name","email","role","patient_id"}` |
 
-Seed accounts (password `ward1234` for all): `doctor@ward.tn`, `nurse@ward.tn`, `admin@ward.tn`, `patient@ward.tn` (linked to `p-0001`), and `n8n@ward.tn` (role `admin`, used by n8n W6 to book follow-ups).
+Seed accounts (password `ward1234` for all): `doctor@ward.tn`, `nurse@ward.tn`, `admin@ward.tn`, `patient@ward.tn` (linked to `p-0001`).
 
 ## Patients and records
 
@@ -132,8 +132,9 @@ All are authenticated with the header `X-N8N-Secret: ${N8N_CALLBACK_SECRET}` (no
 | Method & path | Body |
 |---|---|
 | `POST /integrations/n8n/appointment-reply` | `{"appointment_id","reply":"confirm\|cancel"}` |
-| `POST /integrations/n8n/backfill-accept` | `{"appointment_id","slot_at"}` |
-| `GET /integrations/n8n/daily-digest?doctor_id=` | → `{"doctor","patients":[{"name","news2","summary"}]}` |
+| `POST /integrations/n8n/backfill-accept` | `{"appointment_id","slot_at"}` → `{"status":"confirmed"}` · 409 `slot_taken` / `not_waiting` |
+| `GET /integrations/n8n/daily-digest[?doctor_id=]` | → `[{"doctor":{"id","name","email"},"patients":[{"name","bed","news2","summary"}]}]` |
+| `POST /integrations/n8n/follow-up` | `{"patient_id","days"}` → `{"appointment_id","status":"requested"}` |
 
 ## Health
 
@@ -154,5 +155,7 @@ All are authenticated with the header `X-N8N-Secret: ${N8N_CALLBACK_SECRET}` (no
 Filtering: a nurse receives frames for their ward, a doctor for their own patients, an admin only `device_status`. Patients do not connect.
 
 ## Changelog
+
+- **1.1** (2026-10-05): integrations callbacks aligned with n8n-webhooks v1.2 (`backfill-accept` responses, `daily-digest` list shape with doctor email, new `follow-up`); the `n8n@ward.tn` service account is no longer needed.
 
 - **1.0** (2026-10-05): initial freeze. Adds `PATCH /appointments/{id}` (urgency override), `/appointments/{id}/reply`, `/ai/summary/{id}/review`, `/me`, `/patients/{id}/prescriptions`, `/patients/{id}/notes`, discharge, digitize-approve, device command and `/integrations/n8n/*` to the brief's drafts.
