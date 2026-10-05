@@ -7,26 +7,26 @@ Spec: `docs/superpowers/specs/2026-10-05-ward-foundation-design.md` · Contracts
 
 | Workstream | Owner | Priority | Notes |
 |---|---|---|---|
-| WS1 Firmware: sensors, MQTT, NVS schedule, RTC, offline buffer, RFID read, carousel + IR dose flow | **Hedi** | core | |
-| WS2 Device screens (LVGL): home, dose, measure, call-nurse, nurse mode | **Hedi** | core | Patient role owner |
-| WS3 Wiring, PINMAP (with Hedi), power, enclosure, **carousel mechanism** | **Wali** | core | Go/no-go end of Day 2 |
+| WS1 ESP32 listener firmware (Wokwi): MQTT, NVS schedule, DS1307 RTC, servo dose flow, acks | **Hedi** | core, built last | No sensors; same code on the real board |
+| WS2 Device screens (SSD1306 OLED): home, dose reminder, alert banner, message toast | **Hedi** | core | Patient role owner |
+| WS3 Real-board wiring (OLED, servo, RTC), PINMAP (with Hedi), servo pill holder | **Wali** | stretch | Only if the Wokwi path is green on Day 3 |
 | WS4 IoT backend: Mosquitto config, ingestion worker, device registry, schedule push | **Wali** | core | |
 | WS5 Early warning (NEWS2 partial + trend) + alerts + WebSocket | **Wali** | core | Nurse role owner |
 | WS6 Core backend: scaffold, schema + migrations, seed, JWT + RBAC, audit, patients/records/prescriptions | **Wali** | core | |
 | WS6b n8n event emitter (`integrations/n8n.py`) | **Wali** | core | Faouzi builds the workflows |
-| WS7 No-show model + backfill ranking | **Hedi** | Day 3–4 | After firmware is stable |
+| WS7 No-show model + backfill ranking | **Hedi** | Day 1 | Moved earlier; the hardware lane is small now |
 | WS8 Next.js PWA: doctor → nurse → admin → patient | **Faouzi** | core | Doctor + Admin role owner |
 | WS9 n8n: W4, W3, W1 core; W2, W5, W6 stretch | **Faouzi** | core/stretch | |
 | WS10 LLM wrapper + triage + copilot + digitizer; assistant = stretch | **Faouzi** | core/stretch | |
 | WS11 Appointments & waitlist endpoints + n8n callbacks | **Faouzi** | core | On Wali's schema |
-| WS12 Simulator (`simulator/`) | **Hedi** | Day 0–1 | Unblocks Wali + Faouzi before the hardware works |
+| WS12 Simulator (`simulator/`): all vitals, nurse taps, call-nurse, dose taken; `--companion` mode next to the ESP | **Hedi** | Day 0 | Main patient-side traffic source for the demo |
 | WS13 Seed data | **Wali** | Day 1 | Finishes with the schema |
 | WS14 Demo script + pitch | **Faouzi** (lead), all rehearse | Day 4+ | |
 
 **Balance check:**
 - **Faouzi** carries the widest surface (web + AI + n8n). It's offset by moving the core backend and the simulator away, and by making the assistant and W2/W5/W6 stretch goals.
 - **Wali** carries the backend core, which is the heaviest after Day 1 because the mechanics shrink then.
-- **Hedi** carries all firmware, the deepest single item. The simulator is small, and the no-show model only starts once the firmware is stable.
+- **Hedi** carries the simulator (the demo's whole patient-side traffic), the no-show model and a small listener firmware built last in Wokwi. He has spare capacity: he is first in line for the rebalance list (§7).
 
 If anyone is behind at a checkpoint, the first thing to drop is that person's stretch items, then the rebalance list in §7.
 
@@ -38,7 +38,7 @@ flowchart LR
   C --> SCH["Schema + auth + seed<br/>Wali D1"]
   C --> MOCK["Web mocks<br/>Faouzi D0"]
   C --> FW["Firmware core<br/>Hedi D1"]
-  PIN["PINMAP<br/>Hedi+Wali D1"] --> FW
+  WOK["Wokwi project<br/>Hedi D1"] --> FW
   SIM --> ING["Ingestion + WS<br/>Wali D1"]
   SCH --> ING
   SCH --> APT["Appointments API<br/>Faouzi D1–2"]
@@ -49,9 +49,8 @@ flowchart LR
   MOCK --> WEB["Doctor + nurse views<br/>Faouzi D1"]
   WEB --> WEB2["Admin + patient views<br/>Faouzi D2"]
   APT --> TRI["Triage<br/>Faouzi D2"]
-  FW --> FW2["Schedule + reminders + RFID<br/>+ carousel · Hedi D2"]
+  FW --> FW2["Schedule + reminders<br/>+ servo · Hedi D2"]
   RX --> FW2
-  MECH["Carousel mechanism<br/>Wali D1–2"] --> FW2
   ING & WEB & EW --> CP1{{"CP1 end D1"}}
   FW2 & RX --> CP2{{"CP2 end D2"}}
   CP2 & TRI & WEB2 & W4 --> CP3{{"CP3 D3 midday:<br/>golden path"}}
@@ -68,19 +67,19 @@ flowchart LR
 - **Done when:** the foundation PR is merged, the stack runs empty everywhere, and the simulator traffic is visible in `mosquitto_sub`.
 
 ### Day 1 — Tue 10-06 (parallel build on mocks)
-- **Hedi:** PINMAP (with Wali); sensors read over serial; TFT + LVGL home screen; Wi-Fi + MQTT publish of `vitals` and `status` with last-will.
+- **Hedi:** no-show model (→ Faouzi); Wokwi project (ESP32 + OLED + servo + DS1307) boots; schedule logic with native tests.
 - **Wali:** wiring of all I2C/SPI parts; schema + first migration; seed; JWT login + RBAC deps + audit; ingestion worker → `vitals` with dedupe; WS broadcast of `vital`; n8n emitter.
 - **Faouzi:** doctor view (patient list + patient detail with a vitals chart) and nurse view (ward list, live vitals, alerts panel) on mocks; n8n W4 from a manual webhook test.
 - **Checkpoint CP1 (end of Day 1):** simulator vitals appear live on the nurse view through the real API + WS.
 
 ### Day 2 — Wed 10-07 (parallel build)
-- **Hedi:** NVS schedule + RTC reminders + dose screen + "Taken"; RFID nurse mode; offline ring buffer; carousel rotate + IR pickup (with Wali's mechanism).
-- **Wali:** prescriptions → `med_doses` → retained schedule publish; dose events update `med_doses`; early warning + alerts + `alert.critical` / `dose.missed` emits; carousel mechanism built. **Carousel go/no-go at 18:00.**
+- **Hedi:** ESP listener in Wokwi: NVS schedule + RTC reminders + OLED dose screen + servo + acks; `--companion` simulator answers `dose_taken`.
+- **Wali:** prescriptions → `med_doses` → retained schedule publish; dose events update `med_doses`; early warning + alerts + `alert.critical` / `dose.missed` emits.
 - **Faouzi:** `llm.py`, triage (rules + LLM + fallback), appointments + waitlist endpoints, admin view (waitlist confirm/override, devices/beds), patient view (meds, next visit, request appointment); copilot summary; digitizer; n8n W3 + W1.
-- **Checkpoint CP2 (end of Day 2):** a prescription written in the doctor view reaches the **real** device screen, and a dose event comes back.
+- **Checkpoint CP2 (end of Day 2):** a prescription written in the doctor view reaches the **Wokwi** device's OLED, and a dose event comes back.
 
 ### Day 3 — Thu 10-08 (integration day)
-- Morning: replace every mock with the real service and the real device. Run the golden path; log every break in a shared list; fix only what blocks the demo.
+- Morning: replace every mock with the real service and the Wokwi device (real board if built). Run the golden path; log every break in a shared list; fix only what blocks the demo.
 - **Checkpoint CP3 (Day 3, 13:00):** the full golden path runs end-to-end twice in a row.
 - Afternoon: Hedi → no-show model; Wali → trend alerts + device-offline alert; Faouzi → digitizer review screen polish + W6 if time allows.
 
@@ -112,9 +111,9 @@ flowchart LR
 3. **(60 s) Care:**
    - The doctor writes a prescription.
    - Seconds later the **bedside unit** shows the schedule.
-   - `dispense_now`: the carousel rotates, the buzzer sounds, the patient takes the pill (IR) and the doctor view shows "taken".
+   - `dispense_now`: the OLED shows "TAKE NOW", the servo turns to the pill slot, the dose is confirmed (simulator) and the doctor view shows "taken".
 4. **(60 s) Nurse:**
-   - The nurse taps a badge; nurse mode measures real HR/SpO2/temp.
+   - A (simulated) nurse badge tap sends vitals tagged with the nurse. Say clearly that vitals are simulated.
    - Then the **simulator injects an abnormal vital** (SpO2 88, HR 130), producing a NEWS2 critical alert on the nurse dashboard **and** on Telegram (W4).
    - The nurse acks it.
 5. **(45 s) Paper digitizer:**
@@ -133,10 +132,9 @@ flowchart LR
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 |---|---|---|---|---|
-| Part missing or late (e.g. MAX30102, RC522) | M | H | Inventory Day 0; the simulator covers any missing sensor; buy spares locally | Wali |
-| Carousel mechanism unreliable | H | M | Go/no-go Day 2 18:00 → "Taken" button, same events | Wali + Hedi |
-| LVGL + TFT_eSPI config eats a day | M | H | Start from the TFT_eSPI `User_Setup` for ILI9341; fallback is plain TFT_eSPI drawing without LVGL | Hedi |
-| SPI conflict TFT/touch/RC522 | M | M | Separate CS pins, `SPI.beginTransaction` per device; RC522 on its own SPI host (HSPI) if needed | Hedi + Wali |
+| Wokwi ESP can't reach the laptop's Mosquitto | M | H | Wokwi private IoT gateway (`host.wokwi.internal`); verify Day 1; dev-only fallback: public test broker | Hedi |
+| Real board not built or unreliable | M | L | The demo uses the Wokwi device on the projector; events are identical | Hedi + Wali |
+| Judges expect real sensors | M | M | Honesty slide: vitals are simulated; the architecture takes real sensors over the same contract | Faouzi |
 | Venue Wi-Fi blocks MQTT/ports | M | H | Bring a phone hotspot / travel router; run the stack on one laptop on that LAN | Wali |
 | LLM slow, offline or out of quota | M | H | 15 s timeout → deterministic fallback; `source` badge in the UI | Faouzi |
 | Telegram blocked at venue | L | M | Show the n8n execution log + email as backup | Faouzi |
@@ -148,4 +146,4 @@ flowchart LR
 
 1. Faouzi behind → Wali takes `routers/integrations.py` (n8n callbacks); Hedi takes the patient view of the PWA (simple read-only pages).
 2. Wali behind → Hedi takes the trend z-score and the device-offline alert; Faouzi uses mocked alerts on the web.
-3. Hedi behind → Wali takes the carousel firmware (`carousel.cpp`); the no-show model is dropped (base rate is used).
+3. Hedi behind → the ESP listener is dropped and the simulator plays the device (standalone mode); the no-show model falls back to the base rate.
