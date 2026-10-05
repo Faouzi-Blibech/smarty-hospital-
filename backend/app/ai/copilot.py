@@ -4,7 +4,7 @@
 """
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 
@@ -65,3 +65,37 @@ def summarize(vitals: list[dict], notes: list[str], meds: list[str], names: list
         summary, source = fallback_summary(vitals, notes, meds), "fallback"
     return {"summary": summary, "interactions": interactions, "source": source,
             "generated_at": datetime.now(UTC).isoformat()}
+
+
+# --- GET /ai/summary/{patient_id} building blocks. Rows follow data-model.md (vitals, notes, prescriptions,
+# ai_summaries); the router loads them (last 24 h) and stores summarize()'s output as an ai_summaries row.
+
+CACHE_FOR = timedelta(minutes=10)
+
+
+def summary_inputs(patient, vitals: list, notes: list, prescriptions: list) -> dict:
+    """Turn DB rows into summarize() arguments: oldest-first vitals, non-empty notes, active med names."""
+    return {
+        "vitals": [{"hr": v.hr, "spo2": v.spo2, "temp": v.temp, "news2": v.news2} for v in vitals],
+        "notes": [n.text.strip() for n in notes if n.text and n.text.strip()],
+        "meds": [item["med"] for rx in prescriptions if rx.active for item in rx.items if item.get("med")],
+        "names": [patient.first_name, patient.last_name],
+    }
+
+
+def is_fresh(summary_row, *, now: datetime) -> bool:
+    """A stored summary is served from cache for 10 minutes."""
+    return summary_row is not None and now - summary_row.created_at < CACHE_FOR
+
+
+def apply_review(summary_row, *, user_id: str) -> None:
+    """The doctor read the AI summary (human in the loop)."""
+    summary_row.human_confirmed_by = user_id
+
+
+def summary_payload(summary_row) -> dict:
+    """Response body of GET /ai/summary (api.md v1.2)."""
+    s = summary_row.ai_suggested
+    return {"summary": s["summary"], "interactions": s["interactions"], "source": s["source"],
+            "generated_at": summary_row.created_at.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "human_confirmed_by": summary_row.human_confirmed_by}
