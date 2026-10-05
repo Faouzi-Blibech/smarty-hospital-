@@ -19,7 +19,7 @@ In Tunisian public hospitals:
 |---|---|
 | **Patient** | A **bedside unit** with a touch screen, medication reminders that work offline, a rotating pill carousel and a call-nurse button. A web app to request appointments and follow home care after discharge. |
 | **Nurse** | Tap an RFID badge on the device to log vitals. A live ward board with **early-warning alerts** (NEWS2-based) on screen and on Telegram. A med-round checklist. |
-| **Doctor** | Patient list with an **AI daily summary**, vitals trends, prescriptions that go straight to the bedside unit, and a **paper-record digitizer** (photo → structured record). |
+| **Doctor** | Patient list with an **AI daily summary**, vitals trends, prescriptions that go straight to the bedside unit, and **adherence**: which doses were taken or missed. |
 | **Admin** | An **AI-ranked waitlist** that admins confirm or override, bed and device assignment, and a hospital dashboard. |
 
 **Principles:**
@@ -38,7 +38,7 @@ flowchart LR
   W --> DB[("PostgreSQL + TimescaleDB")]
   PWA["Next.js PWA<br/>doctor · nurse · admin · patient"] <-->|REST + WS| API[FastAPI]
   API --> DB
-  API --> AI["AI: triage · early warning · copilot<br/>digitizer · no-show"]
+  API --> AI["AI: triage · early warning · copilot<br/>no-show · assistant"]
   API --> S3[(MinIO)]
   API -->|events| N8N[n8n] -->|Telegram / email| People((Staff & patients))
 ```

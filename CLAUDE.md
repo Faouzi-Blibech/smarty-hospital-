@@ -32,7 +32,7 @@ update the ownership table below and the table above in one PR titled `chore: sw
 | `simulator/` | Hedi | Python fake devices speaking the MQTT contract |
 | `backend/` (default) | Wali | FastAPI app, models, migrations, auth, IoT, alerts |
 | `backend/app/routers/appointments.py`, `backend/app/routers/ai.py`, `backend/app/routers/integrations.py` | Faouzi | |
-| `backend/app/ai/` (default) | Faouzi | LLM wrapper, triage, copilot, digitizer, assistant, prompts, rules |
+| `backend/app/ai/` (default) | Faouzi | LLM wrapper, triage, copilot, assistant, prompts, rules |
 | `backend/app/ai/early_warning.py` | Wali | NEWS2 + trend |
 | `backend/app/ai/no_show/` | Hedi | No-show model + backfill ranking |
 | `web/` | Faouzi | Next.js PWA |

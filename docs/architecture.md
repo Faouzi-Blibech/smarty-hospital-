@@ -41,7 +41,7 @@ flowchart TB
     APT["Appointments & Waitlist"]
     REC["Patient records"]
     RX["Prescriptions & Med schedule"]
-    AI["AI engine<br/>triage · early warning · copilot<br/>digitizer · no-show · assistant"]
+    AI["AI engine<br/>triage · early warning · copilot<br/>no-show · assistant"]
     LLM["ai/llm.py<br/>provider-agnostic wrapper<br/>(PII stripped)"]
   end
 
@@ -95,7 +95,6 @@ flowchart LR
     UC12["Prescribe & plan care"]
     UC13["Vitals history & trends"]
     UC14["Set / confirm urgency"]
-    UC15["Review digitized paper records"]
     UC16["Bookings & AI-ranked waitlist"]
     UC17["Assign beds & devices"]
     UC18["Staff accounts & roles"]
@@ -103,8 +102,8 @@ flowchart LR
   end
 
   P --- UC1 & UC2 & UC3 & UC4 & UC5 & UC6
-  N --- UC7 & UC8 & UC9 & UC10 & UC15
-  D --- UC11 & UC12 & UC13 & UC14 & UC15 & UC9
+  N --- UC7 & UC8 & UC9 & UC10
+  D --- UC11 & UC12 & UC13 & UC14 & UC9
   A --- UC16 & UC17 & UC18 & UC19 & UC14
 ```
 
@@ -148,7 +147,7 @@ sequenceDiagram
   S-->>P: Follow-up booked (n8n W6) · home care in app
 ```
 
-**Golden demo path:** the journey above, plus a live **paper digitizer** moment and a **simulated abnormal vital** that fires an alert on the dashboard and on Telegram.
+**Golden demo path:** the journey above, plus a **simulated abnormal vital** that fires an alert on the dashboard and on Telegram.
 
 ## 5. Hardware: Smart Bedside Unit with pill carousel (Option A)
 
@@ -205,7 +204,6 @@ flowchart LR
     REF["Referral + symptoms<br/>(AR / FR / Darija)"]
     VS["Vitals stream"]
     H24["24h vitals + notes + meds"]
-    IMG["Photo of paper record"]
     HIST["Booking history"]
     Q["Patient question"]
   end
@@ -213,7 +211,6 @@ flowchart LR
     T["1 · Triage<br/>red-flag rules + LLM JSON"]
     EW["2 · Early warning<br/>NEWS2 partial + z-score"]
     CP["3 · Doctor copilot<br/>LLM summary + interaction list"]
-    DG["4 · Paper digitizer<br/>vision LLM + confidence"]
     NS["5 · No-show model<br/>LogReg on Kaggle dataset"]
     PA["6 · Patient assistant<br/>(stretch) scoped tools"]
   end
@@ -222,16 +219,14 @@ flowchart LR
     HA["Admin / doctor<br/>confirms waitlist order"]
     HN["Nurse + doctor<br/>ack alert"]
     HD["Doctor reviews summary"]
-    HR["Nurse / doctor<br/>approves fields"]
     HO["Admin can override booking"]
   end
   REF --> T --> HA
   VS --> EW --> HN
   H24 --> CP --> HD
-  IMG --> DG --> HR
   HIST --> NS --> HO
   Q --> PA
-  T & CP & DG & PA -.-> W
+  T & CP & PA -.-> W
 ```
 
 | # | Module | Owner | Deterministic fallback |
@@ -239,7 +234,6 @@ flowchart LR
 | 1 | Triage | Faouzi | Red-flag rule list + keyword score → urgency |
 | 2 | Early warning | Wali | Pure rules, so it is its own fallback |
 | 3 | Doctor copilot | Faouzi | Templated summary from min/max/latest vitals + the curated interaction list |
-| 4 | Paper digitizer | Faouzi | Pre-baked extraction for `demo_record.jpg` |
 | 5 | No-show model | Hedi | Base rate (≈0.20) |
 | 6 | Patient assistant (stretch) | Faouzi | "Please ask your nurse" + next dose / next visit from the DB |
 
