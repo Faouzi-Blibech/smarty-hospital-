@@ -218,3 +218,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Ward additions ---
+# PlatformIO uses lib/ for project libraries; the Python template above ignores lib/ globally
+!firmware/lib/
+.pio/
+firmware/include/secrets.h
+# Node / Next.js
+node_modules/
+.next/
+next-env.d.ts
+*.tsbuildinfo
