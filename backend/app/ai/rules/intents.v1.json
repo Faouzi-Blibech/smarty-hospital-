@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "note": "Question asked to Laya for the patient assistant. Keys are the intents assistant.py answers; the descriptions are what the model reads. Changing a key or description means re-running make_data + finetune_laya.",
+  "question": {
+    "type": "choice",
+    "instructions": "What is the hospital patient asking the bedside assistant for?",
+    "criteria": {
+      "next_dose": "when to take the next medicine or pill",
+      "next_visit": "the date of the next appointment or consultation",
+      "my_vitals": "their latest heart rate, oxygen or temperature",
+      "urgent": "a symptom happening now that needs a nurse immediately",
+      "ask_staff": "a question about their illness, diagnosis or treatment that staff must answer"
+    }
+  }
+}
