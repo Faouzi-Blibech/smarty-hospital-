@@ -455,7 +455,12 @@ Built ahead against the contracts (all DB-free and tested): `app/services/appoin
 
 - [ ] `routers/appointments.py`: `POST /appointments` (`new_appointment_fields` → row via `new_id(db, "a")`), `GET /appointments/waitlist` (`waitlist`), `GET /appointments`, `PATCH /appointments/{id}` (`apply_override`), `POST .../confirm` (`apply_confirm` → `emit("appointment.confirmed", confirmed_event(...))`), `POST .../cancel` (`apply_cancel` → `emit("appointment.cancelled", cancelled_event(..., waiting=requested appointments + patients))`), `POST .../reply` (`apply_reply`). `Conflict` → 409 `{"detail","code"}`; `ValueError` → 422.
 - [ ] `routers/integrations.py`: dependency that 401s unless `callback_secret_ok(request.headers.get("X-N8N-Secret"))`; `appointment-reply` (`apply_reply`), `backfill-accept` (`slot_taken` = another confirmed appointment with the same `doctor_id` + `slot_at`, `doctor_id` from the cancelled appointment; `apply_backfill_accept`), `daily-digest` (`digest_entries` over active admissions, latest `news2`, `copilot` summary), `follow-up` (`follow_up_fields`).
-- [ ] `routers/ai.py`: `POST /ai/triage`, `GET /ai/summary/{patient_id}` (+ `ai_summaries` cache 10 min), `POST /ai/summary/{patient_id}/review`, `POST /ai/digitize` (MinIO `ward-docs`) + `/approve`.
+- [ ] `routers/ai.py`:
+  - `POST /ai/triage` (`triage`, preview only)
+  - `GET /ai/summary/{patient_id}`: `summary_inputs` over the last 24 h, `is_fresh` cache, else `summarize` + new `ai_summaries` row, `summary_payload`
+  - `POST /ai/summary/{patient_id}/review` (`apply_review`)
+  - `POST /ai/digitize`: `documents.validate_upload` → `put_document` → `digitizer.digitize` → `documents` row; `/approve` sets `approved_fields` + `human_confirmed_by`
+  - `POST /ai/assistant` (patient): the caller's own today's doses, next appointment, latest vital → `assistant.answer(q, assistant_context(...))`
 - [ ] Mount the three routers in `app/main.py` (one-line PR to Wali, he owns `main.py`).
 - [ ] API tests with Wali's `client` fixture and `tests/helpers.login` for each route above, including the 403s from the role matrix and the 409s.
 - [ ] Run W2/W5/W6 against the real API (no stub): `WARD_API_URL` back to the default.
