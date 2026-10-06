@@ -25,14 +25,14 @@ In Tunisian public hospitals:
 **Principles:**
 - **Human in the loop:** AI only suggests, and a person confirms every change to care or bookings.
 - **Privacy by design:** self-hosted, role-based access, an audit log of every record read, and no patient data leaves the server unless an optional open LLM is switched on, and then it is anonymised (Tunisian Organic Law 2004-63 / INPDP).
-- **Honest prototype:** the sensors are not medical-grade and the AI is not clinically validated.
+- **Honest prototype:** vitals are simulated (the bedside unit has no sensors) and the AI is not clinically validated.
 - **Synthetic data only.**
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  BSU["Bedside unit<br/>ESP32 · TFT · sensors · carousel"] <-->|MQTT| MQ[Mosquitto]
+  BSU["Bedside unit<br/>ESP32 · OLED · servo · RTC"] <-->|MQTT| MQ[Mosquitto]
   SIM[simulator] <-->|MQTT| MQ
   MQ --> W[ingestion worker]
   W --> DB[("PostgreSQL + TimescaleDB")]
@@ -47,7 +47,7 @@ Full diagrams (use cases, patient-journey swimlane, hardware, AI layer): [`docs/
 
 | Layer | Tech |
 |---|---|
-| Device | ESP32, PlatformIO (Arduino), LVGL, MAX30102, MLX90614, DS3231, RC522, 28BYJ-48 |
+| Device | ESP32, PlatformIO (Arduino), SSD1306 OLED, SG90 servo, DS1307 RTC · developed in Wokwi |
 | Messaging | Mosquitto (MQTT) |
 | Backend | FastAPI, SQLAlchemy, Alembic |
 | Data | PostgreSQL + TimescaleDB, MinIO |
@@ -85,7 +85,7 @@ python simulator/sim.py --device bsu-001 --patient p-0001
 
 ```
 firmware/    ESP32 bedside unit (PlatformIO) · PINMAP.md
-hardware/    BOM, wiring, carousel mechanism
+hardware/    BOM, wiring, servo pill holder
 simulator/   fake devices speaking the MQTT contract
 backend/     FastAPI app, models, IoT ingestion, AI modules (app/ai/)
 web/         Next.js PWA (all role views)
@@ -100,8 +100,8 @@ plans/       one implementation plan per team member
 | | Lane | Owns the demo flow for |
 |---|---|---|
 | **Faouzi Blibech** (lead) | Web app, AI modules, n8n, pitch | Doctor & Admin |
-| **Hedi** | Firmware, device screens, simulator | Patient |
-| **Wali** | Hardware build, core backend, IoT, early warning | Nurse |
+| **Hedi** | Simulator, no-show model, device firmware (Wokwi) | Patient |
+| **Wali** | Core backend, IoT, early warning, real-board build | Nurse |
 
 How we work together (ownership, contracts, git rules): [`CLAUDE.md`](CLAUDE.md) · schedule and demo script: [`TEAM_PLAN.md`](TEAM_PLAN.md).
 

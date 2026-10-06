@@ -16,7 +16,7 @@ Shorter waits are the *result*. We do not claim to "solve the waitlist".
 **Locked principles:**
 - **Human in the loop:** AI suggests and a human confirms.
 - **Privacy:** self-hosted, RBAC, an audit log of every read, and no patient data leaves the server unless an optional open LLM is switched on, and then it is anonymized (Tunisian Organic Law 2004-63 / INPDP).
-- **Prototype honesty:** sensors are not medical-grade and the AI is not clinically validated.
+- **Prototype honesty:** vitals are simulated (the bedside unit has no sensors) and the AI is not clinically validated.
 - **Data:** synthetic only.
 
 ## 2. System architecture
@@ -24,8 +24,8 @@ Shorter waits are the *result*. We do not claim to "solve the waitlist".
 ```mermaid
 flowchart TB
   subgraph USERS["Users & devices"]
-    BSU["Bedside Unit<br/>ESP32 + TFT + sensors<br/>+ pill carousel"]
-    SIM["simulator/<br/>(fake devices)"]
+    BSU["Bedside Unit<br/>ESP32 + OLED + servo + RTC<br/>(listener)"]
+    SIM["simulator/<br/>(vitals, nurse taps, call-nurse)"]
     PWA["Next.js PWA<br/>doctor · nurse · admin · patient"]
     TG["Telegram / email"]
   end
@@ -84,10 +84,10 @@ flowchart LR
     UC1["Request appointment"]
     UC2["Med reminders on bedside screen"]
     UC3["See prescriptions & next visit"]
-    UC4["Call-nurse button"]
+    UC4["Call nurse (simulated)"]
     UC5["Home care via app after discharge"]
     UC6["Ask patient assistant (stretch)"]
-    UC7["Log vitals via RFID tap"]
+    UC7["Log vitals via badge tap (simulated)"]
     UC8["Update patient record / notes"]
     UC9["Receive abnormal-vitals alerts"]
     UC10["Med-round checklist"]
@@ -132,11 +132,11 @@ sequenceDiagram
   S->>B: Retained MQTT schedule (med_doses)
   B-->>S: schedule_ack
   Note over B: Dose time (RTC, works offline)
-  B->>B: Rotate carousel · buzz
-  P->>B: Takes pill (IR) or presses "Taken"
-  B-->>S: dose_taken (or dose_missed → n8n W3)
-  N->>B: RFID badge tap → nurse mode → measure
-  B-->>S: vitals {nurse_rfid}
+  B->>B: Turn servo to slot · show "TAKE NOW"
+  B-->>S: dose_dispensed
+  P->>S: Takes pill (dose_taken, simulated)
+  Note over B: or 30 min → dose_missed → n8n W3
+  N->>S: Badge tap → vitals {nurse_rfid} (simulated)
   S->>S: Early warning (NEWS2 partial + trend)
   alt abnormal
     S-->>N: WS alert + Telegram (n8n W4)
@@ -149,52 +149,47 @@ sequenceDiagram
 
 **Golden demo path:** the journey above, plus a **simulated abnormal vital** that fires an alert on the dashboard and on Telegram.
 
-## 5. Hardware: Smart Bedside Unit with pill carousel (Option A)
+## 5. Hardware: Smart Bedside Unit (listener: OLED + servo + RTC)
+
+The bedside unit is a **listener**. It receives the schedule and commands, shows them, turns a servo to the dose's
+pill slot and acknowledges. It has **no vital-sign sensors**: vitals, nurse taps and call-nurse come from
+`simulator/`, which can run next to the device on the same `device_id` (`--companion`). The firmware is developed in
+**Wokwi** (virtual ESP32, `firmware/diagram.json`) and is the last piece built; the same code flashes to a real board.
 
 ```mermaid
 flowchart LR
-  PWR["5V 2A USB<br/>+ 18650 backup"] --> ESP
+  PWR["5V USB"] --> ESP
   subgraph ESP["ESP32 DevKit"]
     direction TB
     WIFI["Wi-Fi + MQTT"]
-    NVS["NVS: schedule, msg_id"]
-    RB["Ring buffer (offline)"]
+    NVS["NVS: schedule"]
+    Q["Small event queue (offline)"]
   end
-  ESP ---|"SPI · CS_TFT"| TFT["2.8in ILI9341 touch TFT<br/>LVGL UI"]
-  ESP ---|"SPI · CS_RFID"| RFID["RC522 RFID<br/>nurse badge / wristband"]
-  ESP ---|"I2C 0x57"| MAX["MAX30102<br/>HR + SpO2"]
-  ESP ---|"I2C 0x5A"| MLX["MLX90614<br/>temperature"]
-  ESP ---|"I2C 0x68"| RTC["DS3231 RTC"]
-  ESP ---|GPIO| BTN["Call-nurse button"]
-  ESP ---|"PWM / GPIO"| BZ["Buzzer + LED"]
-  ESP ---|"4 GPIO"| ULN["ULN2003"] --> STEP["28BYJ-48 stepper<br/>pill carousel"]
-  ESP ---|"GPIO (input)"| IR["IR sensor in tray"]
+  ESP ---|"I2C 0x3C"| OLED["0.96in SSD1306 OLED<br/>128x64"]
+  ESP ---|"I2C 0x68"| RTC["DS1307 RTC<br/>(UTC)"]
+  ESP ---|"GPIO 13 PWM"| SERVO["SG90 servo<br/>4-slot pill holder"]
+  SIM["simulator --companion<br/>vitals · nurse_tap · call_nurse · dose_taken"] -.->|"same device_id"| MQ[Mosquitto]
+  ESP <-->|MQTT| MQ
 ```
 
-- TFT, touch and RC522 share SPI with separate CS pins. MAX30102, MLX90614 and DS3231 share I2C (distinct addresses).
-- GPIO 34–39 are input-only, so they suit the IR sensor and the button, never the stepper.
-- The final pin assignment lives in `firmware/PINMAP.md` (Hedi + Wali, Day 1).
-- **Carousel:** a store-bought round rotating pill organizer (or a foam-board build) sits on the stepper over a base with one drop hole. The IR sensor in the tray detects that the pill was removed.
+- OLED and RTC share I2C (distinct addresses). The final pin assignment lives in `firmware/PINMAP.md`.
+- **Servo dispenser:** slot 0 = 0° (home), slots 1–4 = 45°, 90°, 135°, 180°. A dose with `slot: null` is reminder-only.
 
-**Device screens:**
+**Device screens (OLED):**
 - **Home:** first name, clock, next dose, online/offline icon.
-- **Dose reminder:** full screen + buzzer + "Taken".
-- **Measure:** "place finger".
-- **Call-nurse confirmation.**
-- **Nurse mode** (after an RFID tap): shows the patient; vitals are tagged with the nurse.
+- **Dose reminder:** "TAKE NOW" + meds, blinking.
+- **Alert banner** (inverted screen, 5 s) and **message toast**, from `command`.
+- **Status:** "Syncing time…", "Not assigned".
 
-**Dose flow (Option A):**
-1. At dose time, rotate to the dose's `slot` → `dose_dispensed`.
-2. Buzz.
-3. Wait for IR pickup or the "Taken" button → `dose_taken {method}`.
-4. After 30 min with no pickup → `dose_missed` → the backend sends it to n8n W3.
+**Dose flow:**
+1. At dose time (or on `dispense_now`), turn the servo to the dose's `slot` → `dose_dispensed`, and show the reminder.
+2. The simulator (`--companion`) answers with `dose_taken {method:"button"}`; the device sees it on its own `events` topic, homes the servo and returns to the home screen.
+3. After 30 min with no `dose_taken` → `dose_missed` → the backend sends it to n8n W3.
 
 **Offline:**
-- The schedule lives in NVS and reminders fire from the RTC.
-- Vitals and events go into a 128-entry ring buffer with RTC timestamps and are replayed on reconnect; the server deduplicates on `msg_id`.
+- The schedule lives in NVS, and reminders fire from the DS1307 RTC, so a reboot with no Wi-Fi still knows the time. NTP only sets the RTC when Wi-Fi is up.
+- Up to 8 pending events are queued in RAM and sent on reconnect; the server deduplicates on `msg_id`.
 - An MQTT last-will reports offline status.
-
-**Fallback (go/no-go end of Day 2):** if the carousel is unreliable, skip the rotation and keep the "Taken" button. The MQTT events stay identical.
 
 ## 6. AI layer (human in the loop)
 

@@ -5,8 +5,8 @@ Shared conventions for every teammate's Claude Code session. Read this file, the
 ## Project in one paragraph
 
 **Ward** (وَرد, "rose" in Arabic and "hospital ward" in English) is a connected smart-hospital prototype. Patient, nurse,
-doctor and admin share one patient record. A bedside unit (ESP32 + touch screen + sensors + rotating pill carousel)
-fires dose reminders offline and sends vitals over MQTT. A FastAPI backend stores everything in PostgreSQL/TimescaleDB,
+doctor and admin share one patient record. A bedside unit (ESP32 + OLED + servo + RTC, developed in Wokwi)
+listens over MQTT, fires dose reminders offline and turns a servo to the pill slot; a simulator sends the vitals. A FastAPI backend stores everything in PostgreSQL/TimescaleDB,
 scores urgency and early warnings with AI (a human always confirms), and drives n8n for Telegram/email follow-ups.
 The goal we pitch is **automating the patient process**; shorter waits are the result, not the promise.
 
@@ -15,8 +15,8 @@ The goal we pitch is **automating the patient process**; shorter waits are the r
 | Person | Lane | Role owner (end-to-end demo flow) | Plan |
 |---|---|---|---|
 | **Faouzi** (lead, presenter) | Web PWA, n8n, LLM AI modules, appointments API, pitch | Doctor + Admin | `plans/FAOUZI.md` |
-| **Hedi** (HW-A) | ESP32 firmware + LVGL screens, simulator, no-show model | Patient | `plans/HEDI.md` |
-| **Wali** (HW-B) | Wiring, power, enclosure, carousel mechanism, core backend, IoT ingestion, early warning, infra | Nurse | `plans/WALI.md` |
+| **Hedi** (HW-A) | Simulator (all patient-side traffic), no-show model, ESP32 listener firmware (OLED + servo, Wokwi, built last) | Patient | `plans/HEDI.md` |
+| **Wali** (HW-B) | Core backend, real-board wiring + servo pill holder (if built), IoT ingestion, early warning, infra | Nurse | `plans/WALI.md` |
 
 **Swapping lanes:** Hedi and Wali are both hardware people and may swap HW-A/HW-B. If they do, swap the two plan files' names,
 update the ownership table below and the table above in one PR titled `chore: swap HW lanes`, and tell Faouzi.
@@ -27,8 +27,8 @@ update the ownership table below and the table above in one PR titled `chore: sw
 
 | Path | Owner | What |
 |---|---|---|
-| `firmware/` | Hedi | PlatformIO project (Arduino framework, LVGL) |
-| `firmware/PINMAP.md`, `hardware/` | Wali (Hedi co-signs PINMAP) | Pin map, wiring, power, enclosure, carousel |
+| `firmware/` | Hedi | PlatformIO project (Arduino framework, SSD1306 OLED, servo, DS1307) + Wokwi `diagram.json` |
+| `firmware/PINMAP.md`, `hardware/` | Wali (Hedi co-signs PINMAP) | Pin map, wiring, power, servo pill holder |
 | `simulator/` | Hedi | Python fake devices speaking the MQTT contract |
 | `backend/` (default) | Wali | FastAPI app, models, migrations, auth, IoT, alerts |
 | `backend/app/routers/appointments.py`, `backend/app/routers/ai.py`, `backend/app/routers/integrations.py` | Faouzi | |
@@ -57,16 +57,16 @@ Never change a payload shape silently in code. If the code and the contract disa
 - **Models are trained only on synthetic data in `backend/app/ai/data/`;** the training scripts live in `backend/app/ai/training/`.
 - **Any optional LLM call goes through `backend/app/ai/llm.py`** (open models only), which strips names, phone numbers and IDs first. Prompts and rule lists live in versioned files under `backend/app/ai/prompts/` and `backend/app/ai/rules/`, never inline.
 - **Privacy:** self-hosted only (n8n too). Every read of a patient record writes `audit_log`. Synthetic data only, never real patients.
-- **On-device reminders never depend on the server or n8n** (NVS schedule + DS3231 RTC).
+- **On-device reminders never depend on the server or n8n** (NVS schedule + DS1307 RTC).
 - **n8n is not the source of truth.** The backend emits events; n8n calls back `/integrations/n8n/*`.
-- **Prototype honesty:** never claim medical-grade sensors or clinically validated AI in UI copy or the pitch.
+- **Prototype honesty:** vitals are simulated (the device has no sensors); never claim medical-grade sensing or clinically validated AI in UI copy or the pitch.
 - **Demo first:** if a feature isn't on the golden demo path (`TEAM_PLAN.md`), it waits until the path works.
 - **Mocks first:** never block on a teammate. Build against the contract and mock the rest (`simulator/`, `web/src/mocks/`, `backend/tests/fixtures/`).
 
 ## Git
 
 - **No AI attribution.** Never add `Co-Authored-By: Claude …` trailers or "Generated with Claude Code" footers to commits or PRs.
-- Branch per member and feature: `<name>/<feature>` (e.g. `wali/ingestion`, `hedi/lvgl-home`, `faouzi/doctor-view`).
+- Branch per member and feature: `<name>/<feature>` (e.g. `wali/ingestion`, `hedi/simulator`, `faouzi/doctor-view`).
 - Small PRs into `main`. Squash merge. `main` must always start with `docker compose up`.
 - Commit messages: Conventional Commits (`feat(backend): …`, `fix(firmware): …`, `docs(contracts): …`).
 - Secrets only in `.env` (never committed). Keep `.env.example` up to date whenever you add a variable.
@@ -93,7 +93,7 @@ Lane-specific dev loops:
 - **Backend:** `cd backend && python -m venv .venv && .venv/Scripts/activate && pip install -r requirements-dev.txt && uvicorn app.main:app --reload`, tests with `pytest`.
 - **Web:** `cd web && npm install && npm run dev` (uses mocks when `NEXT_PUBLIC_USE_MOCKS=1`).
 - **Simulator:** `cd simulator && pip install -r requirements.txt && python sim.py --device bsu-001`.
-- **Firmware:** `cd firmware && pio run -t upload && pio device monitor`, logic tests with `pio test -e native`.
+- **Firmware:** `cd firmware && pio run -e wokwi`, then start the Wokwi simulator in VS Code (`wokwi.toml`); real board: `pio run -t upload && pio device monitor`. Logic tests with `pio test -e native`.
 
 ## Coding conventions
 
@@ -106,7 +106,7 @@ Lane-specific dev loops:
   - Next.js App Router, strict TS, Tailwind.
   - API types in `web/src/lib/types.ts` mirror `docs/contracts/api.md`.
 - **C++ (firmware):**
-  - One module per peripheral in `firmware/src/` (`sensors.cpp`, `net.cpp`, `schedule.cpp`, `ui.cpp`, `carousel.cpp`, `rfid.cpp`).
+  - One module per peripheral in `firmware/src/` (`net.cpp`, `schedule.cpp`, `ui.cpp`, `servo.cpp`, `clock.cpp`).
   - Pure logic goes in `firmware/lib/` so `pio test -e native` can run it.
   - Secrets go in `firmware/include/secrets.h` (git-ignored; copy `secrets.h.example`).
 - Times:
