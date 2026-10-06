@@ -1,0 +1,135 @@
+{
+  "base": {
+    "accuracy": 0.75,
+    "n": 36,
+    "median_ms": 293,
+    "misses": [
+      {
+        "text": "Did I miss my evening tablets?",
+        "expected": "next_dose",
+        "got": "my_vitals"
+      },
+      {
+        "text": "Je dois avaler quoi ce midi ?",
+        "expected": "next_dose",
+        "got": "urgent"
+      },
+      {
+        "text": "How many pills are left for today?",
+        "expected": "next_dose",
+        "got": "my_vitals"
+      },
+      {
+        "text": "Le docteur repasse quel jour ?",
+        "expected": "next_visit",
+        "got": "next_dose"
+      },
+      {
+        "text": "How fast is my heart beating right now?",
+        "expected": "my_vitals",
+        "got": "ask_staff"
+      },
+      {
+        "text": "النبض متاعي كيفاش",
+        "expected": "my_vitals",
+        "got": "next_dose"
+      },
+      {
+        "text": "chnowa 9al el capteur 3la l'oxygène",
+        "expected": "my_vitals",
+        "got": "next_dose"
+      },
+      {
+        "text": "شنوة عندي بالضبط",
+        "expected": "ask_staff",
+        "got": "my_vitals"
+      },
+      {
+        "text": "najjem nemchi lel khedma ba3d jem3a",
+        "expected": "ask_staff",
+        "got": "next_visit"
+      }
+    ]
+  },
+  "fine_tuned": {
+    "accuracy": 0.694,
+    "n": 36,
+    "median_ms": 197,
+    "misses": [
+      {
+        "text": "Did I miss my evening tablets?",
+        "expected": "next_dose",
+        "got": "my_vitals"
+      },
+      {
+        "text": "Je dois avaler quoi ce midi ?",
+        "expected": "next_dose",
+        "got": "ask_staff"
+      },
+      {
+        "text": "ama dwa nekhdhou ba3d l'ftour",
+        "expected": "next_dose",
+        "got": "ask_staff"
+      },
+      {
+        "text": "How many pills are left for today?",
+        "expected": "next_dose",
+        "got": "my_vitals"
+      },
+      {
+        "text": "Le docteur repasse quel jour ?",
+        "expected": "next_visit",
+        "got": "next_dose"
+      },
+      {
+        "text": "imta el control el jey",
+        "expected": "next_visit",
+        "got": "ask_staff"
+      },
+      {
+        "text": "How fast is my heart beating right now?",
+        "expected": "my_vitals",
+        "got": "ask_staff"
+      },
+      {
+        "text": "النبض متاعي كيفاش",
+        "expected": "my_vitals",
+        "got": "next_dose"
+      },
+      {
+        "text": "chnowa 9al el capteur 3la l'oxygène",
+        "expected": "my_vitals",
+        "got": "next_dose"
+      },
+      {
+        "text": "nzif barcha mel jor7",
+        "expected": "urgent",
+        "got": "ask_staff"
+      },
+      {
+        "text": "شنوة عندي بالضبط",
+        "expected": "ask_staff",
+        "got": "my_vitals"
+      }
+    ]
+  },
+  "train_items": 300,
+  "epoch_loss": [
+    1.1465448776358051,
+    1.1047604327139102,
+    1.1316270020447279,
+    1.064336201862285,
+    1.0205473899841309,
+    0.963812162217341,
+    0.9273441002557152,
+    0.9206620617524574
+  ],
+  "note": "Run 2 (8 epochs, head lr 1e-3, frozen encoder). Fine-tuned head scored below base Laya, so it is not shipped; laya_intent.py runs base Laya zero-shot. Run 1 (4 epochs, lr 1e-4) left accuracy unchanged at 0.75.",
+  "shipped": {
+    "laya_base": 0.75,
+    "textclf_intent_v1": 0.75,
+    "average_of_both": 0.778,
+    "n": 36,
+    "laya_median_ms_cpu": 356
+  }
+}
