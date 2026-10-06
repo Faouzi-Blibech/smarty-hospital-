@@ -138,6 +138,8 @@ export function vitalWord(kind: "hr" | "spo2" | "temp", v: number): "Normal" | "
   return ok ? "Normal" : "Needs attention";
 }
 
-/** The call-nurse fallback: the web app cannot page staff, the bedside unit can (backend URGENT text). */
-export const CALL_NURSE_HINT =
-  "Press the call-nurse button on your bedside unit now, or tell any member of staff straight away.";
+/**
+ * "Call nurse" fallback. Nothing in the prototype pages staff (no web endpoint; the bedside unit
+ * has no button, buzzer or sensors), so the hint must not claim anyone was told.
+ */
+export const CALL_NURSE_HINT = "Ask any member of staff, or tell your nurse at the next round.";

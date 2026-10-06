@@ -120,7 +120,7 @@ export function VitalsView() {
         )}
 
         <div className={styles.careNote}>
-          Your care team sees these too. If you feel unwell, press the call button or tap <b>Call nurse</b>.
+          Your care team sees these too. If you feel unwell, tell any member of staff.
         </div>
       </div>
     </PatientScreen>

@@ -3,7 +3,8 @@
 // Patient / Assistant (/patient/assistant). Each question → POST /ai/assistant (api.md 1.4):
 // `{answer, sources[], intent, source}`. Red flags come back as intent "urgent" (source "rules")
 // and show the red "This could be urgent" block. The patient never sees a score or an AI badge.
-// The web app cannot page staff: "Call nurse" points to the bedside unit's call button.
+// Nothing pages staff from here (no endpoint, and the bedside unit has no call button):
+// "Call nurse" shows a hint to ask any member of staff, without claiming anyone was told.
 import { useEffect, useRef, useState } from "react";
 import { askAssistant } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";

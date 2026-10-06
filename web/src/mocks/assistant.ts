@@ -12,9 +12,11 @@ export interface AssistantContext {
   latestVitals: { ts: string; hr: number | null; spo2: number | null; temp: number | null } | null;
 }
 
-/** Backend `URGENT` (assistant.py). */
-export const URGENT =
-  "This could be urgent. Press the call-nurse button on your bedside unit now, or tell any member of staff straight away.";
+/**
+ * Urgent answer. Same meaning as backend assistant.py `URGENT`, without the device claim
+ * (the bedside unit has no call button): prototype-honesty rule.
+ */
+export const URGENT = "This could be urgent. Tell any member of staff straight away.";
 const URGENT_AR = "من فضلك اتصل بالممرضة الآن.";
 const ASK_STAFF = "I can’t answer medical questions. Please ask your nurse or doctor.";
 const ASK_STAFF_AR = "ما نجمش نجاوب على أسئلة طبية. اسأل الممرضة ولا الطبيب.";
@@ -61,7 +63,8 @@ export function isRedFlag(question: string): boolean {
   return RED_FLAGS.some((k) => (Array.isArray(k) ? k.every((term) => t.includes(term)) : t.includes(k)));
 }
 
-const DOSE = /next|pill|dose|medic|comprim|traitement|dwa|دواء|حبوب/;
+// No bare "next": "next appointment" must reach VISIT (VISIT is also tested first).
+const DOSE = /pill|dose|medic|comprim|traitement|dwa|دواء|حبوب/;
 const VISIT = /appoint|rendez|rdv|visit|consultation|maw3ed|موعد/;
 const VITALS = /vital|heart|pulse|pouls|oxygen|oxyg|temperature|tension|skhana|سخانه|حراره|نبض/;
 /** "Is my heart rate dangerous?" asks for an interpretation: staff answer that. */
@@ -94,18 +97,6 @@ export function mockAssistant(question: string, ctx: AssistantContext): Assistan
     return { intent: "urgent", source: "rules", sources: ["safety_rules"], answer: ar ? URGENT_AR : URGENT };
   }
 
-  if (DOSE.test(s)) {
-    const d = ctx.nextDose;
-    const answer = d
-      ? ar
-        ? `الدواء الجاي على الساعة ${d.time}: ${d.meds.map((m) => AR_MEDS[m] ?? m).join("، ")}.`
-        : `Your next dose is at ${d.time}: ${d.meds.join(", ")}.`
-      : ar
-        ? "ما عندكش دواء آخر اليوم."
-        : "You have no more doses scheduled today.";
-    return { intent: "next_dose", source: "rules", sources: ["med_doses"], answer };
-  }
-
   if (VISIT.test(s)) {
     const v = ctx.nextVisit;
     let answer: string;
@@ -122,6 +113,18 @@ export function mockAssistant(question: string, ctx: AssistantContext): Assistan
         : `Your next appointment is ${EN_DAYS[p.wd]} ${p.day} ${EN_MONTHS[p.mon]} at ${t}${doc ? ` with ${doc}` : ""}.`;
     }
     return { intent: "next_visit", source: "rules", sources: ["appointments"], answer };
+  }
+
+  if (DOSE.test(s)) {
+    const d = ctx.nextDose;
+    const answer = d
+      ? ar
+        ? `الدواء الجاي على الساعة ${d.time}: ${d.meds.map((m) => AR_MEDS[m] ?? m).join("، ")}.`
+        : `Your next dose is at ${d.time}: ${d.meds.join(", ")}.`
+      : ar
+        ? "ما عندكش دواء آخر اليوم."
+        : "You have no more doses scheduled today.";
+    return { intent: "next_dose", source: "rules", sources: ["med_doses"], answer };
   }
 
   if (VITALS.test(s) && !JUDGEMENT.test(s)) {

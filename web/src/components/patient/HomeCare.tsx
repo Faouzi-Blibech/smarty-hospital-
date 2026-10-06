@@ -19,7 +19,7 @@ async function load() {
 export function HomeCare() {
   const flags = useDemoFlags();
   const res = useLoad(load);
-  const data = flags.state ? null : res.data;
+  const data = flags.state === "loading" || flags.state === "error" ? null : res.data;
   const failed = flags.state === "error" || (!!res.error && !res.data);
   const plan = data?.plan;
 
