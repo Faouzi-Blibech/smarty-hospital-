@@ -11,7 +11,7 @@
 - **Triage** = max(red-flag floor, trained char n-gram classifier, 2 if age ≥ 75). The model can raise urgency, never lower it. It dropped the `history` and `names` parameters. Without the model file it runs on rules alone.
 - **Assistant:** a red-flag question returns the URGENT message with no model call. Otherwise the intent is the average of Laya (base model, zero-shot) and a trained char n-gram classifier; low confidence means `ask_staff`. Answers are templates filled from the caller's own record.
 - **Copilot:** templated summary plus curated drug-interaction rules. An optional open LLM may rewrite the text.
-- **Laya is an optional install** (`requirements-laya.txt`, needs torch). The first load takes about 50 s, so the router calls `laya_intent.preload()` at startup. Without Laya the assistant uses the classifier, and without both it uses keyword rules.
+- **Laya is an optional install** (`requirements-laya.txt`, needs torch). The first load takes about 50 s, so the router must call `laya_intent.preload()` at startup (a link step: no router exists yet). Without Laya the assistant uses the classifier, and without both it uses keyword rules.
 - **Laya fine-tuning was tried twice and not shipped.** Run 1 (4 epochs, lr 1e-4) left accuracy at 0.75. Run 2 (8 epochs, head lr 1e-3, frozen encoder) scored 0.694, below the base model. `laya_intent.py` runs base Laya.
 - **Locked rules (CLAUDE.md):** every AI module works with no LLM; models are trained only on synthetic data; any optional LLM call goes through `llm.py`.
 
@@ -24,7 +24,7 @@ All numbers come from `backend/app/ai/models/*metrics.json`. The evaluation sets
 | Triage classifier alone (trained on 450 rows) | 29 referrals | exact 0.966, within one 1.0, under-triaged 0, urgent missed 0 |
 | Triage rules + classifier | same 29 | exact 0.966, within one 1.0, under-triaged 0, urgent missed 0 |
 | Intent, char n-gram classifier (300 rows) | 36 questions | accuracy 0.75 |
-| Intent, base Laya | same 36 | accuracy 0.75, median 356 ms on CPU |
+| Intent, base Laya | same 36 | accuracy 0.75, median 356 ms on a laptop CPU (ensemble measurement run) |
 | Intent, Laya fine-tuned head | same 36 | accuracy 0.694 (not shipped) |
 | Intent, average of Laya and classifier | same 36 | accuracy 0.778 |
 
@@ -39,10 +39,11 @@ pip install -r requirements-train.txt
 python -m app.ai.training.make_data        # rewrites app/ai/data/*_train.v1.jsonl (synthetic templates)
 python -m app.ai.training.train_textclf    # writes models/{triage,intent}.v1.json and *.metrics.json
 # optional, about 30 min on CPU, needs requirements-laya.txt:
-python -m app.ai.training.finetune_laya    # writes models/laya_intent_metrics.json
+python -m app.ai.training.finetune_laya    # always updates models/laya_intent_metrics.json (keeps its note and shipped keys);
+                                           # writes models/laya_intent_head.safetensors ONLY if fine-tuned accuracy > base
 ```
 
-Scores are always measured on `app/ai/data/*_eval.v1.jsonl`, never on generated rows. A new model ships only if it beats the current one on that set.
+Scores are always measured on `app/ai/data/*_eval.v1.jsonl`, never on generated rows. A new model ships only if it beats the current one on that set. The Laya script enforces this: `laya_intent` auto-loads the head file when it exists, so the script writes it only when the fine-tuned accuracy is strictly above the base accuracy, and prints which happened.
 
 ## Limits
 

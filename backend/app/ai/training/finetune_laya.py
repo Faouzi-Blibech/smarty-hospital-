@@ -71,11 +71,18 @@ def main(epochs: int, head_lr: float) -> None:
                 if not k.startswith("encoder.")}
 
     MODELS.mkdir(exist_ok=True)
-    save_file(head, str(HEAD), metadata={"base": f"{BASE_REPO}/{BASE_SUBFOLDER}", "data": "intent_train.v1.jsonl"})
-    METRICS.write_text(json.dumps({"base": base, "fine_tuned": tuned, "train_items": summary["train_items"],
+    # Keep hand-written keys ("note", "shipped") from an existing metrics file.
+    old = json.loads(METRICS.read_text(encoding="utf-8")) if METRICS.exists() else {}
+    METRICS.write_text(json.dumps({**old, "base": base, "fine_tuned": tuned, "train_items": summary["train_items"],
                                    "epoch_loss": summary["epoch_loss"]}, ensure_ascii=False, indent=2) + "\n",
                        encoding="utf-8")
-    print(f"wrote {HEAD.name} ({HEAD.stat().st_size / 1e6:.1f} MB) and {METRICS.name}")
+    # laya_intent auto-loads the head file, so only write it when it beats the base model.
+    if tuned["accuracy"] > base["accuracy"]:
+        save_file(head, str(HEAD), metadata={"base": f"{BASE_REPO}/{BASE_SUBFOLDER}", "data": "intent_train.v1.jsonl"})
+        print(f"fine-tuned beats base: wrote {HEAD.name} ({HEAD.stat().st_size / 1e6:.1f} MB) and {METRICS.name}")
+    else:
+        print(f"fine-tuned does not beat base ({tuned['accuracy']} <= {base['accuracy']}): "
+              f"head NOT written, wrote {METRICS.name} only")
 
 
 if __name__ == "__main__":

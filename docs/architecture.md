@@ -250,7 +250,7 @@ flowchart LR
 | Triage classifier alone | 29 referrals | exact 0.966, within one 1.0, under-triaged 0, urgent missed 0 |
 | Triage rules + model | same 29 | exact 0.966, within one 1.0, under-triaged 0, urgent missed 0 |
 | Intent: char n-gram classifier | 36 questions | accuracy 0.75 |
-| Intent: base Laya | same 36 | accuracy 0.75, median 356 ms on CPU |
+| Intent: base Laya | same 36 | accuracy 0.75, median 356 ms on a laptop CPU (ensemble measurement run) |
 | Intent: average of both | same 36 | accuracy 0.778 |
 
 A Laya fine-tuned head scored 0.694 on the same 36 questions, so it is not shipped. Sources: `backend/app/ai/models/*metrics.json`. These sets are tiny; read them as a sanity check, not a validation.
