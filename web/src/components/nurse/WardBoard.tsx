@@ -187,7 +187,7 @@ export function WardBoard() {
       {showCall && callAlert ? (
         <div role="alert" className={`${styles.call} ${styles.desk}`}>
           <div className={styles.callTop}>
-            <span aria-label="Sound on" className={styles.speaker}>
+            <span aria-hidden="true" className={styles.speaker}>
               <span className={styles.spkBody} />
               <span className={styles.spkCone} />
               <span className={styles.spkWave} />
@@ -195,7 +195,7 @@ export function WardBoard() {
             <div className={styles.callText}>
               <span className={styles.callTitle}>Bed {callAlert.bed ?? "—"} is calling</span>
               <span dir="auto" className={styles.callSub}>
-                {callAlert.patient_first_name ?? callAlert.patient_id} · call button pressed {tunisTimeSeconds(callAlert.created_at)} · sound on
+                {callAlert.patient_first_name ?? callAlert.patient_id} · call button pressed {tunisTimeSeconds(callAlert.created_at)}
               </span>
             </div>
           </div>
@@ -220,7 +220,7 @@ export function WardBoard() {
           <div className={styles.critHead}>
             <span className={styles.critTag}>CRITICAL</span>
             <span className={styles.critMeta}>
-              {critAlert.kind === "news2" ? "NEWS2 alert" : "Alert"} · {tunisTime(critAlert.created_at)} · sound on
+              {critAlert.kind === "news2" ? "NEWS2 alert" : "Alert"} · {tunisTime(critAlert.created_at)}
             </span>
           </div>
           <span dir="auto" className={styles.critTitle}>

@@ -61,6 +61,8 @@ function tile(
   points: (v: number) => number,
   threshold: number,
   display: (v: Vital, value: number) => string,
+  /** Points from which a moving trend's arrow turns crit-red (else high-orange). Design: HR and SpO2 at 2, others at 3. */
+  critAt = 3,
 ): Tile {
   const rows = vitals.filter((v) => pick(v) != null).slice(-TILE_POINTS);
   if (rows.length === 0) return { k, v: "—", u, pts: null, arrow: "", arrowColor: "var(--muted)", trend: "No reading", spark: "" };
@@ -69,7 +71,7 @@ function tile(
   const value = values[values.length - 1];
   const pts = points(value);
   const t = trendOf(values, threshold);
-  const arrowColor = t.word === "steady" ? "var(--muted)" : pts >= 2 ? "var(--news-crit-fg)" : "var(--news-high-fg)";
+  const arrowColor = t.word === "steady" ? "var(--muted)" : pts >= critAt ? "var(--news-crit-fg)" : "var(--news-high-fg)";
   return {
     k,
     v: display(last, value),
@@ -84,8 +86,8 @@ function tile(
 
 function tiles(vitals: Vital[]): Tile[] {
   return [
-    tile("Heart rate", "bpm", vitals, (v) => v.hr, hrPoints, 10, (_, x) => String(x)),
-    tile("SpO2", "%", vitals, (v) => v.spo2, spo2Points, 2, (_, x) => String(x)),
+    tile("Heart rate", "bpm", vitals, (v) => v.hr, hrPoints, 10, (_, x) => String(x), 2),
+    tile("SpO2", "%", vitals, (v) => v.spo2, spo2Points, 2, (_, x) => String(x), 2),
     tile("Temperature", "°C", vitals, (v) => v.temp, tempPoints, 0.5, (_, x) => x.toFixed(1)),
     tile("Resp. rate", "/min", vitals, (v) => v.rr, rrPoints, 3, (_, x) => String(x)),
     tile("Blood pressure", "", vitals, (v) => v.bp_sys, sysPoints, 10, (v, x) => `${x}/${v.bp_dia ?? "—"}`),

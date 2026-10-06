@@ -7,6 +7,7 @@ import { LiveBanner } from "@/components/LiveBanner";
 import { DosesTimeline } from "@/components/shared/DosesTimeline";
 import { NotesPanel } from "@/components/shared/NotesPanel";
 import { LIVE_JITTER, useLiveTick } from "@/components/shared/useLiveTick";
+import { Toast, useToast } from "@/components/Toast";
 import { addNote, getDoses, getNotes, getPatient, getPrescriptions, getVitals } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
 import { now, tunisTime, USE_MOCKS } from "@/lib/time";
@@ -36,6 +37,7 @@ export function PatientDetail({ id }: { id: string }) {
   const [data, setData] = useState<Data | null>(null);
   const [failed, setFailed] = useState(false);
   const [openedAt] = useState(() => tunisTime(now().toISOString()));
+  const [noteError, showNoteError] = useToast<string>();
 
   const load = useCallback(() => {
     setFailed(false);
@@ -53,10 +55,15 @@ export function PatientDetail({ id }: { id: string }) {
 
   const onAddNote = useCallback(
     async (text: string) => {
-      const note = await addNote(id, text, { by: DOCTOR_ID });
-      setData((d) => (d ? { ...d, notes: [note, ...d.notes] } : d));
+      try {
+        const note = await addNote(id, text, { by: DOCTOR_ID });
+        setData((d) => (d ? { ...d, notes: [note, ...d.notes] } : d));
+      } catch (e) {
+        showNoteError("Couldn’t save the note. Your text is still in the box — try again.");
+        throw e; // keeps the draft in NotesPanel
+      }
     },
-    [id],
+    [id, showNoteError],
   );
 
   const state = flags.state === "error" || failed ? "error" : flags.state === "loading" || !data ? "loading" : null;
@@ -127,6 +134,7 @@ export function PatientDetail({ id }: { id: string }) {
           </div>
         </>
       )}
+      {noteError ? <Toast tone="warn">{noteError}</Toast> : null}
     </div>
   );
 }

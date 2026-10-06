@@ -91,7 +91,7 @@ export function AlertsEmpty() {
     <div className={styles.empty}>
       <span className={styles.emptyIcon}>✓</span>
       <span className={styles.emptyTitle}>No open alerts</span>
-      <span className={styles.emptyText}>New alerts appear here with a sound.</span>
+      <span className={styles.emptyText}>New alerts appear here.</span>
     </div>
   );
 }
