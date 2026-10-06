@@ -1,0 +1,65 @@
+.root {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 12px;
+  box-shadow: var(--shadow-toast);
+  z-index: 30;
+}
+
+.md {
+  padding: 16px 20px;
+  font-size: 16px;
+  max-width: 520px;
+}
+
+.sm {
+  padding: 14px 18px;
+  font-size: 15px;
+}
+
+.fixed {
+  position: fixed;
+  right: 32px;
+  bottom: 32px;
+}
+
+.absolute {
+  position: absolute;
+  right: 32px;
+  bottom: 32px;
+}
+
+.inline {
+  position: static;
+}
+
+.icon {
+  flex: none;
+  border-radius: 50%;
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.md .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.sm .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.ok {
+  background: var(--live-dot);
+}
+
+.warn {
+  background: var(--paused-ink);
+}

@@ -1,0 +1,30 @@
+.page {
+  padding: 36px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 100vh;
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.h2 {
+  margin: 0;
+  font: 600 40px/1.1 var(--serif);
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.sub {
+  font-size: 16px;
+  color: var(--muted);
+}
+
+/* The Waitlist scrim uses inset: -24px; it needs a positioned ancestor. */
+.waitlist {
+  position: relative;
+}

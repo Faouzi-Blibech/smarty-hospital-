@@ -1,0 +1,113 @@
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.title {
+  margin: 0;
+  font: 600 22px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.compose {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.textarea {
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font-size: 16px;
+  line-height: 1.45;
+  background: var(--paper);
+  color: var(--ink);
+  resize: vertical;
+}
+
+.composeBar {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.add {
+  font: 600 14px/1 var(--sans);
+  color: var(--paper);
+  background: var(--teal);
+  border: none;
+  border-radius: 8px;
+  padding: 11px 16px;
+  cursor: pointer;
+}
+
+.add:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.who {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.role {
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.when {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  text-wrap: pretty;
+}
+
+/* Nurse design: 44 px button aligned right, 15 px label. */
+.addNurse {
+  margin-left: auto;
+  min-height: 44px;
+  padding: 0 18px;
+  font-size: 15px;
+}
+
+.composeNurse {
+  gap: 14px;
+}

@@ -1,0 +1,34 @@
+.shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--canvas);
+}
+
+.aside {
+  width: 248px;
+  flex: none;
+  align-self: stretch; /* the ink column runs the full page height */
+  background: var(--ink);
+}
+
+/* The nav itself stays pinned to the viewport while the page scrolls. */
+.asideInner {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.main {
+  position: relative; /* anchors absolutely placed toasts and dialogs */
+  flex: 1;
+  min-width: 0;
+  min-height: 100vh;
+  background: var(--canvas);
+}
+
+@media (max-width: 1024px) {
+  .asideTablet {
+    width: 216px;
+  }
+}

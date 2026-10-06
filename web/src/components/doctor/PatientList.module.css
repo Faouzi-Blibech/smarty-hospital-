@@ -1,0 +1,304 @@
+.page {
+  padding: 36px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 100vh;
+}
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+}
+
+.titles {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.h2 {
+  margin: 0;
+  font: 600 40px/1.1 var(--serif);
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.sub {
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 300px;
+  padding: 11px 14px;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+}
+
+/* The input itself has no outline, so the field shows the focus ring. */
+.search:focus-within {
+  outline: 3px solid var(--teal);
+  outline-offset: 2px;
+}
+
+.searchIcon {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--muted);
+  border-radius: 50%;
+  flex: none;
+}
+
+.searchInput {
+  border: none;
+  outline: none;
+  background: none;
+  font-size: 16px;
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+}
+
+.segment {
+  display: flex;
+  padding: 4px;
+  background: var(--segment);
+  border-radius: 10px;
+  gap: 4px;
+}
+
+.segBtn {
+  padding: 8px 14px;
+  border-radius: 7px;
+  border: none;
+  background: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.segOn {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-segment);
+}
+
+.table {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) 110px 210px 130px 150px 170px 24px;
+  gap: 16px;
+  padding: 18px 24px;
+  align-items: center;
+}
+
+.th {
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--line);
+  font: 600 12px/1.2 var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sorted {
+  color: var(--ink);
+}
+
+.tr {
+  border-bottom: 1px solid var(--line-soft);
+  text-decoration: none;
+  color: inherit;
+}
+
+.tr:hover {
+  background: var(--canvas);
+  color: inherit;
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.meta {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.bed {
+  font: 600 20px/1 var(--serif);
+  color: var(--ink);
+}
+
+.alerts {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.last {
+  font-size: 15px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.unit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.unitDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid;
+  flex: none;
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+.chev {
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.noMatch {
+  padding: 24px;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.foot {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ── States ─────────────────────────────────────────────────────────────── */
+
+.skelCard {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 8px 0;
+}
+
+.skelRow {
+  display: grid;
+  grid-template-columns: 1fr 60px 120px 80px;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.skelName {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skelBar {
+  display: block;
+  border-radius: 4px;
+  background: var(--line-soft);
+}
+
+.emptyCard {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 56px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.emptyIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--news-normal-bg);
+  display: grid;
+  place-items: center;
+}
+
+.emptyIcon > span {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 2.5px solid var(--teal);
+}
+
+.emptyTitle {
+  font: 600 24px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.emptyText {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 360px;
+}
+
+.emptyBtn {
+  margin-top: 6px;
+}
+
+.primary {
+  font: 600 15px/1 var(--sans);
+  border-radius: 8px;
+  padding: 13px 18px;
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--paper);
+  background: var(--ink);
+  border: none;
+}
+
+.primary:hover {
+  color: var(--paper);
+  background: var(--ink-hover);
+}
+
+@media (max-width: 1280px) {
+  .head {
+    flex-wrap: wrap;
+  }
+  .table {
+    overflow-x: auto;
+  }
+  .grid {
+    min-width: 940px;
+  }
+}

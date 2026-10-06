@@ -1,0 +1,387 @@
+/* Nurse / Ward board · 1440 (tablet 1024 frame at the bottom). */
+.board {
+  position: relative; /* anchors the call banner and the critical toast */
+  display: flex;
+  min-height: 100vh;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 32px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.main .banner {
+  font-size: 16px; /* nurse banner is 16 px (LiveBanner default 15) */
+}
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+}
+
+.titleBlock {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.title {
+  margin: 0;
+  font: 600 40px/1.1 var(--serif);
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.sub {
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.legend {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.error {
+  max-width: 420px;
+}
+
+/* Alerts side panel (desktop) / drawer (tablet). */
+.aside {
+  width: 344px;
+  flex: none;
+  background: var(--paper);
+  border-left: 1px solid var(--line);
+  padding: 28px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.asideHead {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.asideTitle {
+  margin: 0;
+  font: 600 26px/1.1 var(--serif);
+  color: var(--ink);
+}
+
+.openCount {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.newest {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.close {
+  align-self: center;
+  min-height: 44px;
+  padding: 0 14px;
+  font: 600 15px/1 var(--sans);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Red call banner (desktop). */
+.call {
+  position: absolute;
+  top: 24px;
+  left: 144px;
+  width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 24px;
+  background: var(--danger);
+  color: var(--paper);
+  border-radius: 16px;
+  box-shadow: var(--call-shadow);
+  animation: wardSlide 0.4s ease-out;
+  z-index: 20;
+}
+
+.callTop {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.callText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.callTitle {
+  font: 600 34px/1.05 var(--serif);
+}
+
+.callSub {
+  font-size: 16px;
+  color: var(--call-sub);
+}
+
+.callActions {
+  display: flex;
+  gap: 10px;
+}
+
+.onMyWay {
+  flex: 1;
+  min-height: 52px;
+  font: 700 17px/1 var(--sans);
+  color: var(--danger-ink);
+  background: var(--paper);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.mute {
+  min-height: 52px;
+  padding: 0 20px;
+  font: 600 16px/1 var(--sans);
+  color: var(--paper);
+  background: transparent;
+  border: 1.5px solid rgba(252, 253, 253, 0.6);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.onMyWay:disabled,
+.critAck:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+/* Tablet-only pieces, hidden on desktop. */
+.tab {
+  display: none;
+}
+
+.alertsBtn {
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 16px;
+  font: 700 16px/1 var(--sans);
+  color: var(--paper);
+  background: var(--ink);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.alertsCount {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--teal-bright);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+}
+
+.critToast {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 380px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  background: var(--paper);
+  border: 2px solid var(--news-crit-edge);
+  border-radius: 14px;
+  box-shadow: var(--drawer-shadow);
+  animation:
+    wardSlide 0.4s ease-out,
+    wardPulse 2.4s ease-in-out infinite;
+  z-index: 20;
+}
+
+.critHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.critTag {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--news-crit-edge);
+  color: var(--paper);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.critMeta {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.critTitle {
+  font: 600 26px/1.1 var(--serif);
+  color: var(--ink);
+}
+
+.critMsg {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--news-crit-fg);
+}
+
+.critActions {
+  display: flex;
+  gap: 8px;
+}
+
+.critAck {
+  flex: 1;
+  min-height: 48px;
+  font: 700 16px/1 var(--sans);
+  color: var(--paper);
+  background: var(--news-crit-edge);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.openBed {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 16px;
+  white-space: nowrap;
+  font: 600 15px/1 var(--sans);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  text-decoration: none;
+}
+
+.openBed:hover {
+  color: var(--ink);
+  background: var(--canvas);
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 45, 68, 0.35);
+  z-index: 40;
+}
+
+/* Between the tablet frame and the 1440 design, keep the cards readable. */
+@media (max-width: 1280px) and (min-width: 1025px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Nurse / Ward board · 1024 tablet: alerts move into a drawer; a critical alert slides in as a toast. */
+@media (max-width: 1024px) {
+  .desk {
+    display: none;
+  }
+
+  .tab {
+    display: block;
+  }
+
+  .alertsBtn {
+    display: flex;
+  }
+
+  .critToast {
+    display: flex;
+  }
+
+  .main {
+    padding: 24px 22px 28px;
+    gap: 16px;
+  }
+
+  .head {
+    align-items: center;
+    gap: 12px;
+  }
+
+  .title {
+    font-size: 32px;
+    letter-spacing: 0;
+  }
+
+  .grid {
+    gap: 12px;
+  }
+
+  .aside {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    z-index: 50;
+    box-shadow: var(--drawer-shadow);
+    transform: translateX(100%);
+    visibility: hidden;
+    transition:
+      transform 0.25s ease-out,
+      visibility 0.25s;
+  }
+
+  .drawerOpen {
+    transform: none;
+    visibility: visible;
+  }
+}

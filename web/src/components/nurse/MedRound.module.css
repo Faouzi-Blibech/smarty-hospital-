@@ -1,0 +1,215 @@
+/* Nurse / Med round */
+.page {
+  padding: 36px 40px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.titleBlock {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.title {
+  margin: 0;
+  font: 600 40px/1.1 var(--serif);
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.sub {
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.segment {
+  display: flex;
+  padding: 4px;
+  background: var(--segment);
+  border-radius: 10px;
+  gap: 4px;
+}
+
+.segBtn {
+  min-height: 44px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 7px;
+  font: 600 15px/1 var(--sans);
+  cursor: pointer;
+  background: transparent;
+  color: var(--text);
+  box-shadow: none;
+}
+
+.segOn {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-segment);
+}
+
+.empty {
+  padding: 48px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.emptyTitle {
+  font: 600 24px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.emptyText {
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.group {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.groupHead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--line);
+  background: var(--group-head);
+}
+
+.bed {
+  font: 600 26px/1 var(--serif);
+  color: var(--ink);
+}
+
+.name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.allergy {
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: transparent;
+}
+
+.allergyOn {
+  border: 2px solid var(--danger);
+  color: var(--danger-ink);
+  background: var(--danger-bg);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.dev {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.rows {
+  overflow-x: auto;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr) 150px 210px 170px;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--line-soft);
+  min-width: 760px;
+}
+
+.time {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.medCol {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.med {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.medSub {
+  font-size: 14px;
+}
+
+.slot {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.pill {
+  justify-self: start;
+}
+
+.give {
+  min-height: 44px;
+  font: 600 15px/1 var(--sans);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--paper);
+  background: var(--ink);
+  border: none;
+}
+
+.give:hover {
+  background: var(--ink-hover);
+}
+
+.give:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.by {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.skelRow {
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+@media (max-width: 1024px) {
+  .page {
+    padding: 24px 22px 28px;
+  }
+}

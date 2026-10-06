@@ -1,0 +1,342 @@
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.h3 {
+  margin: 0;
+  font: 600 22px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.sub {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.rxGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px 150px 90px 60px;
+  gap: 14px;
+}
+
+.th {
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--line);
+  font: 600 12px/1.2 var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tr {
+  align-items: center;
+  padding: 4px 0 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.medCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.med {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.note {
+  font-size: 13px;
+}
+
+.times {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.time {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--chip);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.slotCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cells {
+  display: flex;
+  gap: 3px;
+}
+
+.cell {
+  width: 12px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1.5px solid var(--ink);
+}
+
+.slotLabel {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.days {
+  font-size: 15px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.edit {
+  font: 600 14px/1 var(--sans);
+  color: var(--teal);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 0;
+}
+
+/* ── New prescription form ──────────────────────────────────────────────── */
+
+.form {
+  margin-top: 6px;
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formTitle {
+  font: 600 18px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.input,
+.textarea {
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font-size: 16px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.textarea {
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.step {
+  width: 40px;
+  height: 44px;
+  border: none;
+  background: none;
+  font-size: 20px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.stepValue {
+  flex: 1;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.rule {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 2px solid var(--danger);
+  border-radius: 10px;
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.ruleDiamond {
+  width: 10px;
+  height: 10px;
+  margin-top: 5px;
+  flex: none;
+  background: var(--danger);
+  transform: rotate(45deg);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 9px 14px;
+  border-radius: 999px;
+  font: 600 15px/1 var(--sans);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.slots {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  border: 1.5px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.chip.on,
+.slot.on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.slot.taken {
+  background: var(--disabled);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.slotName {
+  font: 600 15px/1 var(--sans);
+}
+
+.slotSub {
+  font: 400 13px/1.2 var(--sans);
+}
+
+.formBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.formHint {
+  font-size: 14px;
+  color: var(--muted);
+  flex: 1;
+}
+
+.primary,
+.secondary {
+  font: 600 15px/1 var(--sans);
+  border-radius: 8px;
+  padding: 13px 18px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.primary {
+  color: var(--paper);
+  background: var(--ink);
+  border: none;
+}
+
+.primary:hover {
+  background: var(--ink-hover);
+}
+
+.primary:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.secondary {
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+}
+
+.card .toast {
+  max-width: 460px;
+}
+
+@media (max-width: 900px) {
+  .slots {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .formBar {
+    flex-wrap: wrap;
+  }
+}
+
+.fieldError {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--danger-ink);
+}

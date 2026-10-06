@@ -1,0 +1,390 @@
+/* Nurse / Patient detail */
+.page {
+  padding: 28px 40px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.crumbLink {
+  color: var(--teal);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.crumbHere {
+  color: var(--ink);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.audit {
+  font-size: 13px;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.lock {
+  width: 10px;
+  height: 8px;
+  border: 1.5px solid var(--muted);
+  border-radius: 2px;
+}
+
+.page .banner {
+  font-size: 16px;
+}
+
+.critical {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: var(--news-crit-bg);
+  border: 2px solid var(--news-crit-edge);
+  color: var(--news-crit-fg);
+}
+
+.critScore {
+  min-width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--news-crit-edge);
+  color: var(--paper);
+  display: grid;
+  place-items: center;
+  font: 700 24px/1 var(--sans);
+}
+
+.critText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.critTitle {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.critSub {
+  font-size: 15px;
+}
+
+.critAck {
+  min-height: 48px;
+  padding: 0 18px;
+  font: 700 16px/1 var(--sans);
+  color: var(--paper);
+  background: var(--news-crit-edge);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.critAck:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.critAcked {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--news-normal-fg);
+  white-space: nowrap;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+  align-items: center;
+  padding: 22px 26px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.name {
+  margin: 0;
+  font: 600 36px/1.05 var(--serif);
+  color: var(--ink);
+}
+
+.factLine {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.dotSep {
+  color: var(--faint);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+.online {
+  color: var(--news-normal-fg);
+}
+
+.offline {
+  color: var(--news-high-fg);
+}
+
+.allergy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  border: 2px solid var(--danger);
+  border-radius: 12px;
+  background: var(--danger-bg);
+}
+
+.allergyLabel {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--danger);
+}
+
+.allergyValue {
+  font: 600 20px/1.15 var(--serif);
+  color: var(--danger-ink);
+}
+
+.allergyNote {
+  font-size: 13px;
+  color: var(--danger-ink);
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 16px 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-top: 5px solid var(--line);
+  border-radius: 12px;
+}
+
+.tileHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tileName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.pts {
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tileValue {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--ink);
+}
+
+.tileNum {
+  font: 600 40px/1 var(--serif);
+  font-variant-numeric: tabular-nums;
+}
+
+.tileUnit {
+  font-size: 15px;
+}
+
+.tileArrow {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.spark {
+  width: 100%;
+  height: 28px;
+}
+
+.tileTrend {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 20px;
+  align-items: start;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cardHead {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.cardTitle {
+  margin: 0;
+  font: 600 22px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.readOnly {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.none {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.doseRow {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.doseTime {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.doseMed {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.doseName {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.doseSub {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.rxRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.rxMed {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.rxTimes {
+  font-size: 15px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.rxSlot {
+  width: 120px;
+  font-size: 14px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.skelCard {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 26px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+@media (max-width: 1280px) {
+  .tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .page {
+    padding: 24px 22px 28px;
+  }
+
+  .header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

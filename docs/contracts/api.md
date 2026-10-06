@@ -1,6 +1,6 @@
 # REST + WebSocket contract — v1.0
 
-> **Version:** 1.4 (2026-10-06) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations)
+> **Version:** 1.5 (2026-10-06) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Conventions
@@ -152,7 +152,58 @@ All are authenticated with the header `X-N8N-Secret: ${N8N_CALLBACK_SECRET}` (no
 
 Filtering: a nurse receives frames for their ward, a doctor for their own patients, an admin only `device_status`. Patients do not connect.
 
+## Proposed in 1.5 (web UI needs)
+
+Proposed by Faouzi from the web UI (`web/src/lib/api.ts`, `web/src/lib/types.ts`); **Wali to confirm** before the backend builds them. Nothing above changes. Until confirmed, the web app calls these paths in real mode but survives their absence (empty sections, not error pages).
+
+**Endpoints**
+
+| Method & path | Roles | Notes |
+|---|---|---|
+| `GET /patients/{id}/doses?date=YYYY-MM-DD` | doctor, nurse, patient (self) | → `[Dose]` oldest first (the `med_doses` rows). Without `date`: the last 24 h and the rest of today |
+| `POST /doses/{id}/given` | nurse | Nurse gave the dose by hand → `Dose` with `status:"taken"`, `given_by`, `taken_at` |
+| `GET /offers/{id}` | patient (self) | → `SlotOffer` (a freed slot offered by the W2 backfill) |
+| `POST /offers/{id}/accept` | patient (self) | → the moved `Appointment` · 409 `slot_taken` / `not_waiting` |
+| `GET /patients/{id}/home-care` | patient (self) | → `HomeCarePlan` (the "After discharge" screen) |
+| `GET /staff` | admin | → `[StaffMember]` |
+| `POST /staff` | admin | `{"name","email","role","ward"}`: invite a staff member → `StaffMember` |
+| `DELETE /ai/summary/{id}/review` | doctor | Un-review (clears `human_confirmed_by`); the UI's "Undo" |
+| A patient call-nurse request *(optional)* | patient (self) | e.g. `POST /patients/{id}/call-nurse` → raises a `call_nurse` alert. The bedside unit has no button, so this is the only way a patient could ask |
+| Admin dashboard stats | admin | Admitted count, requests per day by urgency, reminders confirmed, slots refilled, open offers (one stats endpoint, e.g. `GET /stats/today`) |
+| Admin read of alert counts | admin | Either `GET /alerts` for admin (counts only) or the stats endpoint above |
+
+**Fields**
+
+| Type | Added fields |
+|---|---|
+| `PatientSummary` | `last_vital_at`, `device_online`, `sex` |
+| `Patient` | `admitted_at`, `allergy_notes`, `attending_doctor_name`, `nurse_name` |
+| `Vital` | `rr`, `bp_sys`, `bp_dia`; `source` enum `device\|simulator\|manual` |
+| `Note` | `author_name` |
+| `Prescription` | `allergy_override` |
+| `Dose` | full shape (`id`, `prescription_id`, `patient_id`, `scheduled_at`, `time_of_day`, `meds[]`, `slot`, `status`, `taken_method`, `updated_at`) plus `taken_at`, `given_by`, `given_by_name`, `instructions` |
+| `AiSummary` | `human_confirmed_by_name`, `reviewed_at`, `based_on {vitals, doses, notes}` |
+| `Appointment.triage` | `confidence`, `model_urgency` |
+| `Appointment` | `ai_suggested`, `human_confirmed_by`, `human_confirmed_by_name`, `patient_name`, `patient_age`, `specialty`, `referral_text`, `lang` (`fr\|ar\|aeb-Latn\|en`), `doctor_name`, `room`, `confirmed_by_name` |
+| `Alert` | `bed`, `patient_first_name`, `acked_by_name`; AI `source` on `trend` alerts |
+| `Device` | `patient_name`, `admission_id` (the active admission, needed for `POST /admissions/{id}/discharge`) |
+
+New types:
+
+```jsonc
+// StaffMember
+{ "id": "u-0001", "name": "Dr Trabelsi", "email": "...", "role": "doctor|nurse|admin", "ward": "Cardiology", "scope": "Cardiology · Ward C", "last_login_at": "..." }
+// SlotOffer
+{ "id": "of-0001", "appointment_id": "a-0001", "slot_at": "...", "doctor_id": "u-0001", "doctor_name": "Dr Trabelsi", "room": "...", "status": "open|accepted|taken", "expires_at": "..." }
+// HomeCarePlan
+{ "patient_id": "p-0001", "discharged_at": "...", "ward_label": "...", "follow_up": { "title": "...", "steps": ["..."] }, "medicines": [...], "desk_phone": "...", "emergency_number": "190" }
+```
+
+**Patient role:** an appointment returned to the patient role (`GET /appointments?patient_id=`, `/appointments/{id}/reply`, `/offers/{id}/accept`) must omit `urgency_ai`, `triage` and `no_show_prob`. The patient never sees an AI urgency score.
+
 ## Changelog
+
+- **1.5** (2026-10-06): UI needs, proposed by Faouzi; Wali to confirm. Adds the section "Proposed in 1.5 (web UI needs)" (endpoints, fields and new types the web app uses) and the rule that patient-role appointment responses omit `urgency_ai`, `triage` and `no_show_prob`. Nothing in 1.4 changes.
 
 - **1.4** (2026-10-06): AI layer reworked onto rules and trained models. `POST /ai/triage` drops `history` and adds `model_urgency` and `confidence`; `POST /ai/assistant` also returns `intent` and `source`; `source` is now `"model" | "rules" | "llm"` (was `"llm" | "fallback"`), including `Appointment.triage.source`. Owner: Faouzi.
 

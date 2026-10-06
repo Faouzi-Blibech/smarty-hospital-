@@ -1,0 +1,138 @@
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.alert {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-line);
+  color: var(--danger-ink);
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--danger);
+  color: var(--paper);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.primary,
+.secondary {
+  font: 600 15px/1 var(--sans);
+  border-radius: 8px;
+  padding: 13px 18px;
+  cursor: pointer;
+}
+
+.primary {
+  color: var(--paper);
+  background: var(--ink);
+  border: none;
+}
+
+.primary:hover {
+  background: var(--ink-hover);
+}
+
+.secondary {
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+}
+
+/* variant="box" (Nurse / States · Ward board · Error) */
+.box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-line);
+  color: var(--danger-ink);
+}
+
+.boxTitle {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.boxMessage {
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.boxButton {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 16px;
+  font: 600 15px/1 var(--sans);
+  color: var(--paper);
+  background: var(--ink);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.boxButton:hover {
+  background: var(--ink-hover);
+}
+
+/* variant="patient" (Patient / States · error) */
+.patient {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-line);
+  color: var(--danger-ink);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.patientButton {
+  align-self: flex-start;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: none;
+  background: var(--ink);
+  color: var(--paper);
+  font: 700 16px/1 var(--sans);
+  cursor: pointer;
+}
+
+.patientButton:hover {
+  background: var(--ink-hover);
+}

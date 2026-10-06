@@ -1,0 +1,209 @@
+/* Patient / Assistant (Ward Patient.dc.html) */
+
+.head {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 20px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.headRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  flex: 1;
+  font: 600 24px/1.1 var(--serif);
+  color: var(--ink);
+}
+
+.callBtn {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: none;
+  background: var(--danger);
+  color: var(--paper);
+  font: 700 15px/1 var(--sans);
+  cursor: pointer;
+}
+
+.headSub {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.list {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.item {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.itemMe {
+  align-items: flex-end;
+}
+
+.itemBot {
+  align-items: flex-start;
+}
+
+.urgent {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--news-crit-edge);
+  color: var(--paper);
+}
+
+.urgentTitle {
+  font: 600 21px/1.2 var(--serif);
+}
+
+.urgentBtn {
+  min-height: 52px;
+  border-radius: 12px;
+  border: none;
+  background: var(--paper);
+  color: var(--news-crit-fg);
+  font: 700 17px/1 var(--sans);
+  cursor: pointer;
+}
+
+.urgentSub {
+  font-size: 14px;
+  color: var(--call-sub);
+}
+
+.bubble {
+  max-width: 86%;
+  padding: 12px 15px;
+  font-size: 17px;
+  line-height: 1.45;
+  border: 1px solid;
+  text-align: start;
+}
+
+.bubbleMe {
+  border-radius: 18px 18px 4px 18px;
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+.bubbleBot {
+  border-radius: 18px 18px 18px 4px;
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.typing {
+  color: var(--muted);
+  animation: wardBlink 1.2s ease-in-out infinite;
+}
+
+.source {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sourceDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+
+.askNurse {
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 2px solid var(--danger);
+  background: var(--paper);
+  color: var(--danger);
+  font: 700 16px/1 var(--sans);
+  cursor: pointer;
+}
+
+.chips {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px 0;
+  overflow-x: auto;
+}
+
+.chip {
+  flex: none;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  color: var(--ink);
+  font: 600 14px/1 var(--font-public-sans), "Public Sans", var(--font-noto-arabic), "Noto Sans Arabic", sans-serif;
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--ink);
+}
+
+.composer {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px 28px;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  font-size: 17px;
+  color: var(--ink);
+}
+
+.send {
+  width: 52px;
+  height: 52px;
+  flex: none;
+  border-radius: 14px;
+  border: none;
+  background: var(--ink);
+  color: var(--paper);
+  font: 700 20px/1 var(--sans);
+  cursor: pointer;
+}
+
+.send:disabled,
+.chip:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}

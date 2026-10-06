@@ -1,0 +1,271 @@
+/* Nurse / Ward board bed card. Desktop 1440 values; the tablet (≤ 1024 px) frame below. */
+.card {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 1px var(--bd-style, solid) var(--bd, var(--line));
+  border-top: 8px solid var(--edge, var(--line));
+  border-radius: 12px;
+}
+
+a.card:hover {
+  color: inherit;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bed {
+  font: 600 40px/1 var(--serif);
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.news {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px 5px 5px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.bubble {
+  min-width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  color: var(--paper);
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.who {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.name {
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.age {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.calling {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--danger);
+  color: var(--paper);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.callDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--paper);
+  animation: wardBlink 1s infinite;
+}
+
+.idle {
+  font-size: 16px;
+  color: var(--muted);
+  padding: 18px 0;
+}
+
+.vitals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.unit {
+  font-weight: 500;
+}
+
+.reading {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.value {
+  font: 700 30px/1.05 var(--sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.arrow {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.devDot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid;
+}
+
+.dev {
+  font-family: var(--mono);
+}
+
+.ago {
+  flex: 1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Nurse / States · Bed card · Loading */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-top: 8px solid var(--line);
+  border-radius: 12px;
+}
+
+.skelLine {
+  height: 16px;
+  width: 120px;
+  border-radius: 4px;
+  background: var(--line-soft);
+}
+
+.skelGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.skelGrid span {
+  height: 40px;
+  border-radius: 6px;
+  background: var(--line-soft);
+}
+
+/* Nurse / Ward board · 1024 tablet */
+@media (max-width: 1024px) {
+  .desk {
+    display: none;
+  }
+
+  .card {
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .top {
+    gap: 8px;
+  }
+
+  .bed {
+    font-size: 36px;
+    letter-spacing: 0;
+  }
+
+  .news {
+    gap: 6px;
+    padding: 4px 9px 4px 4px;
+    font-size: 13px;
+  }
+
+  .bubble {
+    min-width: 26px;
+    height: 26px;
+    font-size: 15px;
+  }
+
+  .name {
+    font-size: 19px;
+  }
+
+  .calling {
+    padding: 7px 9px;
+    font-size: 14px;
+  }
+
+  .vitals {
+    gap: 6px;
+  }
+
+  .cell {
+    gap: 1px;
+  }
+
+  .label {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+
+  .value {
+    font-size: 26px;
+  }
+
+  .arrow {
+    font-size: 14px;
+  }
+
+  .foot {
+    gap: 6px;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .ago {
+    text-align: left;
+  }
+}

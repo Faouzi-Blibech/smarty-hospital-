@@ -1,0 +1,8 @@
+.pill {
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 1px solid;
+}
