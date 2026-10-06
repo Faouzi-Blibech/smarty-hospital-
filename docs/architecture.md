@@ -15,7 +15,7 @@ Shorter waits are the *result*. We do not claim to "solve the waitlist".
 
 **Locked principles:**
 - **Human in the loop:** AI suggests and a human confirms.
-- **Privacy:** self-hosted, RBAC, an audit log of every read, and anonymized cloud LLM calls (Tunisian Organic Law 2004-63 / INPDP).
+- **Privacy:** self-hosted, RBAC, an audit log of every read, and no patient data leaves the server unless an optional open LLM is switched on, and then it is anonymized (Tunisian Organic Law 2004-63 / INPDP).
 - **Prototype honesty:** sensors are not medical-grade and the AI is not clinically validated.
 - **Data:** synthetic only.
 
@@ -41,8 +41,8 @@ flowchart TB
     APT["Appointments & Waitlist"]
     REC["Patient records"]
     RX["Prescriptions & Med schedule"]
-    AI["AI engine<br/>triage · early warning · copilot<br/>no-show · assistant"]
-    LLM["ai/llm.py<br/>provider-agnostic wrapper<br/>(PII stripped)"]
+    AI["AI engine<br/>triage · early warning · copilot<br/>no-show · assistant<br/>(rules + trained models)"]
+    LLM["ai/llm.py<br/>optional open LLM (off by default)<br/>(PII stripped)"]
   end
 
   subgraph DATA["Data (hospital's own server)"]
@@ -124,7 +124,7 @@ sequenceDiagram
   participant B as Bedside Unit
 
   P->>S: Request appointment (app / reception)
-  S->>S: Triage: red-flag rules + LLM → urgency 1–5
+  S->>S: Triage: red-flag rules + trained classifier → urgency 1–5
   S-->>A: AI-ranked waitlist
   A->>S: Confirm booking (may override urgency)
   S-->>P: Confirmation + 24h reminder (n8n W1)
@@ -208,13 +208,13 @@ flowchart LR
     Q["Patient question"]
   end
   subgraph Mods["backend/app/ai/"]
-    T["1 · Triage<br/>red-flag rules + LLM JSON"]
+    T["1 · Triage<br/>red-flag rules + trained char n-gram classifier"]
     EW["2 · Early warning<br/>NEWS2 partial + z-score"]
-    CP["3 · Doctor copilot<br/>LLM summary + interaction list"]
+    CP["3 · Doctor copilot<br/>templated summary + rule interactions<br/>(optional open LLM rewrite)"]
     NS["5 · No-show model<br/>LogReg on Kaggle dataset"]
-    PA["6 · Patient assistant<br/>(stretch) scoped tools"]
+    PA["6 · Patient assistant<br/>Laya + trained classifier → intent<br/>templated answers"]
   end
-  W["llm.py wrapper<br/>strip PII · LLM_PROVIDER · timeout → fallback"]
+  W["llm.py wrapper (optional)<br/>strip PII · LLM_PROVIDER · open models only"]
   subgraph Human["Human confirms"]
     HA["Admin / doctor<br/>confirms waitlist order"]
     HN["Nurse + doctor<br/>ack alert"]
@@ -226,19 +226,39 @@ flowchart LR
   H24 --> CP --> HD
   HIST --> NS --> HO
   Q --> PA
-  T & CP & PA -.-> W
+  CP -.-> W
 ```
 
-| # | Module | Owner | Deterministic fallback |
+| # | Module | Owner | Without the model or LLM |
 |---|---|---|---|
-| 1 | Triage | Faouzi | Red-flag rule list + keyword score → urgency |
+| 1 | Triage | Faouzi | Red-flag rules alone (`source: "rules"`); with the trained model, `source: "model"` |
 | 2 | Early warning | Wali | Pure rules, so it is its own fallback |
-| 3 | Doctor copilot | Faouzi | Templated summary from min/max/latest vitals + the curated interaction list |
+| 3 | Doctor copilot | Faouzi | Templated summary from min/max/latest vitals + the curated interaction list (this is the default; an open LLM only rewrites it when `LLM_PROVIDER` is set) |
 | 5 | No-show model | Hedi | Base rate (≈0.20) |
-| 6 | Patient assistant (stretch) | Faouzi | "Please ask your nurse" + next dose / next visit from the DB |
+| 6 | Patient assistant | Faouzi | Keyword intent rules, then the same templated answers from the DB; otherwise "Please ask your nurse" |
+
+**How the modules decide:**
+- **Triage:** urgency = max(red-flag floor, trained classifier, 2 if age ≥ 75). The model can raise urgency above the floor, never lower it.
+- **Assistant:** a red-flag question gets the URGENT message with no model call. Otherwise the intent is the average of Laya (base model, zero-shot, optional install) and a trained char n-gram classifier. Low confidence means "ask staff". The answer is a template filled from the caller's own record.
+- **Copilot:** the summary and the interaction list come from templates and a curated rule file. An optional open LLM (Groq or Ollama) may rewrite the text.
+- **Early warning and no-show:** unchanged (Wali and Hedi).
+
+**Measured on hand-written sets (synthetic, small):**
+
+| Model | Eval set | Result |
+|---|---|---|
+| Triage classifier alone | 29 referrals | exact 0.966, within one 1.0, under-triaged 0, urgent missed 0 |
+| Triage rules + model | same 29 | exact 0.966, within one 1.0, under-triaged 0, urgent missed 0 |
+| Intent: char n-gram classifier | 36 questions | accuracy 0.75 |
+| Intent: base Laya | same 36 | accuracy 0.75, median 356 ms on CPU |
+| Intent: average of both | same 36 | accuracy 0.778 |
+
+A Laya fine-tuned head scored 0.694 on the same 36 questions, so it is not shipped. Sources: `backend/app/ai/models/*metrics.json`. These sets are tiny; read them as a sanity check, not a validation.
 
 **Rules for every module:**
-- All LLM calls go through `backend/app/ai/llm.py`.
+- Every module works with no LLM. A trained model is optional too: without its file the module drops to rules.
+- Models are trained only on synthetic data (`backend/app/ai/data/`, scripts in `backend/app/ai/training/`).
+- Any optional LLM call goes through `backend/app/ai/llm.py` (open models only).
 - Every output is stored with `ai_suggested` + `human_confirmed_by`.
 - Prompts and red-flag lists are versioned files in `backend/app/ai/prompts/` and `backend/app/ai/rules/`.
 
@@ -264,5 +284,6 @@ Partial score → severity:
 
 - Everything runs from one `docker compose` on the hospital's server.
 - RBAC is enforced in FastAPI dependencies. Every read of a patient record appends an `audit_log` row. Postgres RLS is the Day 4 stretch / production plan.
-- `llm.py` replaces names, phone numbers and IDs with placeholders before any cloud call. `LLM_PROVIDER=local` routes to a local model (e.g. Ollama) instead.
+- No data leaves the server unless `LLM_PROVIDER` is set (default `none`). When it is, `llm.py` replaces names, phone numbers and IDs with placeholders first. `LLM_PROVIDER=local` sends nothing off the machine (Ollama); `groq` calls the Groq API with an open model.
+- Laya, when installed, runs locally on the CPU; its weights are downloaded once from the Hugging Face Hub.
 - Seed data is synthetic (`backend/app/seed.py`).
