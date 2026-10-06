@@ -26,19 +26,19 @@ def test_red_flag_common_phrasings(text, flag):
 
 
 def test_routine_text_is_low_urgency():
-    r = T.triage("Certificat médical pour le sport", [], 30)
+    r = T.triage("Demande de justificatif administratif pour mon employeur", [], 30)
     assert r.urgency in (1, 2) and r.model_urgency is not None
 
 
 def test_elderly_routine_is_raised():
-    r = T.triage("Certificat médical pour le sport", [], 80)
+    r = T.triage("Demande de justificatif administratif pour mon employeur", [], 80)
     assert r.urgency >= 2 and any("Age 80" in x for x in r.reasons)
 
 
 def test_without_model_falls_back_to_rules(monkeypatch):
     monkeypatch.setattr(T.textclf, "load", lambda name: None)
-    r = T.triage("Certificat médical pour le sport", [], 30)
-    assert r.source == "rules" and r.urgency == T.rule_floor("Certificat médical pour le sport") == 1
+    r = T.triage("Demande de justificatif administratif pour mon employeur", [], 30)
+    assert r.source == "rules" and r.urgency == T.rule_floor("Demande de justificatif administratif pour mon employeur") == 1
     assert r.reasons == ["No red flag found; routine priority"]
     assert r.model_urgency is None
 

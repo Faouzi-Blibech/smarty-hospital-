@@ -2,17 +2,17 @@
   "train_rows": 450,
   "model_only": {
     "n": 29,
-    "exact": 0.966,
+    "exact": 0.897,
     "within_one": 1.0,
-    "under_triaged": 0,
-    "urgent_missed": 0
+    "under_triaged": 2,
+    "urgent_missed": 1
   },
   "rules_plus_model": {
     "n": 29,
-    "exact": 0.966,
+    "exact": 0.897,
     "within_one": 1.0,
-    "under_triaged": 0,
-    "urgent_missed": 0
+    "under_triaged": 2,
+    "urgent_missed": 1
   },
   "cases": [
     {
@@ -34,10 +34,10 @@
       "final": 5
     },
     {
-      "text": "3andi waja3 fi sadri w ma najjamch nitnaffes",
+      "text": "9albi yedhrab bezzef w nhess rouhi bech nghib",
       "expected": 5,
-      "model": 5,
-      "final": 5
+      "model": 4,
+      "final": 4
     },
     {
       "text": "Sudden weakness of the right arm and slurred speech",
@@ -64,13 +64,13 @@
       "final": 4
     },
     {
-      "text": "Fièvre persistante depuis 5 jours chez une personne âgée de 80 ans",
+      "text": "Nourrisson de 2 mois, température à 39 et refuse le biberon",
       "expected": 4,
       "model": 4,
       "final": 4
     },
     {
-      "text": "سخانة قوية عند رضيع عمره 3 أشهر",
+      "text": "طفل عمره شهرين حرارته مرتفعة جدا ولا يرضع",
       "expected": 4,
       "model": 4,
       "final": 4
@@ -106,10 +106,10 @@
       "final": 3
     },
     {
-      "text": "نتيجة تحليل غير طبيعية تحتاج مراجعة",
+      "text": "فحص الأشعة أظهر ورما صغيرا في الرئة يستوجب متابعة",
       "expected": 3,
-      "model": 3,
-      "final": 3
+      "model": 2,
+      "final": 2
     },
     {
       "text": "Bosse au sein découverte il y a deux semaines",
@@ -142,7 +142,7 @@
       "final": 2
     },
     {
-      "text": "ضغط الدم مستقر، متابعة عادية",
+      "text": "مريض سكري منتظم على علاجه، زيارة دورية",
       "expected": 2,
       "model": 2,
       "final": 2
@@ -160,13 +160,13 @@
       "final": 2
     },
     {
-      "text": "Certificat médical pour le sport",
+      "text": "Attestation d'aptitude pour l'inscription à la salle de gym",
       "expected": 1,
       "model": 1,
       "final": 1
     },
     {
-      "text": "Renouvellement d'ordonnance et papiers administratifs",
+      "text": "Besoin d'un duplicata de mon dossier pour l'assurance",
       "expected": 1,
       "model": 1,
       "final": 1

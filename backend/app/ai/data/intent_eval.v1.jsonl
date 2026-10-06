@@ -1,4 +1,4 @@
-{"text": "When is my next pill?", "intent": "next_dose"}
+{"text": "What am I supposed to swallow at bedtime?", "intent": "next_dose"}
 {"text": "C'est quand mon prochain médicament ?", "intent": "next_dose"}
 {"text": "وقتاش الدواء الجاي؟", "intent": "next_dose"}
 {"text": "Did I miss my evening tablets?", "intent": "next_dose"}
@@ -6,29 +6,29 @@
 {"text": "شنوة نشرب الليلة من دواء", "intent": "next_dose"}
 {"text": "ama dwa nekhdhou ba3d l'ftour", "intent": "next_dose"}
 {"text": "How many pills are left for today?", "intent": "next_dose"}
-{"text": "When is my next appointment?", "intent": "next_visit"}
+{"text": "How many days until I see my surgeon again?", "intent": "next_visit"}
 {"text": "Mon prochain rendez-vous c'est quand ?", "intent": "next_visit"}
-{"text": "متى موعدي القادم مع الطبيب؟", "intent": "next_visit"}
+{"text": "هل زيارة الطبيب غدا أم بعد غد؟", "intent": "next_visit"}
 {"text": "Is the cardiologist seeing me this week?", "intent": "next_visit"}
 {"text": "Le docteur repasse quel jour ?", "intent": "next_visit"}
 {"text": "الطبيب وقتاش يجي يشوفني", "intent": "next_visit"}
 {"text": "imta el control el jey", "intent": "next_visit"}
-{"text": "What is my temperature now?", "intent": "my_vitals"}
+{"text": "Is my body running hot at the moment?", "intent": "my_vitals"}
 {"text": "Quelle est ma tension et mon oxygène ?", "intent": "my_vitals"}
 {"text": "How fast is my heart beating right now?", "intent": "my_vitals"}
 {"text": "J'ai encore de la fièvre d'après le capteur ?", "intent": "my_vitals"}
 {"text": "النبض متاعي كيفاش", "intent": "my_vitals"}
 {"text": "ما هي درجة حرارتي الآن", "intent": "my_vitals"}
 {"text": "chnowa 9al el capteur 3la l'oxygène", "intent": "my_vitals"}
-{"text": "I can't breathe well right now", "intent": "urgent"}
-{"text": "J'ai très mal à la poitrine maintenant", "intent": "urgent"}
+{"text": "I am gasping for air and getting dizzy", "intent": "urgent"}
+{"text": "Ma poitrine me serre fort et je transpire", "intent": "urgent"}
 {"text": "There is blood everywhere on my bandage", "intent": "urgent"}
 {"text": "Je n'arrive plus à bouger mon bras", "intent": "urgent"}
-{"text": "صدري يحرق فيا وما نجمش نتنفس", "intent": "urgent"}
+{"text": "قلبي يدق بسرعة جنونية وعيني تظلم", "intent": "urgent"}
 {"text": "أشعر بدوخة شديدة وسأسقط", "intent": "urgent"}
 {"text": "nzif barcha mel jor7", "intent": "urgent"}
 {"text": "Is my cancer curable?", "intent": "ask_staff"}
-{"text": "Pourquoi je prends cet antibiotique ?", "intent": "ask_staff"}
+{"text": "À quoi sert ce sirop que l'infirmière m'a donné ?", "intent": "ask_staff"}
 {"text": "Can I drink coffee with my treatment?", "intent": "ask_staff"}
 {"text": "Est-ce que l'opération est risquée ?", "intent": "ask_staff"}
 {"text": "شنوة عندي بالضبط", "intent": "ask_staff"}

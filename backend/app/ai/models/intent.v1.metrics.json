@@ -1,13 +1,8 @@
 {
   "train_rows": 300,
-  "accuracy": 0.75,
+  "accuracy": 0.722,
   "n": 36,
   "misses": [
-    {
-      "text": "When is my next pill?",
-      "expected": "next_dose",
-      "got": "next_visit"
-    },
     {
       "text": "Did I miss my evening tablets?",
       "expected": "next_dose",
@@ -34,6 +29,11 @@
       "got": "ask_staff"
     },
     {
+      "text": "Is my body running hot at the moment?",
+      "expected": "my_vitals",
+      "got": "next_visit"
+    },
+    {
       "text": "J'ai encore de la fièvre d'après le capteur ?",
       "expected": "my_vitals",
       "got": "urgent"
@@ -42,6 +42,11 @@
       "text": "There is blood everywhere on my bandage",
       "expected": "urgent",
       "got": "next_visit"
+    },
+    {
+      "text": "قلبي يدق بسرعة جنونية وعيني تظلم",
+      "expected": "urgent",
+      "got": "my_vitals"
     },
     {
       "text": "شنوة عندي بالضبط",
