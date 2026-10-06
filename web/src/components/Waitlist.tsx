@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { confirmAppointment, getWaitlist, overrideUrgency } from "@/lib/api";
-import { LANG_LABELS, noShowWord, redFlagLabel, URGENCY } from "@/lib/labels";
+import { doctorForSpecialty, LANG_LABELS, noShowWord, redFlagLabel, URGENCY } from "@/lib/labels";
 import { daysSince, tunisDay } from "@/lib/time";
 import type { Appointment, Urgency } from "@/lib/types";
 import { AiBadge } from "./AiBadge";
@@ -22,7 +22,7 @@ export interface WaitlistProps {
   confirmId?: string;
   /** Appointment id whose "Why?" popover starts open. */
   whyId?: string;
-  /** Doctor booked in the dialog. Default: Dr Trabelsi (u-0001). */
+  /** Doctor booked when a row's specialty has no mapped doctor. The row's specialty decides first. */
   doctorId?: string;
 }
 
@@ -47,7 +47,7 @@ export function Waitlist({
   aiFallback = false,
   confirmId,
   whyId,
-  doctorId = "u-0001",
+  doctorId,
 }: WaitlistProps) {
   const [fetched, setFetched] = useState<Appointment[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -97,10 +97,11 @@ export function Waitlist({
 
   async function confirm(a: Appointment) {
     const d = DAYS.find((x) => x.label === day)!;
+    const doc = doctorForSpecialty(a.specialty, doctorId);
     setBusy(true);
     try {
-      const upd = await confirmAppointment(a.id, { slot_at: new Date(`${d.date}T${time}:00+01:00`).toISOString(), doctor_id: doctorId }, by);
-      const slot = `${day} · ${time} · Dr Trabelsi`;
+      const upd = await confirmAppointment(a.id, { slot_at: new Date(`${d.date}T${time}:00+01:00`).toISOString(), doctor_id: doc.id }, by);
+      const slot = `${day} · ${time} · ${doc.name}`;
       setConfirmed((c) => ({ ...c, [a.id]: { row: { ...a, ...upd }, slot } }));
       setDlg(null);
       showToast({ text: `${a.patient_name} booked ${day}, ${time}. Reminder scheduled 24 h before.`, tone: "ok" });
@@ -113,6 +114,7 @@ export function Waitlist({
   }
 
   const dlgRow = rows.find((r) => r.a.id === dlg) ?? null;
+  const dlgDoctor = dlgRow ? doctorForSpecialty(dlgRow.a.specialty, doctorId) : null;
   const filters = specialty
     ? [{ label: specialty, on: true }, { label: "All specialties", on: false }]
     : [{ label: "All specialties", on: true }, { label: "Cardiology", on: false }, { label: "Pediatrics", on: false }];
@@ -258,7 +260,7 @@ export function Waitlist({
               </div>
               <label className={styles.field}>
                 <span className={styles.label}>Doctor</span>
-                <span className={styles.select}>Dr Trabelsi · Cardiology<span>▾</span></span>
+                <span className={styles.select}>{dlgDoctor?.name} · {dlgDoctor?.specialty}<span>▾</span></span>
               </label>
               <div className={styles.info}>
                 <span className={styles.infoDot} />

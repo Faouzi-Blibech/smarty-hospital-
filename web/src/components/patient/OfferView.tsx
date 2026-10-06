@@ -2,12 +2,12 @@
 
 // Patient / Freed slot offer (/patient/offers/[id]). "Take this slot" → acceptOffer (NOT IN CONTRACT,
 // mirrors the n8n backfill-accept: 409 slot_taken → "Sorry, this slot was just taken.").
-// The demo link forces the 409 (the design's "simulate “someone was faster”").
+// The demo link (mock mode only) forces the 409 (the design's "simulate “someone was faster”").
 import Link from "next/link";
 import { useState } from "react";
 import { acceptOffer, ApiError, getMyAppointments, getOffer } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
-import { tunisTime } from "@/lib/time";
+import { tunisTime, USE_MOCKS } from "@/lib/time";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { daysBetween, longDay, myPatientId, useLoad } from "./patient";
 import { PatientScreen, SkeletonCard } from "./PatientScreen";
@@ -133,9 +133,11 @@ export function OfferView({ id }: { id: string }) {
             <button type="button" className={styles.primaryBtn} disabled={busy} onClick={() => take()}>
               Take this slot
             </button>
-            <button type="button" className={styles.demoLink} disabled={busy} onClick={() => take(true)}>
-              Demo: simulate “someone was faster”
-            </button>
+            {USE_MOCKS ? (
+              <button type="button" className={styles.demoLink} disabled={busy} onClick={() => take(true)}>
+                Demo: simulate “someone was faster”
+              </button>
+            ) : null}
             <Link href="/patient" className={`${styles.secondaryBtn} ${styles.keepBtn}`}>
               {currentDay ? `Keep ${currentDay}` : "Keep my appointment"}
             </Link>

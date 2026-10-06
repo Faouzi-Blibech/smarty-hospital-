@@ -2,12 +2,12 @@
 
 // Patient / Appointment (/patient/appointments/[id]) and Patient / Appointment · Confirmed.
 // Confirm → POST /appointments/{id}/reply "confirm" → the full-screen confirmation.
-// Cancel → reply "cancel" → the grey "Cancelled…" status. "Undo (demo)" only resets this view.
+// Cancel → reply "cancel" → the grey "Cancelled…" status. "Undo (demo)" (mock mode only) resets this view.
 import Link from "next/link";
 import { useState } from "react";
 import { getMyAppointments, replyAppointment } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
-import { tunisTime } from "@/lib/time";
+import { tunisTime, USE_MOCKS } from "@/lib/time";
 import type { Appointment } from "@/lib/types";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { dayMonthLong, longDay, myPatientId, offlineSince, useLoad, useOffline, weekday } from "./patient";
@@ -187,9 +187,11 @@ export function AppointmentView({ id }: { id: string }) {
                       : "Thanks, see you soon."
                     : "Cancelled. Your slot will go to someone who is waiting. Your request stays on the list."}
                 </span>
-                <button type="button" className={styles.linkBtn} onClick={() => setView("open")}>
-                  Undo (demo)
-                </button>
+                {USE_MOCKS ? (
+                  <button type="button" className={styles.linkBtn} onClick={() => setView("open")}>
+                    Undo (demo)
+                  </button>
+                ) : null}
               </div>
             )}
           </>

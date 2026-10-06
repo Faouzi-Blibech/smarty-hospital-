@@ -85,7 +85,9 @@ async function http<T>(method: string, path: string, body?: unknown): Promise<T>
     const err = (await res.json().catch(() => ({}))) as { detail?: string; code?: string };
     throw new ApiError(res.status, err.code ?? "http_error", err.detail ?? res.statusText);
   }
-  return (await res.json()) as T;
+  // Some endpoints (assign, discharge) have no response body in api.md.
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 let store: MockStore | null = null;
@@ -480,10 +482,40 @@ export function ackAlert(id: string, opts: ActorOpts = {}): Promise<Alert> {
 
 // ── Devices and staff ───────────────────────────────────────────────────────
 
-/** GET /devices */
+/** GET /devices. Mock: adds the UI-extension `admission_id` from the patient record. */
 export function getDevices(): Promise<Device[]> {
-  if (USE_MOCKS) return mock((s) => s.devices);
+  if (USE_MOCKS)
+    return mock((s) =>
+      s.devices.map((d) => ({ ...d, admission_id: s.patients.find((p) => p.id === d.patient_id)?.admission_id ?? null })),
+    );
   return http<Device[]>("GET", "/devices");
+}
+
+/** POST /devices/{id}/assign `{"patient_id","bed"}` (admin): creates/updates the admission, publishes the schedule. */
+export function assignDevice(deviceId: string, req: { patient_id: string; bed: string }): Promise<void> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      const device = s.devices.find((d) => d.id === deviceId) ?? notFound(`Device ${deviceId}`);
+      const patient = s.patients.find((p) => p.id === req.patient_id);
+      const name =
+        (patient ? `${patient.first_name} ${patient.last_name}` : null) ??
+        s.appointments.find((a) => a.patient_id === req.patient_id)?.patient_name ??
+        req.patient_id;
+      Object.assign(device, { patient_id: req.patient_id, bed: req.bed, patient_name: name });
+    });
+  return http<void>("POST", `/devices/${encodeURIComponent(deviceId)}/assign`, req);
+}
+
+/** POST /admissions/{id}/discharge (admin, doctor): clears the device schedule and sets `discharged_at`. */
+export function dischargeAdmission(admissionId: string): Promise<void> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      const patient = s.patients.find((p) => p.admission_id === admissionId) ?? notFound(`Admission ${admissionId}`);
+      for (const d of s.devices) {
+        if (d.patient_id === patient.id) Object.assign(d, { patient_id: null, patient_name: null });
+      }
+    });
+  return http<void>("POST", `/admissions/${encodeURIComponent(admissionId)}/discharge`, {});
 }
 
 /** GET /staff — NOT IN CONTRACT (admin "Staff" screen). */

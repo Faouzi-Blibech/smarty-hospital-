@@ -2,14 +2,15 @@
 
 // Admin / Staff accounts (/admin/staff) with the "Add staff" side panel.
 // `?add=1` opens the panel pre-filled as in the design. There is no invite
-// endpoint in api.md yet, so "Send invite" adds the row locally.
+// endpoint in api.md yet: in mock mode "Send invite" adds the row locally; in real
+// mode it says invites aren't available instead of claiming one was sent.
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Toast, useToast } from "@/components/Toast";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { getStaff } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
-import { dayLabel, tunisTime } from "@/lib/time";
+import { dayLabel, tunisTime, USE_MOCKS } from "@/lib/time";
 import type { StaffMember } from "@/lib/types";
 import page from "./AdminPage.module.css";
 import styles from "./StaffView.module.css";
@@ -84,6 +85,10 @@ export function StaffView() {
     const email = draft.email.trim();
     if (!name || !/^[^\s@]+@[^\s@]+$/.test(email)) {
       setInvalid(true);
+      return;
+    }
+    if (!USE_MOCKS) {
+      showToast("Invites aren’t available yet.");
       return;
     }
     const ward = WARDS.find((w) => w.value === draft.scope)?.ward ?? null;

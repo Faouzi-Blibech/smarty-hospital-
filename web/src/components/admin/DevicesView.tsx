@@ -1,22 +1,21 @@
 "use client";
 
 // Admin / Beds & devices (/admin/devices): bedside units, discharge and assign.
-// Discharge and assign have no endpoint in api.md yet, so they act on local state
-// like the design script. Discharging an offline unit shows the "Couldn’t reach"
-// result from Admin / States.
+// Assign → POST /devices/{id}/assign, Discharge → POST /admissions/{id}/discharge (api.md 1.4).
+// In mock mode, discharging an offline unit shows the "Couldn’t reach" result from Admin / States.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Toast, useToast } from "@/components/Toast";
 import { ErrorCard } from "@/components/shared/ErrorCard";
-import { getDevices } from "@/lib/api";
+import { assignDevice, dischargeAdmission, getDevices } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
-import { ago, now, tunisTime } from "@/lib/time";
+import { ago, now, tunisTime, USE_MOCKS } from "@/lib/time";
 import type { Device } from "@/lib/types";
 import page from "./AdminPage.module.css";
 import styles from "./DevicesView.module.css";
 
 const LATEST_FW = "v0.4.2";
 /** The admitted patient waiting for a bed (design sample; no admissions endpoint yet). */
-const NEW_PATIENT = { name: "Karim Ben Ali", label: "Karim Ben Ali · admitted 09:40" };
+const NEW_PATIENT = { id: "p-0008", name: "Karim Ben Ali", label: "Karim Ben Ali · admitted 09:40" };
 
 function lastSeen(d: Device): string {
   if (d.online) return ago(d.last_seen);
@@ -33,6 +32,7 @@ export function DevicesView() {
   const [assignId, setAssignId] = useState<string | null>(null);
   const [unreachable, setUnreachable] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
+  const [working, setWorking] = useState<string | null>(null);
   const [toast, showToast] = useToast<string>(5000);
   const firstField = useRef<HTMLSelectElement>(null);
 
@@ -61,20 +61,34 @@ export function DevicesView() {
 
   const patientOf = (d: Device) => assigned[d.id] ?? (discharged[d.id] ? null : d.patient_name ? { name: d.patient_name, bed: d.bed ?? "" } : d.patient_id ? { name: d.patient_id, bed: d.bed ?? "" } : null);
 
-  const discharge = (d: Device) => {
+  const discharge = async (d: Device) => {
     const p = patientOf(d);
-    if (!d.online) {
+    if (USE_MOCKS && !d.online) {
       setUnreachable(d.id);
       return;
     }
+    // A unit assigned on this screen has no admission id until the list reloads.
+    const admissionId = assigned[d.id] ? null : d.admission_id;
+    if (!admissionId && !USE_MOCKS) {
+      showToast(`${d.id}: Couldn’t discharge — no admission found for this unit. Reload the page and try again.`);
+      return;
+    }
     setUnreachable(null);
-    setDischarged((s) => ({ ...s, [d.id]: true }));
-    setAssigned((s) => {
-      const next = { ...s };
-      delete next[d.id];
-      return next;
-    });
-    showToast(`${d.id}: Device cleared. Follow-up request created automatically for ${p?.name ?? "the patient"}.`);
+    setWorking(d.id);
+    try {
+      if (admissionId) await dischargeAdmission(admissionId); // mock: a unit assigned here clears locally
+      setDischarged((s) => ({ ...s, [d.id]: true }));
+      setAssigned((s) => {
+        const next = { ...s };
+        delete next[d.id];
+        return next;
+      });
+      showToast(`${d.id}: Device cleared. Follow-up request created automatically for ${p?.name ?? "the patient"}.`);
+    } catch {
+      showToast(`${d.id}: Couldn’t discharge. Nothing was changed — try again.`);
+    } finally {
+      setWorking(null);
+    }
   };
 
   const retry = () => {
@@ -82,19 +96,27 @@ export function DevicesView() {
     setRetrying(true);
     setTimeout(() => {
       setRetrying(false);
-      if (d) discharge(d);
+      if (d) void discharge(d);
     }, 600);
   };
 
-  const assignDevice = list.find((d) => d.id === assignId) ?? null;
-  const assignBed = assignDevice?.bed ?? "C-13";
-  const doAssign = () => {
-    if (!assignId) return;
+  const assignTarget = list.find((d) => d.id === assignId) ?? null;
+  const assignBed = assignTarget?.bed ?? "C-13";
+  const doAssign = async () => {
+    if (!assignId || working) return;
     const id = assignId;
-    setAssigned((s) => ({ ...s, [id]: { name: NEW_PATIENT.name, bed: assignBed } }));
-    setDischarged((s) => ({ ...s, [id]: false }));
-    setAssignId(null);
-    showToast(`${id} assigned to ${NEW_PATIENT.name} · Bed ${assignBed}. Schedule sent to the unit.`);
+    setWorking(id);
+    try {
+      await assignDevice(id, { patient_id: NEW_PATIENT.id, bed: assignBed });
+      setAssigned((s) => ({ ...s, [id]: { name: NEW_PATIENT.name, bed: assignBed } }));
+      setDischarged((s) => ({ ...s, [id]: false }));
+      setAssignId(null);
+      showToast(`${id} assigned to ${NEW_PATIENT.name} · Bed ${assignBed}. Schedule sent to the unit.`);
+    } catch {
+      showToast(`Couldn’t assign ${id}. Nothing was changed — try again.`);
+    } finally {
+      setWorking(null);
+    }
   };
 
   return (
@@ -170,7 +192,7 @@ export function DevicesView() {
                     </span>
                     <div className={styles.actions}>
                       {p ? (
-                        <button type="button" className={styles.btn} onClick={() => discharge(d)}>
+                        <button type="button" className={styles.btn} disabled={working === d.id} onClick={() => void discharge(d)}>
                           Discharge
                         </button>
                       ) : (
@@ -212,7 +234,7 @@ export function DevicesView() {
               <button type="button" className={page.btn} onClick={() => setAssignId(null)}>
                 Cancel
               </button>
-              <button type="button" className={page.btnPrimary} onClick={doAssign}>
+              <button type="button" className={page.btnPrimary} disabled={!!working} onClick={() => void doAssign()}>
                 Assign
               </button>
             </div>

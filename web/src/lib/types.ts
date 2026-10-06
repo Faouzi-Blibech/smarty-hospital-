@@ -289,6 +289,8 @@ export interface Device {
   bed: string | null;
   /** UI extension. */
   patient_name?: string | null;
+  /** UI extension (proposed in api.md 1.5): the active admission, needed for discharge. */
+  admission_id?: string | null;
 }
 
 /** GET /staff — NOT in api.md 1.4 (admin "Staff" screen). */

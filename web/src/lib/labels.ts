@@ -57,3 +57,26 @@ export function noShowWord(prob: number | null | undefined): string {
   const pct = Math.round((prob ?? 0) * 100);
   return pct >= 30 ? "likely to miss" : pct >= 15 ? "medium" : "low";
 }
+
+export interface ClinicDoctor {
+  id: string;
+  name: string;
+  specialty: string;
+}
+
+/**
+ * Which doctor a waitlist row books, by the request's specialty (ids from the staff list).
+ * A UI map until the API can return the doctors of a specialty.
+ */
+export const SPECIALTY_DOCTORS: Record<string, ClinicDoctor> = {
+  Cardiology: { id: "u-0001", name: "Dr Trabelsi", specialty: "Cardiology" },
+  Pediatrics: { id: "u-0005", name: "Dr Ben Romdhane", specialty: "Pediatrics" },
+  Pulmonology: { id: "u-0006", name: "Dr Karoui", specialty: "Pulmonology" },
+};
+
+/** The doctor for a specialty; falls back to the doctor with `fallbackId`, then Cardiology. */
+export function doctorForSpecialty(specialty: string | null | undefined, fallbackId?: string): ClinicDoctor {
+  const bySpecialty = specialty ? SPECIALTY_DOCTORS[specialty] : undefined;
+  if (bySpecialty) return bySpecialty;
+  return Object.values(SPECIALTY_DOCTORS).find((d) => d.id === fallbackId) ?? SPECIALTY_DOCTORS.Cardiology;
+}
