@@ -1,0 +1,33 @@
+.pill {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 11px 6px 6px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.bubble {
+  min-width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  color: var(--paper);
+  display: grid;
+  place-items: center;
+  font: 600 15px/1 var(--sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 700 13px/1 var(--sans);
+  font-variant-numeric: tabular-nums;
+  border: 1.5px solid;
+}

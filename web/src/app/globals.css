@@ -1,0 +1,156 @@
+/* Ward design tokens. Exact hex values from the Claude Design mockups
+   (`claude design output/healthcare-ui-mockups/project/*.dc.html`). */
+:root {
+  /* Type */
+  --serif: var(--font-fraunces), "Fraunces", serif;
+  --sans: var(--font-public-sans), "Public Sans", system-ui, sans-serif;
+  --mono: ui-monospace, Menlo, monospace;
+
+  /* Ink and surfaces */
+  --ink: #0f2d44; /* headings, primary buttons, sidebar */
+  --ink-hover: #1c4462; /* primary button hover */
+  --text: #33454f; /* body text */
+  --muted: #55666f; /* secondary text */
+  --faint: #8597a1; /* tertiary text, offline rings */
+  --paper: #fcfdfd; /* cards */
+  --canvas: #f3f6f7; /* app background, row hover */
+  --backdrop: #dce4e7; /* landing page background */
+  --chip: #ecf2f3; /* chips, tags */
+  --segment: #e4ebed; /* segmented control track */
+  --disabled: #e8eef0; /* taken slot, non-urgent */
+  --line: #d8e1e4; /* card borders */
+  --line-soft: #e7edef; /* row dividers, skeleton */
+  --line-strong: #bfcdd2; /* inputs, secondary buttons */
+
+  /* Brand */
+  --teal: #0b8a96; /* links, accents, online dot */
+  --teal-deep: #0b7285; /* eyebrow text */
+  --teal-bright: #5fd0d6; /* sidebar accents */
+  --teal-tint: #e7f4f6; /* selected menu item */
+  --teal-line: #bce2e7; /* "Why?" button border */
+
+  /* Sidebar */
+  --side-muted: #b7cad6;
+  --side-active: rgba(252, 253, 253, 0.1);
+  --side-count: rgba(252, 253, 253, 0.12);
+  --side-rule: rgba(252, 253, 253, 0.12);
+  --live-ink: #bdefd0;
+  --live-bg: rgba(46, 155, 95, 0.28);
+  --live-dot: #5ed38a; /* also the success toast icon */
+  --paused-ink: #f3d48c; /* also the warning toast icon */
+  --paused-bg: rgba(199, 144, 15, 0.22);
+
+  /* NEWS2 levels (and the matching waitlist urgency colours) */
+  --news-normal-bg: #e1f3e7;
+  --news-normal-fg: #1b6b3f;
+  --news-normal-edge: #2e9b5f;
+  --news-low-bg: #faefd6;
+  --news-low-fg: #6e4b00;
+  --news-low-edge: #c7900f;
+  --news-high-bg: #fbe3d6;
+  --news-high-fg: #8f3412;
+  --news-high-edge: #d2602a;
+  --news-crit-bg: #f7dcdf;
+  --news-crit-fg: #8a1c2b;
+  --news-crit-edge: #b4232f;
+
+  /* Alarm (allergy, errors, call button) */
+  --danger: #b42330;
+  --danger-ink: #7e1a22;
+  --danger-bg: #fdf2f2;
+  --danger-line: #ebb8b8;
+  --danger-row: #fdf3f4;
+
+  /* Warning (reconnecting, AI unavailable) */
+  --warn-bg: #fbf3de;
+  --warn-line: #e3c77e;
+  --warn-ink: #5a4100;
+  --warn-dot: #8a6400;
+
+  /* AI badge and role chips */
+  --ai: #2f6fb5;
+  --ai-bg: #e5eef9;
+  --doctor-bg: #e3edf8;
+  --doctor-fg: #1e4f86;
+  --override-line: #b5cdeb;
+  --confirmed-line: #9ed3b2;
+  --confirmed-row: #f4faf6;
+
+  /* Elevation */
+  --shadow-toast: 0 16px 40px rgba(15, 45, 68, 0.3);
+  --shadow-frame: 0 1px 2px rgba(15, 45, 68, 0.08), 0 20px 50px rgba(15, 45, 68, 0.1);
+  --shadow-segment: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--canvas);
+  font-family: var(--sans);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--teal);
+}
+
+a:hover {
+  color: var(--ink);
+}
+
+button,
+input,
+textarea {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--teal);
+  outline-offset: 2px;
+}
+
+@keyframes wardPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(180, 35, 47, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(180, 35, 47, 0.22);
+  }
+}
+
+@keyframes wardShimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+@keyframes wardBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Shimmering skeleton bar used by every "Loading" state. */
+.ward-skeleton {
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--line-soft) 0, var(--canvas) 50%, var(--line-soft) 100%);
+  background-size: 800px 100%;
+  animation: wardShimmer 1.4s linear infinite;
+}

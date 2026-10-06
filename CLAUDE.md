@@ -103,7 +103,7 @@ Lane-specific dev loops:
   - Business logic in `backend/app/services/`, not in routers.
   - `pytest` for tests. Format with `ruff format`; lint with `ruff check`.
 - **TypeScript:**
-  - Next.js App Router, strict TS, Tailwind.
+  - Next.js App Router, strict TS, CSS Modules + design tokens in `globals.css`.
   - API types in `web/src/lib/types.ts` mirror `docs/contracts/api.md`.
 - **C++ (firmware):**
   - One module per peripheral in `firmware/src/` (`net.cpp`, `schedule.cpp`, `ui.cpp`, `servo.cpp`, `clock.cpp`).

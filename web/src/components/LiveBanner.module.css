@@ -1,0 +1,26 @@
+.root {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-line);
+  border-radius: 10px;
+  color: var(--warn-ink);
+  font-size: 15px;
+}
+
+.compact {
+  gap: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+.ring {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--warn-dot);
+  animation: wardBlink 1.4s infinite;
+}

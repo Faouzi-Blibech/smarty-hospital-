@@ -1,0 +1,90 @@
+.root {
+  display: inline-flex;
+  flex: none;
+  white-space: nowrap;
+  font: 600 12px/1 var(--sans);
+}
+
+.source {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--ai-bg);
+  color: var(--ink);
+}
+
+.diamond {
+  width: 7px;
+  height: 7px;
+  transform: rotate(45deg);
+  background: transparent;
+  border: 1.5px solid var(--ai);
+}
+
+.filled {
+  background: var(--ai);
+}
+
+.state {
+  background: var(--news-low-bg);
+  color: var(--news-low-fg);
+}
+
+.reviewed,
+.confirmed {
+  background: var(--news-normal-bg);
+  color: var(--news-normal-fg);
+}
+
+.overridden {
+  background: var(--doctor-bg);
+  color: var(--doctor-fg);
+}
+
+/* Daily summary: one bordered pill split in two halves. */
+.joined {
+  border: 1px solid var(--ai);
+  border-radius: 999px;
+}
+
+.joined .source {
+  padding: 6px 9px;
+  border-radius: 999px 0 0 999px;
+}
+
+.joined .state {
+  padding: 6px 9px;
+  border-radius: 0 999px 999px 0;
+}
+
+/* Waitlist rows: two separate pills. */
+.split {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.split .source {
+  padding: 5px 8px;
+  border: 1px solid var(--ai);
+  border-radius: 999px;
+}
+
+.split .diamond {
+  width: 6px;
+  height: 6px;
+}
+
+.split .state {
+  padding: 5px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--warn-line);
+}
+
+.split .reviewed,
+.split .confirmed {
+  border-color: var(--confirmed-line);
+}
+
+.split .overridden {
+  border-color: var(--override-line);
+}
