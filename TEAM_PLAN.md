@@ -3,6 +3,26 @@
 Build window: **Day 0 Mon 2026-10-05 → Day 4 Fri 2026-10-09**. Sat 10-10 onward: buffer, pitch deck, Q&A prep.
 Spec: `docs/superpowers/specs/2026-10-05-ward-foundation-design.md` · Contracts: `docs/contracts/` (v1.0, frozen).
 
+## 0. Core first (agreed 2026-10-05)
+
+The core of Ward is the medication loop: **the doctor prescribes, the bedside device gives the right dose at the right time, and the nurse and doctor see what happened.** On Day 0 we built extras (AI modules, n8n workflows) before any of it. Until step 6 below runs end to end once, **no new extra merges**. After that, extras come back in order of demo value.
+
+| Step | What | Owner | When |
+|---|---|---|---|
+| 1 | Simulator scenarios: `dose_flow`, `call_nurse`, `abnormal`, `schedule_ack` | Hedi | Day 0 |
+| 2 | Schema + seed: patients, staff, devices, prescriptions, `med_doses`, appointments | Wali | Day 1 |
+| 3 | Ingestion + schedule push: device events into the DB; a prescription publishes the retained schedule | Wali | Day 1–2 |
+| 4 | Doctor view: prescribe + see adherence (the screen that starts and ends the loop) | Faouzi | Day 1–2 |
+| 5 | Bedside device in Wokwi: schedule on the OLED, servo turns at dose time, acks back | Hedi | Day 2 |
+| 6 | Missed dose → nurse: backend emitter + n8n W3 + nurse view | Wali + Faouzi | Day 2 |
+| 7 | Extras, in order: appointment reminders on the device, triage + waitlist, copilot, assistant | all | after 6 |
+
+**Open team decisions** (not settled by this plan):
+- Put appointments on the device: an appointments list in the MQTT schedule (contract bump), shown a day and an hour before. Check the 1024-byte message limit.
+- Add one "Taken" button back to the device, so the patient really acts and the simulator stops faking `dose_taken`.
+- Setting: hospital ward, or home care after discharge.
+- Rewrite the pitch around the bedside loop, with the AI modules as supporting features.
+
 ## 1. Ownership
 
 | Workstream | Owner | Priority | Notes |
@@ -17,7 +37,7 @@ Spec: `docs/superpowers/specs/2026-10-05-ward-foundation-design.md` · Contracts
 | WS7 No-show model + backfill ranking | **Hedi** | Day 1 | Moved earlier; the hardware lane is small now |
 | WS8 Next.js PWA: doctor → nurse → admin → patient | **Faouzi** | core | Doctor + Admin role owner |
 | WS9 n8n: W4, W3, W1 core; W2, W5, W6 stretch | **Faouzi** | core/stretch | |
-| WS10 LLM wrapper + triage + copilot + digitizer; assistant = stretch | **Faouzi** | core/stretch | |
+| WS10 AI: triage (rules + trained model), copilot, assistant (Laya intents); no paper digitizer | **Faouzi** | after core step 6 | Hand-coded and trained, no LLM needed |
 | WS11 Appointments & waitlist endpoints + n8n callbacks | **Faouzi** | core | On Wali's schema |
 | WS12 Simulator (`simulator/`): all vitals, nurse taps, call-nurse, dose taken; `--companion` mode next to the ESP | **Hedi** | Day 0 | Main patient-side traffic source for the demo |
 | WS13 Seed data | **Wali** | Day 1 | Finishes with the schema |
@@ -81,7 +101,7 @@ flowchart LR
 ### Day 3 — Thu 10-08 (integration day)
 - Morning: replace every mock with the real service and the Wokwi device (real board if built). Run the golden path; log every break in a shared list; fix only what blocks the demo.
 - **Checkpoint CP3 (Day 3, 13:00):** the full golden path runs end-to-end twice in a row.
-- Afternoon: Hedi → no-show model; Wali → trend alerts + device-offline alert; Faouzi → digitizer review screen polish + W6 if time allows.
+- Afternoon: Hedi → no-show model; Wali → trend alerts + device-offline alert; Faouzi → W6 if time allows.
 
 ### Day 4 — Fri 10-09 (polish)
 - Deterministic fallbacks verified with the network unplugged and `LLM_PROVIDER=fallback`.
@@ -98,7 +118,7 @@ flowchart LR
 | CP0 | Day 0 end | Stack up on 3 laptops; simulator messages seen with `mosquitto_sub -t 'hospital/#' -v` | all |
 | CP1 | Day 1 end | Simulator vitals → worker → DB → WS → nurse view, live, < 2 s | Wali (Nurse owner) |
 | CP2 | Day 2 end | Doctor prescribes → device shows the dose → `dose_taken` → doctor view updates | Hedi (Patient owner) |
-| CP3 | Day 3 13:00 | Full golden path ×2, including Telegram alert and digitizer | Faouzi |
+| CP3 | Day 3 13:00 | Full golden path ×2, including the Telegram alert | Faouzi |
 
 ## 5. Demo script (≈6 minutes)
 
@@ -116,12 +136,9 @@ flowchart LR
    - A (simulated) nurse badge tap sends vitals tagged with the nurse. Say clearly that vitals are simulated.
    - Then the **simulator injects an abnormal vital** (SpO2 88, HR 130), producing a NEWS2 critical alert on the nurse dashboard **and** on Telegram (W4).
    - The nurse acks it.
-5. **(45 s) Paper digitizer:**
-   - Photograph a handwritten record.
-   - Fields appear with confidence; the nurse fixes one and approves.
-6. **(30 s) Doctor copilot:** the AI daily summary with an interaction warning; the doctor marks it reviewed.
-7. **(30 s) Discharge:** the device clears; a follow-up is booked (W6 or seeded); the patient sees it in the app.
-8. **(45 s) Trust:**
+5. **(30 s) Doctor copilot:** the AI daily summary with an interaction warning; the doctor marks it reviewed.
+6. **(30 s) Discharge:** the device clears; a follow-up is booked (W6 or seeded); the patient sees it in the app.
+7. **(45 s) Trust:**
    - Self-hosted, with an audit log on screen.
    - Anonymized LLM calls; INPDP (Law 2004-63).
    - Human-in-the-loop everywhere; not medical-grade, which is our production plan.

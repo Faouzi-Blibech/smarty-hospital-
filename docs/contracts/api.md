@@ -1,14 +1,14 @@
 # REST + WebSocket contract — v1.0
 
-> **Version:** 1.2 (2026-10-05) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations)
+> **Version:** 1.3 (2026-10-05) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Conventions
 
 - Base URL: `http://localhost:8000` (backend container `api`). The web app reads it from `NEXT_PUBLIC_API_URL`.
-- JSON everywhere except file uploads (`multipart/form-data`).
+- JSON everywhere.
 - Auth: `Authorization: Bearer <jwt>`. JWT claims: `sub` (user id), `role` (`doctor|nurse|admin|patient`), `patient_id` (only for the patient role), `exp` (12 h).
-- IDs are prefixed strings: `u-0001` user, `p-0001` patient, `a-0001` appointment, `rx-0001` prescription, `d-000001` dose, `al-0001` alert, `doc-0001` document, `adm-0001` admission, `bsu-001` device.
+- IDs are prefixed strings: `u-0001` user, `p-0001` patient, `a-0001` appointment, `rx-0001` prescription, `d-000001` dose, `al-0001` alert, `adm-0001` admission, `bsu-001` device.
 - Timestamps are ISO-8601 UTC strings (`2026-10-08T09:30:00Z`). (MQTT uses epoch seconds; the backend converts.)
 - Errors: `{"detail": "human readable", "code": "snake_case_code"}` with the right HTTP status (400, 401, 403, 404, 409, 422).
 - **Every read of a patient record** (`GET /patients/{id}` and every `GET /patients/{id}/*`) writes an `audit_log` row.
@@ -119,8 +119,6 @@ Seed accounts (password `ward1234` for all): `doctor@ward.tn`, `nurse@ward.tn`, 
 | `POST /ai/triage` | admin, doctor | `{"referral_text","symptoms[]","age","history"}` → `{"urgency":1-5,"reasons[]","red_flags[]","source"}`. Preview only, nothing stored |
 | `GET /ai/summary/{patient_id}` | doctor | → `{"summary","interactions":[{"drugs":[a,b],"severity","note"}],"source","generated_at","human_confirmed_by"}` (cached 10 min; `human_confirmed_by` is null until a doctor reviews it, and the UI shows "needs review" until then) |
 | `POST /ai/summary/{patient_id}/review` | doctor | Marks the latest summary as reviewed (`human_confirmed_by`) |
-| `POST /ai/digitize` | doctor, nurse | multipart `file` + `patient_id` → stores in MinIO and returns `{"document_id","fields":{name:{"value","confidence"}},"source"}` |
-| `POST /ai/digitize/{document_id}/approve` | doctor, nurse | `{"fields":{...edited}}` → writes the structured record; sets `human_confirmed_by` |
 | `POST /ai/assistant` *(stretch)* | patient | `{"question"}` → `{"answer","sources[]"}`, scoped to the caller's own record |
 
 `source` is `"llm"` or `"fallback"` on every AI response, so the UI can show a badge.
@@ -155,6 +153,8 @@ All are authenticated with the header `X-N8N-Secret: ${N8N_CALLBACK_SECRET}` (no
 Filtering: a nurse receives frames for their ward, a doctor for their own patients, an admin only `device_status`. Patients do not connect.
 
 ## Changelog
+
+- **1.3** (2026-10-05): removes `POST /ai/digitize` and `/ai/digitize/{id}/approve` (paper digitizer dropped) and the `doc-` ID. Owner: Faouzi; nothing else called them.
 
 - **1.2** (2026-10-05): `GET /ai/summary/{patient_id}` also returns `human_confirmed_by`, so the doctor view can show "needs review" / "reviewed" (AI-output convention). Both sides: Faouzi.
 

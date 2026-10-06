@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the Next.js PWA (doctor → nurse → admin → patient views), the LLM layer (wrapper, triage, doctor copilot, paper digitizer), the appointments/waitlist API and the n8n workflows. Then lead the demo and the pitch.
+**Goal:** Build the Next.js PWA (doctor → nurse → admin → patient views), the AI layer (triage, doctor copilot, patient assistant), the appointments/waitlist API and the n8n workflows. Then lead the demo and the pitch.
 
 **Architecture:**
 - **Web:**
@@ -17,6 +17,11 @@
 **Tech stack:** Next.js 16 + React 19 + TypeScript (strict) + Tailwind v4 + Recharts · Python 3.12, FastAPI, Pydantic v2, `anthropic` SDK (Claude `claude-opus-5-5`), httpx (Ollama for local), MinIO · n8n self-hosted, Telegram Bot API, SMTP.
 
 **Spec:** `docs/superpowers/specs/2026-10-05-ward-foundation-design.md` · read also `CLAUDE.md`, `docs/architecture.md`, `TEAM_PLAN.md` and all of `docs/contracts/` (you own `api.md` → Appointments/AI/Integrations and all of `n8n-webhooks.md`).
+
+**Now: core first (`TEAM_PLAN.md` §0).** Extras are frozen until the medication loop runs end to end. Your part of it:
+1. **Doctor view: prescribe + see adherence** (core step 4). UI from Claude Design, wired to `api.md` (`POST /patients/{id}/prescriptions`, doses taken / missed per day) on mocks until Wali's API lands.
+2. **Missed dose → nurse** (core step 6): n8n W3 is built; wire it to Wali's `dose.missed` emitter and show the alert in the nurse view.
+3. Then the extras, in the order of `TEAM_PLAN.md` §0 step 7.
 
 **You are:** Faouzi, team lead and presenter, **Doctor + Admin role owner**. You own `web/`, `n8n/`, `docs/`, `backend/app/ai/` (except `early_warning.py` (Wali) and `no_show/` (Hedi)), and `backend/app/routers/{appointments,ai,integrations}.py`.
 
@@ -58,9 +63,6 @@ def triage(referral_text: str, symptoms: list[str], age: int | None, history: st
 
 # backend/app/ai/copilot.py
 def daily_summary(db, patient_id: str) -> dict   # {"summary","interactions","source","generated_at"}
-
-# backend/app/ai/digitizer.py
-def digitize(image: bytes, media_type: str) -> dict  # {"fields": {name: {"value","confidence"}}, "source"}
 ```
 
 REST: `api.md` → Appointments, AI and Integrations sections (you implement those routers on Wali's models and deps).
@@ -394,25 +396,9 @@ def test_patient_cannot_confirm(client):
 - [ ] `GET /ai/summary/{patient_id}` (doctor) with a 10-minute cache (latest row younger than 10 min). Add `POST /ai/summary/{patient_id}/review` to set `human_confirmed_by` on the latest summary.
 - [ ] Commit `feat(ai): doctor copilot daily summary + interaction rules`.
 
-### Task 8: Paper digitizer
+### Task 8: Paper digitizer (dropped 2026-10-05)
 
-**Files:**
-- Create: `backend/app/ai/digitizer.py`, `backend/app/ai/prompts/digitize.v1.md`, `backend/app/ai/assets/{demo_record.jpg,demo_record.expected.json}`, `web/src/app/digitize/page.tsx`
-- Test: `backend/tests/test_digitizer.py`
-
-- [ ] Write a realistic **synthetic** handwritten record on paper (name, DOB, date, diagnosis, 2–3 meds, allergies) and photograph it as `demo_record.jpg`. Hand-type the expected fields into `demo_record.expected.json` (`{"fields": {"patient_name": {"value": "...", "confidence": 1.0}, ...}}`).
-- [ ] The schema is `DigitizedRecord` with `{value: str | None, confidence: float}` for `patient_name`, `date_of_birth`, `visit_date`, `diagnosis`, `medications`, `allergies` and `notes`. The prompt asks for **verbatim transcription**, normalised dates (ISO), and a confidence of 0–1 per field, with `null` when the field is unreadable.
-- [ ] `digitize(image, media_type)`:
-  - Call `complete_json("digitize", "Extract the record.", DigitizedRecord, images=[(image, media_type)])`.
-  - On `LLMUnavailable`: if `sha256(image)` matches the demo image, return the expected JSON with `source="fallback"`; otherwise return all fields `null` with confidence 0 and `source="fallback"`.
-  - The image goes to the vision model *before* any name is known, so there is no PII stripping of the image. Say so in the pitch Q&A: "in production → local vision model (`LLM_PROVIDER=local`)".
-- [ ] Routes: `POST /ai/digitize` (store in MinIO bucket `ward-docs` under `documents/{patient_id}/{doc_id}.jpg`, plus a `documents` row with `ai_suggested`) and `POST /ai/digitize/{id}/approve`.
-- [ ] Web `/digitize?patient=p-0001`:
-  - camera/file input (`<input type="file" accept="image/*" capture="environment">`)
-  - the image on the left, editable fields on the right, colour-coded by confidence (< 0.6 amber, < 0.3 red)
-  - an **Approve** button
-- [ ] Test `test_digitize_fallback_on_demo_image` (LLM down + demo bytes → the expected `patient_name`).
-- [ ] Commit `feat(ai): paper digitizer with review screen`.
+Removed from scope: code, routes (`api.md` v1.3) and the `documents` table (`data-model.md` v1.2). The doctor's paper records stay out of the demo.
 
 ### Task 9: Patient view + n8n W3 and W1
 
@@ -428,7 +414,7 @@ def test_patient_cannot_confirm(client):
 - [ ] Export the workflows. **CP2** (with Hedi): the prescription you write reaches the real device.
 - [ ] Commit `feat(web,n8n): patient view, W1 reminder, W3 missed dose`.
 
-**Day 2 done when:** CP2 passes. Triage, waitlist, summary and digitizer all work with `LLM_PROVIDER=anthropic` **and** `LLM_PROVIDER=fallback`; W1, W3 and W4 deliver to Telegram.
+**Day 2 done when:** CP2 passes. Triage, waitlist and summary all work with `LLM_PROVIDER=anthropic` **and** `LLM_PROVIDER=fallback`; W1, W3 and W4 deliver to Telegram.
 
 ---
 
@@ -451,7 +437,7 @@ def test_patient_cannot_confirm(client):
 
 ### Link checklist: when Wali's backend lands
 
-Built ahead against the contracts (all DB-free and tested): `app/services/appointments.py`, `app/services/integrations.py`, `app/ai/{llm,triage,copilot,digitizer}.py`, n8n W0-W6. When Wali's `app.models`, `app.auth.deps` (`get_current_user`, `require_roles`, `check_patient_access`), `app.services.audit.audit`, `app.ids.new_id` and `app.integrations.n8n.emit` are on `main`:
+Built ahead against the contracts (all DB-free and tested): `app/services/appointments.py`, `app/services/integrations.py`, `app/ai/{llm,triage,copilot,assistant}.py`, n8n W0-W6. When Wali's `app.models`, `app.auth.deps` (`get_current_user`, `require_roles`, `check_patient_access`), `app.services.audit.audit`, `app.ids.new_id` and `app.integrations.n8n.emit` are on `main`:
 
 - [ ] `routers/appointments.py`: `POST /appointments` (`new_appointment_fields` → row via `new_id(db, "a")`), `GET /appointments/waitlist` (`waitlist`), `GET /appointments`, `PATCH /appointments/{id}` (`apply_override`), `POST .../confirm` (`apply_confirm` → `emit("appointment.confirmed", confirmed_event(...))`), `POST .../cancel` (`apply_cancel` → `emit("appointment.cancelled", cancelled_event(..., waiting=requested appointments + patients))`), `POST .../reply` (`apply_reply`). `Conflict` → 409 `{"detail","code"}`; `ValueError` → 422.
 - [ ] `routers/integrations.py`: dependency that 401s unless `callback_secret_ok(request.headers.get("X-N8N-Secret"))`; `appointment-reply` (`apply_reply`), `backfill-accept` (`slot_taken` = another confirmed appointment with the same `doctor_id` + `slot_at`, `doctor_id` from the cancelled appointment; `apply_backfill_accept`), `daily-digest` (`digest_entries` over active admissions, latest `news2`, `copilot` summary), `follow-up` (`follow_up_fields`).
@@ -459,7 +445,6 @@ Built ahead against the contracts (all DB-free and tested): `app/services/appoin
   - `POST /ai/triage` (`triage`, preview only)
   - `GET /ai/summary/{patient_id}`: `summary_inputs` over the last 24 h, `is_fresh` cache, else `summarize` + new `ai_summaries` row, `summary_payload`
   - `POST /ai/summary/{patient_id}/review` (`apply_review`)
-  - `POST /ai/digitize`: `documents.validate_upload` → `put_document` → `digitizer.digitize` → `documents` row; `/approve` sets `approved_fields` + `human_confirmed_by`
   - `POST /ai/assistant` (patient): the caller's own today's doses, next appointment, latest vital → `assistant.answer(q, assistant_context(...))`
 - [ ] Mount the three routers in `app/main.py` (one-line PR to Wali, he owns `main.py`).
 - [ ] API tests with Wali's `client` fixture and `tests/helpers.login` for each route above, including the 403s from the role matrix and the 409s.

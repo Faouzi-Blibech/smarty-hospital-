@@ -10,5 +10,4 @@ bcrypt==4.*
 paho-mqtt==2.*
 httpx==0.28.*
 python-multipart==0.0.*
-minio==7.*
 anthropic
