@@ -334,3 +334,9 @@
     flex-wrap: wrap;
   }
 }
+
+.fieldError {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--danger-ink);
+}

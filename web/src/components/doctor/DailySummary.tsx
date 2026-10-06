@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import { AiBadge } from "@/components/AiBadge";
 import { ApiError, getSummary, reviewSummary } from "@/lib/api";
-import { tunisTime } from "@/lib/time";
+import { tunisTime, USE_MOCKS } from "@/lib/time";
 import type { AiSummary, Severity } from "@/lib/types";
 import styles from "./DailySummary.module.css";
 
@@ -42,6 +42,7 @@ export function DailySummary({ patientId, aiFallback, actorId }: DailySummaryPro
   const [summary, setSummary] = useState<AiSummary | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "none" | "error">("loading");
   const [busy, setBusy] = useState(false);
+  const [reviewError, setReviewError] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -64,14 +65,17 @@ export function DailySummary({ patientId, aiFallback, actorId }: DailySummaryPro
   async function review() {
     if (busy) return;
     setBusy(true);
+    setReviewError(false);
     try {
       setSummary(await reviewSummary(patientId, { by: actorId, fallback: aiFallback }));
+    } catch {
+      setReviewError(true);
     } finally {
       setBusy(false);
     }
   }
 
-  // No undo endpoint in the contract: undo is local state until one exists.
+  // No undo endpoint in the contract: undo is local state, so it only shows in mock mode.
   function undo() {
     setSummary((s) => (s ? { ...s, human_confirmed_by: null, human_confirmed_by_name: null, reviewed_at: null } : s));
   }
@@ -137,14 +141,23 @@ export function DailySummary({ patientId, aiFallback, actorId }: DailySummaryPro
             <div className={styles.reviewed}>
               <span className={styles.check}>✓</span>
               {reviewedLabel?.replace(/^✓ /, "")}
-              <button type="button" onClick={undo} className={styles.undo}>
-                Undo
-              </button>
+              {USE_MOCKS ? (
+                <button type="button" onClick={undo} className={styles.undo}>
+                  Undo
+                </button>
+              ) : null}
             </div>
           ) : (
-            <button type="button" onClick={review} disabled={busy} className={styles.review}>
-              Mark as reviewed
-            </button>
+            <>
+              <button type="button" onClick={review} disabled={busy} className={styles.review}>
+                Mark as reviewed
+              </button>
+              {reviewError ? (
+                <span role="alert" className={styles.reviewError}>
+                  Couldn’t save the review. The server didn’t answer — try again.
+                </span>
+              ) : null}
+            </>
           )}
         </>
       ) : null}

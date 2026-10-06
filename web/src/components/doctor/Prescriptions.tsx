@@ -46,6 +46,7 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
   const [slot, setSlot] = useState<SlotKey | null>(null);
   const [plan, setPlan] = useState(DEFAULT_PLAN);
   const [saving, setSaving] = useState(false);
+  const [timesError, setTimesError] = useState(false);
   const [toast, showToast] = useToast<{ tone: "ok" | "warn"; body: ReactNode }>(4500);
 
   const pickedSlot: SlotKey = slot && (slot === "r" || !slotMeds[slot]) ? slot : firstFree();
@@ -57,6 +58,7 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
     setMed(DEFAULT_MED);
     setDays(5);
     setTimes(["08:00"]);
+    setTimesError(false);
     setSlot(null);
     setPlan(DEFAULT_PLAN);
   }
@@ -70,6 +72,10 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
 
   async function save() {
     if (!med.trim() || saving) return;
+    if (!times.length) {
+      setTimesError(true);
+      return;
+    }
     setSaving(true);
     const slotText = pickedSlot === "r" ? "reminder only" : `slot ${pickedSlot}`;
     const first = firstDose();
@@ -211,8 +217,13 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
           </div>
         ) : null}
         <div className={styles.group}>
-          <span className={styles.fieldLabel}>Times of day</span>
-          <div className={styles.chips}>
+          <span id="rx-times-label" className={styles.fieldLabel}>Times of day</span>
+          <div
+            className={styles.chips}
+            role="group"
+            aria-labelledby="rx-times-label"
+            aria-describedby={timesError ? "rx-times-error" : undefined}
+          >
             {TIME_CHIPS.map((t) => {
               const on = times.includes(t);
               return (
@@ -220,7 +231,10 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
                   key={t}
                   type="button"
                   aria-pressed={on}
-                  onClick={() => setTimes((s) => (on ? s.filter((x) => x !== t) : [...s, t]))}
+                  onClick={() => {
+                    setTimes((s) => (on ? s.filter((x) => x !== t) : [...s, t]));
+                    if (!on) setTimesError(false);
+                  }}
                   className={`${styles.chip} ${sel(on)}`}
                 >
                   {t}
@@ -228,6 +242,11 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
               );
             })}
           </div>
+          {timesError ? (
+            <span id="rx-times-error" role="alert" className={styles.fieldError}>
+              Pick at least one time of day.
+            </span>
+          ) : null}
         </div>
         <div className={styles.group}>
           <span className={styles.fieldLabel}>Pill slot on bedside unit</span>

@@ -1,7 +1,7 @@
 "use client";
 
 // /nurse/alerts — the design has no dedicated screen: the board's alerts panel as a page.
-import { pausedAt } from "@/components/doctor/PatientList";
+import { pausedAt } from "@/lib/time";
 import { LiveBanner } from "@/components/LiveBanner";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { Toast } from "@/components/Toast";

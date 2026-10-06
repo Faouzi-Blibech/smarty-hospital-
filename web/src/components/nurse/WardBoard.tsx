@@ -5,7 +5,6 @@
 // critical-alert toast (tablet).
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { pausedAt } from "@/components/doctor/PatientList";
 import { LiveBanner } from "@/components/LiveBanner";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { useLiveTick } from "@/components/shared/useLiveTick";
@@ -13,7 +12,7 @@ import { Toast } from "@/components/Toast";
 import { getWard } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
 import { level } from "@/lib/news2";
-import { tunisTime, tunisTimeSeconds } from "@/lib/time";
+import { pausedAt, tunisTime, tunisTimeSeconds } from "@/lib/time";
 import type { Alert, WardBed } from "@/lib/types";
 import { AlertList, AlertSkeleton } from "./AlertList";
 import { BedCard, BedCardSkeleton } from "./BedCard";

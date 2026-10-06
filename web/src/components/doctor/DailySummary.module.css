@@ -147,6 +147,12 @@
   cursor: progress;
 }
 
+.reviewError {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--danger-ink);
+}
+
 .reviewed {
   display: flex;
   align-items: center;

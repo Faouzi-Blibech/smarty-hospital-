@@ -2,9 +2,8 @@
 // the same markup: the few tablet-only differences are switched by the CSS module.
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { pausedAt } from "@/components/doctor/PatientList";
 import { level, PULSE } from "@/lib/news2";
-import { ago, tunisTime, USE_MOCKS } from "@/lib/time";
+import { ago, pausedAt, tunisTime, USE_MOCKS } from "@/lib/time";
 import type { Alert, WardBed } from "@/lib/types";
 import { hrPoints, spo2Points, tempPoints } from "./nurse";
 import styles from "./BedCard.module.css";

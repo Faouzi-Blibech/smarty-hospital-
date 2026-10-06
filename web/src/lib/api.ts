@@ -561,7 +561,8 @@ export async function getMedRound(ward: string = DEFAULT_WARD): Promise<MedRound
     [...summaries].sort(byNews).map(async (p) => ({
       patient: await getPatient(p.id),
       device: devices.find((d) => d.id === p.device_id) ?? null,
-      doses: await getDoses(p.id, { date: today }),
+      // Doses are not in api.md yet: a missing endpoint leaves the round empty instead of failing it.
+      doses: await getDoses(p.id, { date: today }).catch((): Dose[] => []),
     })),
   );
   return groups.filter((g) => g.doses.length > 0);

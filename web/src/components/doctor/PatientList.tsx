@@ -4,18 +4,17 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LiveBanner } from "@/components/LiveBanner";
+import { ErrorCard } from "@/components/shared/ErrorCard";
 import { News2Badge } from "@/components/News2Badge";
 import { getMyPatients } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
-import { ago, now, tunisTimeSeconds } from "@/lib/time";
+import { ago, pausedAt } from "@/lib/time";
 import type { Patient, PatientSummary } from "@/lib/types";
 import styles from "./PatientList.module.css";
 
 const SKELETON_WIDTHS = ["62%", "48%", "70%", "55%", "40%"];
 /** "Needs attention": NEWS2 High or Critical. */
 const needsAttention = (p: PatientSummary) => (p.latest_news2 ?? 0) >= 5;
-/** Time of the last reading shown while live data is paused (design: 09:11:48). */
-export const pausedAt = () => tunisTimeSeconds(new Date(now().getTime() - 12_000).toISOString());
 
 export function PatientList() {
   const flags = useDemoFlags();
@@ -64,8 +63,9 @@ export function PatientList() {
           </span>
         </div>
         <label className={styles.search}>
-          <span className={styles.searchIcon} />
+          <span className={styles.searchIcon} aria-hidden="true" />
           <input
+            aria-label="Search patients by name or bed"
             placeholder="Search name or bed"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -120,23 +120,7 @@ export function PatientList() {
           </Link>
         </div>
       ) : state === "error" ? (
-        <div className={styles.errorCard}>
-          <div role="alert" className={styles.alert}>
-            <span className={styles.alertIcon}>!</span>
-            <div className={styles.alertText}>
-              <b>Couldn’t load your patients.</b>
-              <span>The server didn’t answer. Your data is safe — nothing was changed.</span>
-            </div>
-          </div>
-          <div className={styles.actions}>
-            <button type="button" className={styles.primary} onClick={load}>
-              Try again
-            </button>
-            <button type="button" className={styles.secondary}>
-              Report a problem
-            </button>
-          </div>
-        </div>
+        <ErrorCard title="Couldn’t load your patients." onRetry={load} />
       ) : (
         <div className={styles.table}>
           <div className={`${styles.grid} ${styles.th}`}>

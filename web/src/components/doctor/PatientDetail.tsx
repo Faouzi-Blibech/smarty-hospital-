@@ -2,19 +2,20 @@
 
 // Doctor / Patient detail (/doctor/patients/[id]).
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { LiveBanner } from "@/components/LiveBanner";
 import { DosesTimeline } from "@/components/shared/DosesTimeline";
+import { ErrorCard } from "@/components/shared/ErrorCard";
 import { NotesPanel } from "@/components/shared/NotesPanel";
 import { LIVE_JITTER, useLiveTick } from "@/components/shared/useLiveTick";
 import { Toast, useToast } from "@/components/Toast";
 import { addNote, getDoses, getNotes, getPatient, getPrescriptions, getVitals } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
-import { now, tunisTime, USE_MOCKS } from "@/lib/time";
+import { now, pausedAt, tunisTime, USE_MOCKS } from "@/lib/time";
 import type { Dose, Note, Patient, Prescription, Vital } from "@/lib/types";
 import { DailySummary } from "./DailySummary";
 import { PatientHeader } from "./PatientHeader";
-import { pausedAt } from "./PatientList";
 import { Prescriptions } from "./Prescriptions";
 import { VitalsCard } from "./VitalsCard";
 import styles from "./PatientDetail.module.css";
@@ -22,6 +23,9 @@ import styles from "./PatientDetail.module.css";
 /** The signed-in doctor in the demo (Dr Trabelsi). */
 const DOCTOR_ID = "u-0001";
 const DOCTOR_NAME = "Dr Trabelsi";
+
+/** Doses are not in api.md yet: a missing endpoint shows the timeline's empty state, not an error page. */
+const dosesOrEmpty = (id: string): Promise<Dose[]> => getDoses(id).catch(() => []);
 
 interface Data {
   patient: Patient;
@@ -33,6 +37,7 @@ interface Data {
 
 export function PatientDetail({ id }: { id: string }) {
   const flags = useDemoFlags();
+  const router = useRouter();
   const { sec, reading } = useLiveTick(flags.live);
   const [data, setData] = useState<Data | null>(null);
   const [failed, setFailed] = useState(false);
@@ -41,7 +46,7 @@ export function PatientDetail({ id }: { id: string }) {
 
   const load = useCallback(() => {
     setFailed(false);
-    Promise.all([getPatient(id), getVitals(id), getPrescriptions(id), getDoses(id), getNotes(id)])
+    Promise.all([getPatient(id), getVitals(id), getPrescriptions(id), dosesOrEmpty(id), getNotes(id)])
       .then(([patient, vitals, prescriptions, doses, notes]) => setData({ patient, vitals, prescriptions, doses, notes }))
       .catch(() => setFailed(true));
   }, [id]);
@@ -49,9 +54,13 @@ export function PatientDetail({ id }: { id: string }) {
   useEffect(load, [load]);
 
   const refreshRx = useCallback(async () => {
-    const [prescriptions, doses] = await Promise.all([getPrescriptions(id), getDoses(id)]);
-    setData((d) => (d ? { ...d, prescriptions, doses } : d));
-  }, [id]);
+    try {
+      const [prescriptions, doses] = await Promise.all([getPrescriptions(id), dosesOrEmpty(id)]);
+      setData((d) => (d ? { ...d, prescriptions, doses } : d));
+    } catch {
+      showNoteError("Saved, but couldn’t refresh the prescriptions. Reload the page to see them.");
+    }
+  }, [id, showNoteError]);
 
   const onAddNote = useCallback(
     async (text: string) => {
@@ -89,23 +98,12 @@ export function PatientDetail({ id }: { id: string }) {
       {!flags.live ? <LiveBanner>Chart frozen at {pausedAt()}. New readings will fill in automatically.</LiveBanner> : null}
 
       {state === "error" ? (
-        <div className={styles.errorCard}>
-          <div role="alert" className={styles.alert}>
-            <span className={styles.alertIcon}>!</span>
-            <div className={styles.alertText}>
-              <b>Couldn’t load this patient.</b>
-              <span>The server didn’t answer. Your data is safe — nothing was changed.</span>
-            </div>
-          </div>
-          <div className={styles.actions}>
-            <button type="button" className={styles.primary} onClick={load}>
-              Try again
-            </button>
-            <Link href="/doctor" className={styles.secondary}>
-              Back to my patients
-            </Link>
-          </div>
-        </div>
+        <ErrorCard
+          title="Couldn’t load this patient."
+          onRetry={load}
+          secondaryLabel="Back to my patients"
+          onSecondary={() => router.push("/doctor")}
+        />
       ) : state === "loading" || !data ? (
         <div className={styles.skelCard} aria-busy="true">
           <span className="ward-skeleton" style={{ height: 34, width: 320 }} />

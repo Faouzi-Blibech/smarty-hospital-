@@ -3,7 +3,7 @@
 // /nurse/patients — the design has no dedicated screen: the ward's patients as bed
 // cards (same component as the board), in bed order. Each card opens the detail.
 import { useCallback, useEffect, useState } from "react";
-import { pausedAt } from "@/components/doctor/PatientList";
+import { pausedAt } from "@/lib/time";
 import { LiveBanner } from "@/components/LiveBanner";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { useLiveTick } from "@/components/shared/useLiveTick";

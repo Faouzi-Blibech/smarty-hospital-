@@ -5,7 +5,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { pausedAt } from "@/components/doctor/PatientList";
 import { LiveBanner } from "@/components/LiveBanner";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { NotesPanel } from "@/components/shared/NotesPanel";
@@ -14,7 +13,7 @@ import { Toast, useToast } from "@/components/Toast";
 import { addNote, getDoses, getNotes, getPatient, getPrescriptions, getVitals } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
 import { level, PULSE } from "@/lib/news2";
-import { dayLabel, now, tunisDate, tunisTime, tunisTimeSeconds } from "@/lib/time";
+import { dayLabel, now, pausedAt, tunisDate, tunisTime, tunisTimeSeconds } from "@/lib/time";
 import type { Alert, Dose, Note, Patient, Prescription, Vital } from "@/lib/types";
 import { DosePill } from "./DosePill";
 import {
@@ -109,7 +108,7 @@ export function NursePatientDetail({ id }: { id: string }) {
   const load = useCallback(() => {
     setFailed(false);
     const today = tunisDate(now().toISOString());
-    Promise.all([getPatient(id), getVitals(id), getPrescriptions(id), getDoses(id, { date: today }), getNotes(id)])
+    Promise.all([getPatient(id), getVitals(id), getPrescriptions(id), getDoses(id, { date: today }).catch((): Dose[] => []), getNotes(id)])
       .then(([patient, vitals, prescriptions, doses, notes]) => setData({ patient, vitals, prescriptions, doses, notes }))
       .catch(() => setFailed(true));
   }, [id]);

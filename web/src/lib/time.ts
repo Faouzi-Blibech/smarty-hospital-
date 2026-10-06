@@ -70,3 +70,6 @@ export function ago(iso: string, ref: Date = now()): string {
   if (m < 60) return `${m} min ago`;
   return `${Math.round(m / 60)} h ago`;
 }
+
+/** Time of the last reading shown while live data is paused (design: 09:11:48). */
+export const pausedAt = (): string => tunisTimeSeconds(new Date(now().getTime() - 12_000).toISOString());

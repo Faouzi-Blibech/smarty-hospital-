@@ -170,7 +170,8 @@ export function Dashboard() {
       setFailed(false);
       setData(null);
     }
-    Promise.all([getWaitlist({ fallback }), getDevices(), getAlerts({ status: "open" })])
+    // GET /alerts is nurse/doctor only in api.md: without it the alert figures read 0 instead of failing the page.
+    Promise.all([getWaitlist({ fallback }), getDevices(), getAlerts({ status: "open" }).catch((): Alert[] => [])])
       .then(([waitlist, devices, alerts]) => {
         setData({ waitlist, devices, alerts });
         setFailed(false);
