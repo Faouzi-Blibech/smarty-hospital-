@@ -2,18 +2,18 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Wire and power the bedside unit and build the carousel mechanism. Build the core backend that every other lane depends on: schema, auth/RBAC/audit, MQTT ingestion, schedule push, early warning, alerts, WebSocket and the n8n emitter.
+**Goal:** Build the core backend that every other lane depends on: schema, auth/RBAC/audit, MQTT ingestion, schedule push, early warning, alerts, WebSocket and the n8n emitter.
 
 **Architecture:**
 - FastAPI (sync SQLAlchemy 2.0) in `backend/`, with the same image running two processes: `api` (uvicorn) and `worker` (`python -m app.iot.worker`).
 - The worker ingests MQTT into PostgreSQL/TimescaleDB, runs early warning, and relays live frames to the API through the internal MQTT topic `ward/internal/ws`. The API fans those frames out to WebSocket clients.
 - Business logic lives in `app/services/`; routers stay thin.
 
-**Tech stack:** Python 3.12, FastAPI, SQLAlchemy 2.0, Alembic, psycopg 3, PyJWT, bcrypt, paho-mqtt 2, httpx, pytest · Mosquitto 2 · TimescaleDB pg16 · ESP32 wiring, 28BYJ-48 + ULN2003.
+**Tech stack:** Python 3.12, FastAPI, SQLAlchemy 2.0, Alembic, psycopg 3, PyJWT, bcrypt, paho-mqtt 2, httpx, pytest · Mosquitto 2 · TimescaleDB pg16 · (stretch) real-board wiring: ESP32 + SSD1306 OLED + SG90 servo + DS1307.
 
 **Spec:** `docs/superpowers/specs/2026-10-05-ward-foundation-design.md` · read also `CLAUDE.md`, `docs/architecture.md` and **all** of `docs/contracts/`.
 
-**You are:** Wali, hardware person, HW-B, **Nurse role owner** (the nurse flow must work end-to-end in the demo: RFID tap → vitals → alert → ack). Hedi may swap lanes with you; see `CLAUDE.md`.
+**You are:** Wali, hardware person, HW-B, **Nurse role owner** (the nurse flow must work end-to-end in the demo: simulated badge tap → vitals → alert → ack; the bedside unit has no sensors or RFID, so `simulator/` drives this). Hedi may swap lanes with you; see `CLAUDE.md`.
 
 ## Global Constraints
 
@@ -104,28 +104,22 @@ hub.broadcast(frame: dict) -> None    # frame = {"type","data","scope":{patient_
 
 ### Task 0: Inventory, stack up, branch
 
-- [ ] Tick the BOM in `hardware/README.md`; post the missing parts in the team chat and buy them today.
+- [ ] Review the reduced BOM in `hardware/README.md` (ESP32 + OLED + servo + DS1307; only needed if the real board is built).
+- [ ] Review and 👍 the MQTT contract v1.1 (`msg_id` per publisher; ESP + simulator on the same `device_id`). The dedupe on `(device_id, msg_id)` is unchanged.
 - [ ] `cp .env.example .env && docker compose -f infra/docker-compose.yml --env-file .env up --build`. Check `curl localhost:8000/health` → `{"status":"ok","db":true,"mqtt":true}`.
 - [ ] `docker compose -f infra/docker-compose.yml exec mqtt mosquitto_sub -t 'hospital/#' -v` while Hedi runs the simulator: messages appear.
 - [ ] `git checkout -b wali/schema`
 
-**Done when:** the stack is green on your laptop and the missing parts are ordered.
+**Done when:** the stack is green on your laptop and contract v1.1 is acked.
 
 ---
 
 ## Day 1 — Tue 10-06
 
-### Task 1: Wiring + PINMAP v1.0 (with Hedi, morning)
+### Task 1: (moved) Real-board wiring
 
-**Files:** Modify `firmware/PINMAP.md`, `hardware/README.md`
-
-- [ ] Wire I2C (SDA 21, SCL 22) and run an I2C scanner sketch (Hedi flashes it). Expect `0x57`, `0x5A`, `0x68`. If the DS3231 module's EEPROM also answers on `0x57`, remove/disable it (see the PINMAP warning).
-- [ ] Wire SPI: TFT (CS 15, DC 2, RST 4), touch CS 16, RC522 (SS 5, RST 17). Hedi confirms the TFT test pattern and the RC522 `PCD_DumpVersionToSerial()` → `0x92` or `0x91`.
-- [ ] Button on 34 with an external 10 kΩ pull-up; IR on 35; buzzer on 32 via NPN; LED on 33.
-- [ ] ULN2003 IN1–4 → 25, 26, 27, 14; motor and ULN2003 on 5 V.
-- [ ] Bump `PINMAP.md` to **v1.0**, with photos in `hardware/`. Commit `docs(hardware): pinmap v1.0`.
-
-**Acceptance:** every peripheral answers its smoke test on the same board at the same time.
+The bedside unit is now ESP32 + SSD1306 OLED + SG90 servo + DS1307, developed by Hedi in Wokwi. Real-board wiring
+is a **Day 3 stretch** (see Task 8). Nothing to wire on Day 1; start Task 2.
 
 ### Task 2: Schema, migration, IDs, seed
 
@@ -409,7 +403,7 @@ def emit(event: str, data: dict) -> None:
 - [ ] Test: monkeypatch `httpx.post` to raise `httpx.ConnectError` → `emit()` returns without raising (join the thread in the test through a small `_post` direct call).
 - [ ] Commit `feat(backend): n8n event emitter`.
 
-**Day 1 done when:** CP1 passes. Simulator vitals show live on Faouzi's nurse view through the real API and WS. Auth, RBAC, audit and ingestion tests are green, and PINMAP is v1.0.
+**Day 1 done when:** CP1 passes. Simulator vitals show live on Faouzi's nurse view through the real API and WS. Auth, RBAC, audit and ingestion tests are green.
 
 ---
 
@@ -570,13 +564,13 @@ def test_unassigned_payload(db):
   Add a test for each of these.
 - [ ] **Step 5:** Commit `feat(backend): prescriptions → doses → retained schedule; device events`.
 
-### Task 8: Carousel mechanism (hardware, in parallel with Tasks 6–7)
+### Task 8: (stretch, Day 3 afternoon) Real board + servo pill holder
 
-- [ ] Mount the organizer on the stepper (`hardware/README.md` → "Carousel mechanism"). Cut the drop hole and fit the tray with the IR sensor.
-- [ ] With Hedi's `carousel.cpp` test command, run 10 single-slot rotations and drops, and log the results in `hardware/README.md`.
-- [ ] **Go/no-go at 18:00** with Hedi. Post the decision in the chat. If no-go, the demo uses the "Taken" button only (no code changes on the server).
+- [ ] Only if CP3 is green: wire the real ESP32 per `firmware/PINMAP.md` (OLED + RTC on I2C 21/22, servo signal on 13, servo on 5 V).
+- [ ] Build the 4-slot pill holder on the servo horn (`hardware/README.md` → "Servo dispenser"). Hedi flashes the same firmware as Wokwi.
+- [ ] If it isn't reliable, the demo uses the Wokwi device. No server changes either way.
 
-**Day 2 done when:** CP2 passes. A doctor's prescription appears on the real device, `dose_taken` comes back and `med_doses` updates. The simulator's abnormal scenario produces a critical alert over WS, plus an `alert.critical` POST reaching n8n.
+**Day 2 done when:** CP2 passes. A doctor's prescription appears on the Wokwi device, `dose_taken` comes back and `med_doses` updates. The simulator's abnormal scenario produces a critical alert over WS, plus an `alert.critical` POST reaching n8n.
 
 ---
 
@@ -584,7 +578,7 @@ def test_unassigned_payload(db):
 
 ### Task 9: Golden path as the Nurse owner
 
-- [ ] Run the golden path with the real device and fix only blockers. The nurse flow (tap → measure → vitals tagged with the nurse → abnormal → alert on dashboard + Telegram → ack) must pass twice in a row by 13:00 (CP3).
+- [ ] Run the golden path with the Wokwi device + simulator and fix only blockers. The nurse flow (simulated tap → vitals tagged with the nurse → abnormal → alert on dashboard + Telegram → ack) must pass twice in a row by 13:00 (CP3).
 - [ ] Add a `device_offline` alert: in the worker, a `status {online:false}` for a device with an active admission → alert (medium) + frame.
 - [ ] Add `tests/test_contracts.py`: load the JSON examples from `docs/contracts/mqtt-topics.md` (copy them into `tests/fixtures/mqtt/*.json`) and assert `ingest.handle` accepts each one.
 
@@ -594,10 +588,10 @@ def test_unassigned_payload(db):
 
 - [ ] Stretch: Postgres RLS on `patients`, `vitals` and `notes` (policy using `current_setting('ward.user_id')`), only if CP3 stays green.
 - [ ] Stretch: Mosquitto password auth (`mosquitto_passwd`) + device credentials in `secrets.h`.
-- [ ] Enclosure tidy-up, cable management, label `bsu-001`, battery-backup test (unplug USB → the device keeps running).
+- [ ] If the real board was built: tidy the wiring and label `bsu-001`.
 - [ ] Rehearse your demo segment (Nurse, ~60 s) three times.
 
-**Day 4 done when:** the device survives a 30-minute soak with the simulator running alongside, and your demo segment is rehearsed.
+**Day 4 done when:** the backend survives a 30-minute soak with the device and simulator running, and your demo segment is rehearsed.
 
 ## Self-review checklist (run before each PR)
 

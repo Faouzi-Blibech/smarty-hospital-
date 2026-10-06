@@ -1,5 +1,11 @@
 # Ward — Foundation Design (HackCure @ ESEN)
 
+> **Amendment (2026-10-05, later the same day): reduced hardware.** The bedside unit is now ESP32 + SSD1306 OLED +
+> SG90 servo + DS1307 RTC, developed in Wokwi and built last. It has no vital-sign sensors, RFID, touch screen,
+> stepper carousel or IR sensor; `simulator/` produces vitals, nurse taps, call-nurse and `dose_taken`. Where this
+> spec mentions those parts, the current source of truth is `docs/contracts/mqtt-topics.md` v1.1,
+> `docs/architecture.md` §5, `firmware/PINMAP.md` and `plans/HEDI.md`. The rest of this spec is unchanged.
+
 - **Date:** 2026-10-05 (Day 0)
 - **Status:** approved by the team lead in brainstorming; changes go through a PR
 - **Source brief:** the HackCure project brief (sections 0–12), summarized below so this file stands alone
