@@ -33,6 +33,7 @@
 
 .composeBar {
   display: flex;
+  gap: 8px;
   justify-content: space-between;
   align-items: center;
 }
@@ -97,4 +98,16 @@
   line-height: 1.5;
   color: var(--text);
   text-wrap: pretty;
+}
+
+/* Nurse design: 44 px button aligned right, 15 px label. */
+.addNurse {
+  margin-left: auto;
+  min-height: 44px;
+  padding: 0 18px;
+  font-size: 15px;
+}
+
+.composeNurse {
+  gap: 14px;
 }

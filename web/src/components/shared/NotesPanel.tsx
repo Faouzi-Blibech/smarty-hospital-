@@ -23,10 +23,16 @@ export interface NotesPanelProps {
   onAdd: (text: string) => Promise<unknown> | void;
   title?: string;
   placeholder?: string;
-  /** Hint left of the button. */
-  hint?: string;
+  /** Hint left of the button; null hides it and puts the button on the right (nurse design). */
+  hint?: string | null;
   /** Reference "now" for the Today / weekday labels. */
   now?: Date;
+  /** Textarea rows (default 2; the nurse design uses 3). */
+  rows?: number;
+  /** "doctor" (default): 14 px button with the hint bar. "nurse": 44 px button, 15 px text. */
+  variant?: "doctor" | "nurse";
+  /** Time label per note. Default "Today 09:05"; the nurse design shows "09:05" for today. */
+  timeLabel?: (iso: string) => string;
   className?: string;
 }
 
@@ -37,6 +43,9 @@ export function NotesPanel({
   placeholder = "Add a note for the care team…",
   hint = "Visible to doctors and nurses",
   now,
+  rows = 2,
+  variant = "doctor",
+  timeLabel,
   className,
 }: NotesPanelProps) {
   const [draft, setDraft] = useState("");
@@ -49,6 +58,8 @@ export function NotesPanel({
     try {
       await onAdd(text);
       setDraft("");
+    } catch {
+      // Keep the draft; the caller shows the error (toast or inline).
     } finally {
       setBusy(false);
     }
@@ -57,19 +68,24 @@ export function NotesPanel({
   return (
     <section className={`${styles.card} ${className ?? ""}`}>
       <h3 className={styles.title}>{title}</h3>
-      <div className={styles.compose}>
+      <div className={`${styles.compose} ${variant === "nurse" ? styles.composeNurse : ""}`}>
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          rows={2}
+          rows={rows}
           placeholder={placeholder}
           dir="auto"
           aria-label="New note"
           className={styles.textarea}
         />
         <div className={styles.composeBar}>
-          <span className={styles.hint}>{hint}</span>
-          <button type="button" onClick={add} disabled={busy} className={styles.add}>
+          {hint !== null ? <span className={styles.hint}>{hint}</span> : null}
+          <button
+            type="button"
+            onClick={add}
+            disabled={busy}
+            className={`${styles.add} ${variant === "nurse" ? styles.addNurse : ""}`}
+          >
             Add note
           </button>
         </div>
@@ -84,7 +100,7 @@ export function NotesPanel({
                 {ROLE_WORD[n.author_role]}
               </span>
               <span className={styles.when}>
-                {dayLabel(n.created_at, now)} {tunisTime(n.created_at)}
+                {timeLabel ? timeLabel(n.created_at) : `${dayLabel(n.created_at, now)} ${tunisTime(n.created_at)}`}
               </span>
             </div>
             <p dir="auto" className={styles.text}>

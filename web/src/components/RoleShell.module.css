@@ -20,3 +20,9 @@
   min-height: 100vh;
   background: var(--canvas);
 }
+
+@media (max-width: 1024px) {
+  .asideTablet {
+    width: 216px;
+  }
+}

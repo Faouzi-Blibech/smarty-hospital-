@@ -68,3 +68,41 @@
   background: var(--paper);
   border: 1px solid var(--line-strong);
 }
+
+/* variant="box" (Nurse / States · Ward board · Error) */
+.box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-line);
+  color: var(--danger-ink);
+}
+
+.boxTitle {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.boxMessage {
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.boxButton {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 16px;
+  font: 600 15px/1 var(--sans);
+  color: var(--paper);
+  background: var(--ink);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.boxButton:hover {
+  background: var(--ink-hover);
+}

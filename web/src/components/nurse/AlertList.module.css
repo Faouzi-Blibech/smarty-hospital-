@@ -1,0 +1,159 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 12px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kind {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.sev {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.time {
+  font-size: 14px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.where {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.bed {
+  font: 600 22px/1.1 var(--serif);
+  color: var(--ink);
+}
+
+.who {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.msg {
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.ai {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font: 600 12px/1 var(--sans);
+  white-space: nowrap;
+}
+
+.aiChip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--ai-bg);
+  color: var(--ink);
+  border: 1px solid var(--ai);
+  border-radius: 999px;
+}
+
+.aiDot {
+  width: 6px;
+  height: 6px;
+  transform: rotate(45deg);
+  border: 1.5px solid var(--ai);
+}
+
+.review {
+  padding: 5px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--warn-line);
+  background: var(--news-low-bg);
+  color: var(--news-low-fg);
+}
+
+.ack {
+  margin-top: 2px;
+  min-height: 44px;
+  font: 600 16px/1 var(--sans);
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  color: var(--paper);
+}
+
+.ack:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.acked {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--news-normal-fg);
+}
+
+/* Nurse / States · Alerts · Empty */
+.empty {
+  padding: 32px 22px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.emptyIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--news-normal-bg);
+  color: var(--news-normal-fg);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.emptyTitle {
+  font: 600 20px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.emptyText {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}

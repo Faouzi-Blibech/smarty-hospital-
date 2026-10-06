@@ -12,6 +12,8 @@ export interface RoleShellProps {
   active?: string;
   /** Live override; by default `?live=0` turns it off. */
   live?: boolean;
+  /** Narrow the sidebar to 216 px at 1024 px and below (the nurse tablet frame). */
+  tablet?: boolean;
   children: ReactNode;
 }
 
@@ -30,10 +32,10 @@ function StaticSidebar({ role, active, live }: Omit<RoleShellProps, "children">)
  * Sidebar (248 px) + full-height `main` on the canvas. Used by the doctor, nurse
  * and admin layouts. `main` has no padding: each page sets the design's own.
  */
-export function RoleShell({ role, active, live, children }: RoleShellProps) {
+export function RoleShell({ role, active, live, tablet, children }: RoleShellProps) {
   return (
     <div className={styles.shell}>
-      <aside className={styles.aside}>
+      <aside className={`${styles.aside} ${tablet ? styles.asideTablet : ""}`}>
         <Suspense fallback={<StaticSidebar role={role} active={active} live={live} />}>
           <ShellSidebar role={role} active={active} live={live} />
         </Suspense>

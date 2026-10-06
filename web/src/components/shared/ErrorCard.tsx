@@ -16,6 +16,12 @@ export interface ErrorCardProps {
   /** Secondary button label. Default "Report a problem"; pass null to hide it. */
   secondaryLabel?: string | null;
   onSecondary?: () => void;
+  /**
+   * "card" (default): a card holding the red alert box, then the buttons.
+   * "box": the nurse States "Ward board · Error" — one red box with the title,
+   * the message and the primary button inside it (no icon, no secondary button).
+   */
+  variant?: "card" | "box";
   className?: string;
 }
 
@@ -26,8 +32,22 @@ export function ErrorCard({
   retryLabel = "Try again",
   secondaryLabel = "Report a problem",
   onSecondary,
+  variant = "card",
   className,
 }: ErrorCardProps) {
+  if (variant === "box") {
+    return (
+      <div role="alert" className={`${styles.box} ${className ?? ""}`}>
+        <span className={styles.boxTitle}>{title}</span>
+        {message ? <span className={styles.boxMessage}>{message}</span> : null}
+        {onRetry ? (
+          <button type="button" className={styles.boxButton} onClick={onRetry}>
+            {retryLabel}
+          </button>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <div className={`${styles.card} ${className ?? ""}`}>
       <div role="alert" className={styles.alert}>
