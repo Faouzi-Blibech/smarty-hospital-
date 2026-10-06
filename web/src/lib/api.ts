@@ -17,6 +17,7 @@ import type {
   Device,
   Dose,
   HomeCarePlan,
+  LoginResponse,
   Me,
   MedRoundGroup,
   Note,
@@ -56,10 +57,11 @@ export class ApiError extends Error {
 
 // ── Transport ───────────────────────────────────────────────────────────────
 
+/** Keeps the JWT for this browser tab (sessionStorage), so a reload stays signed in. */
 export function setToken(token: string | null): void {
   try {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
+    if (token) sessionStorage.setItem(TOKEN_KEY, token);
+    else sessionStorage.removeItem(TOKEN_KEY);
   } catch {
     /* storage unavailable */
   }
@@ -68,7 +70,7 @@ export function setToken(token: string | null): void {
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    return sessionStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
@@ -120,6 +122,14 @@ const byNews = (a: { latest_news2: number | null }, b: { latest_news2: number | 
   (b.latest_news2 ?? -1) - (a.latest_news2 ?? -1);
 
 // ── Auth ────────────────────────────────────────────────────────────────────
+
+/** POST /auth/login `{"email","password"}` → token + user. Stores the token. Real mode only. */
+export async function login(email: string, password: string): Promise<LoginResponse> {
+  if (USE_MOCKS) throw new ApiError(400, "mock_mode", "Login is only used when NEXT_PUBLIC_USE_MOCKS=0");
+  const res = await http<LoginResponse>("POST", "/auth/login", { email, password });
+  setToken(res.access_token);
+  return res;
+}
 
 /** GET /me. In mock mode, `role` picks which demo user you are (default doctor). */
 export function getMe(role: Role = "doctor"): Promise<Me> {
