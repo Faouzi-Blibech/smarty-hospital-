@@ -23,9 +23,9 @@ class Settings(BaseSettings):
     n8n_event_secret: str = "change-me-event"
     n8n_callback_secret: str = "change-me-callback"
 
-    llm_provider: str = "fallback"  # fallback | anthropic | local
-    anthropic_api_key: str = ""
-    llm_model: str = "claude-opus-5-5"
+    llm_provider: str = "none"  # none | groq | local (optional, open models only)
+    groq_api_key: str = ""
+    llm_model: str = "llama-3.3-70b-versatile"
     llm_local_base_url: str = "http://localhost:11434"
     llm_local_model: str = "qwen2.5:7b-instruct"
     llm_timeout_s: float = 15.0

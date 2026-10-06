@@ -3,15 +3,13 @@
 Callers catch LLMUnavailable and return their deterministic fallback.
 """
 
-import base64
 import json
 import re
 import unicodedata
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from pathlib import Path
 from typing import TypeVar
 
-import anthropic
 import httpx
 from pydantic import BaseModel
 
@@ -19,6 +17,7 @@ from app.config import Settings, get_settings
 
 T = TypeVar("T", bound=BaseModel)
 PROMPTS = Path(__file__).parent / "prompts"
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
 class LLMUnavailable(Exception):
@@ -61,44 +60,36 @@ def _prompt(name: str) -> str:
     return (PROMPTS / f"{name}.v1.md").read_text(encoding="utf-8")
 
 
-def complete_json(prompt_name: str, user_text: str, schema: type[T], *,
-                  names: Iterable[str] = (), images: Sequence[tuple[bytes, str]] = ()) -> T:
+def complete_json(prompt_name: str, user_text: str, schema: type[T], *, names: Iterable[str] = ()) -> T:
     s = get_settings()
-    if s.llm_provider not in ("anthropic", "local"):
+    if s.llm_provider not in ("groq", "local"):
         raise LLMUnavailable(f"provider={s.llm_provider}")
     text = strip_pii(user_text, names)
     try:
-        if s.llm_provider == "anthropic":
-            return _anthropic(s, _prompt(prompt_name), text, schema, images)
-        return _ollama(s, _prompt(prompt_name), text, schema, images)
+        if s.llm_provider == "groq":
+            return _groq(s, _prompt(prompt_name), text, schema)
+        return _ollama(s, _prompt(prompt_name), text, schema)
     except LLMUnavailable:
         raise
     except Exception as e:  # timeout, network, validation, rate limit...
         raise LLMUnavailable(str(e)) from e
 
 
-def _anthropic(s: Settings, system: str, text: str, schema: type[T], images) -> T:
-    client = anthropic.Anthropic(api_key=s.anthropic_api_key or None, timeout=s.llm_timeout_s, max_retries=0)
-    content: list[dict] = [
-        {"type": "image", "source": {"type": "base64", "media_type": mt, "data": base64.b64encode(b).decode()}}
-        for b, mt in images
-    ]
-    content.append({"type": "text", "text": text})
-    resp = client.messages.parse(
-        model=s.llm_model, max_tokens=4000, system=system,
-        messages=[{"role": "user", "content": content}], output_format=schema,
-    )
-    if resp.stop_reason == "refusal" or resp.parsed_output is None:
-        raise LLMUnavailable(f"stop_reason={resp.stop_reason}")
-    return resp.parsed_output
+def _groq(s: Settings, system: str, text: str, schema: type[T]) -> T:
+    schema_json = json.dumps(schema.model_json_schema())
+    system = f"{system}\n\nAnswer with JSON matching this schema: {schema_json}"
+    r = httpx.post(GROQ_URL, timeout=s.llm_timeout_s,
+                   headers={"Authorization": f"Bearer {s.groq_api_key}"},
+                   json={"model": s.llm_model, "response_format": {"type": "json_object"},
+                         "messages": [{"role": "system", "content": system},
+                                      {"role": "user", "content": text}]})
+    r.raise_for_status()
+    return schema.model_validate(json.loads(r.json()["choices"][0]["message"]["content"]))
 
 
-def _ollama(s: Settings, system: str, text: str, schema: type[T], images) -> T:
-    msg: dict = {"role": "user", "content": text}
-    if images:
-        msg["images"] = [base64.b64encode(b).decode() for b, _ in images]
+def _ollama(s: Settings, system: str, text: str, schema: type[T]) -> T:
     r = httpx.post(f"{s.llm_local_base_url}/api/chat", timeout=s.llm_timeout_s, json={
         "model": s.llm_local_model, "stream": False, "format": schema.model_json_schema(),
-        "messages": [{"role": "system", "content": system}, msg]})
+        "messages": [{"role": "system", "content": system}, {"role": "user", "content": text}]})
     r.raise_for_status()
     return schema.model_validate(json.loads(r.json()["message"]["content"]))
