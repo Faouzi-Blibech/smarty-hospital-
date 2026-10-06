@@ -40,10 +40,9 @@ def _urgency(a) -> int:
 
 
 def new_appointment_fields(patient, referral_text: str, symptoms: list[str], *, today: date) -> dict:
-    """Fields for a new `requested` appointment: triage (PII-stripped) + no-show probability."""
+    """Fields for a new `requested` appointment: triage + no-show probability."""
     age = _age(patient, today)
-    t = triage(referral_text, symptoms, age, getattr(patient, "history", "") or "",
-               names=[patient.first_name, patient.last_name])
+    t = triage(referral_text, symptoms, age)
     no_show = predict_no_show({"age": age or 0, "is_female": int(getattr(patient, "sex", "") == "F"),
                                "sms_received": int(bool(patient.telegram_chat_id or patient.email))})
     return {"patient_id": patient.id, "status": "requested", "referral_text": referral_text, "symptoms": symptoms,
