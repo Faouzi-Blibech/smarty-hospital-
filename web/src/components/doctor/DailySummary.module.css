@@ -1,0 +1,182 @@
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.h3 {
+  margin: 0;
+  font: 600 22px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.badge {
+  align-self: flex-start;
+}
+
+.fallback {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--warn-ink);
+  background: var(--warn-bg);
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  text-wrap: pretty;
+}
+
+.emph {
+  color: var(--ink);
+}
+
+.muted {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.skel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skel > span {
+  display: block;
+}
+
+.based {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.basedLabel {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.basedChip {
+  font-size: 13px;
+  color: var(--text);
+  background: var(--chip);
+  padding: 3px 7px;
+  border-radius: 5px;
+}
+
+.ix {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.ixHead {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.ixNote {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.ixRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: center;
+}
+
+.ixPair {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ixSev {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ixWhy {
+  font-size: 14px;
+  color: var(--muted);
+  grid-column: 1 / -1;
+}
+
+.review {
+  font: 600 15px/1 var(--sans);
+  color: var(--paper);
+  background: var(--ink);
+  border: none;
+  border-radius: 8px;
+  padding: 14px 18px;
+  cursor: pointer;
+}
+
+.review:hover {
+  background: var(--ink-hover);
+}
+
+.review:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.reviewed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--news-normal-bg);
+  color: var(--news-normal-fg);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.check {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--teal);
+  color: var(--paper);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+}
+
+.undo {
+  margin-left: auto;
+  font: 600 13px/1 var(--sans);
+  color: var(--news-normal-fg);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}

@@ -1,0 +1,25 @@
+.row {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.track {
+  position: relative;
+  height: 30px;
+}
+
+.dot {
+  position: absolute;
+  top: 2px;
+  margin-left: -13px;
+}
