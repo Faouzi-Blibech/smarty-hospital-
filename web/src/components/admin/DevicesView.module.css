@@ -1,0 +1,165 @@
+.table {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 120px 130px 150px 130px minmax(0, 1fr) 230px;
+  gap: 16px;
+}
+
+.unit {
+  font: 600 15px/1 var(--mono);
+  color: var(--ink);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fw {
+  font-size: 15px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.update {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--news-high-fg);
+}
+
+.seen {
+  font-size: 15px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.patient {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.bed {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn,
+.btnPrimary {
+  min-height: 40px;
+  padding: 0 14px;
+  font: 600 14px/1 var(--sans);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn {
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+}
+
+.btn:hover {
+  border-color: var(--ink);
+}
+
+.btnPrimary {
+  color: var(--paper);
+  background: var(--ink);
+  border: none;
+  white-space: nowrap;
+}
+
+.btnPrimary:hover {
+  background: var(--ink-hover);
+}
+
+/* Discharge · Result (Admin / States): offline unit */
+.unreachable {
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-line);
+  color: var(--danger-ink);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.retry {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--danger-ink);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Assign dialog */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(15, 45, 68, 0.38);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 140px 16px 16px;
+}
+
+.dialog {
+  width: 480px;
+  max-width: 100%;
+  background: var(--paper);
+  border-radius: 16px;
+  box-shadow: 0 30px 70px rgba(15, 45, 68, 0.3);
+  padding: 24px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dialogTitle {
+  font: 600 24px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.dialogActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 1280px) {
+  .grid {
+    min-width: 960px;
+  }
+}

@@ -1,0 +1,152 @@
+/* Shared admin page chrome: main padding, title block, buttons, table headers. */
+.page {
+  padding: 36px 40px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-height: 100vh;
+}
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+}
+
+.titles {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.h2 {
+  margin: 0;
+  font: 600 40px/1.1 var(--serif);
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.sub {
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.btn,
+.btnPrimary {
+  min-height: 44px;
+  padding: 0 16px;
+  font: 600 15px/1 var(--sans);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn {
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+}
+
+.btn:hover {
+  border-color: var(--ink);
+}
+
+.btnPrimary {
+  color: var(--paper);
+  background: var(--ink);
+  border: none;
+}
+
+.btnPrimary:hover {
+  background: var(--ink-hover);
+}
+
+.th {
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--line);
+  font: 600 12px/1.2 var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tr {
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--line-soft);
+  align-items: center;
+}
+
+.skelRow {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+/* Fields shared by the assign dialog and the add-staff panel */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.input,
+.select {
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font: 400 16px/1.2 var(--sans);
+  color: var(--ink);
+  background: var(--paper);
+  width: 100%;
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  padding: 11px 13px;
+  border: 2px solid var(--teal);
+  box-shadow: 0 0 0 3px #cbeaee;
+}
+
+.selectWrap {
+  position: relative;
+  display: block;
+}
+
+.select {
+  appearance: none;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+.select:focus {
+  padding-right: 35px;
+}
+
+.selectWrap::after {
+  content: "▾";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: var(--ink);
+  pointer-events: none;
+}
+
+.help {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+@media (max-width: 1280px) {
+  .scrollX {
+    overflow-x: auto;
+  }
+}

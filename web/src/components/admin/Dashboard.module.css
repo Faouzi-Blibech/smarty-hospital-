@@ -1,0 +1,265 @@
+.page {
+  gap: 24px;
+}
+
+.refresh {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* KPI tiles */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.kpi {
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px 22px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.kpi:hover {
+  border-color: var(--line-strong);
+}
+
+.kpiLabel {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.kpiValueRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--ink);
+}
+
+.kpiValue {
+  font: 600 46px/1 var(--serif);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.kpiOf {
+  font-size: 18px;
+  color: var(--muted);
+}
+
+.kpiNote {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* KPI tiles · Loading (Admin / States) */
+.skelTile {
+  padding: 18px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skelLabel {
+  height: 12px;
+  width: 70%;
+  border-radius: 4px;
+  background: var(--line-soft);
+}
+
+.skelValue {
+  height: 36px;
+  width: 50%;
+  border-radius: 6px;
+}
+
+/* Lower row */
+.lower {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 20px;
+  align-items: start;
+}
+
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.h3 {
+  margin: 0;
+  font: 600 22px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.chartCard {
+  padding: 22px 24px;
+  gap: 18px;
+}
+
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.chartTitle {
+  flex-basis: 100%;
+}
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.chart {
+  display: grid;
+  grid-template-columns: 32px repeat(7, minmax(0, 1fr));
+  gap: 16px;
+  align-items: end;
+  height: 220px;
+  border-bottom: 1px solid var(--line);
+}
+
+.axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.bar {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+}
+
+.seg {
+  display: block;
+  border-radius: 2px;
+}
+
+.days {
+  display: grid;
+  grid-template-columns: 32px repeat(7, minmax(0, 1fr));
+  gap: 16px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: -8px;
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.day b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Needs a person */
+.todoCard {
+  padding: 22px;
+  gap: 4px;
+}
+
+.todoTitle {
+  margin-bottom: 8px;
+}
+
+.todo {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-top: 1px solid var(--line-soft);
+  text-decoration: none;
+  color: inherit;
+}
+
+.todo:hover {
+  color: inherit;
+}
+
+.todoDot {
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  flex: none;
+  border-radius: 3px;
+}
+
+.todoText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.todoHead {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.todoSub {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.todoCta {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--teal);
+  white-space: nowrap;
+}
+
+.todo:hover .todoCta {
+  color: var(--ink);
+}
+
+.skelTodo {
+  height: 40px;
+  width: 100%;
+  border-radius: 6px;
+}
+
+@media (max-width: 1180px) {
+  .lower {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

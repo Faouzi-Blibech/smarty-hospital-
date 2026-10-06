@@ -1,0 +1,28 @@
+/* The Waitlist scrim uses inset: -24px; it needs a positioned ancestor. */
+.waitlist {
+  position: relative;
+}
+
+/* Waitlist · Empty (Admin / States) */
+.empty {
+  padding: 40px 28px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.emptyTitle {
+  font: 600 22px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.emptyText {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--muted);
+}
