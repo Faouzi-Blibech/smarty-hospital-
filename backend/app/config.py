@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     llm_local_base_url: str = "http://localhost:11434"
     llm_local_model: str = "qwen2.5:7b-instruct"
     llm_timeout_s: float = 15.0
+    laya_enabled: bool = True
 
 
 @lru_cache
