@@ -247,13 +247,15 @@ flowchart LR
 
 | Model | Eval set | Result |
 |---|---|---|
-| Triage classifier alone | 29 referrals | exact 0.966, within one 1.0, under-triaged 0, urgent missed 0 |
-| Triage rules + model | same 29 | exact 0.966, within one 1.0, under-triaged 0, urgent missed 0 |
-| Intent: char n-gram classifier | 36 questions | accuracy 0.75 |
-| Intent: base Laya | same 36 | accuracy 0.75, median 356 ms on a laptop CPU (ensemble measurement run) |
-| Intent: average of both | same 36 | accuracy 0.778 |
+| Triage classifier alone | 29 referrals | exact 0.897, within one 1.0, under-triaged 2, urgent missed 1 |
+| Triage rules + model | same 29 | exact 0.897, within one 1.0, under-triaged 2, urgent missed 1 |
+| Intent: classifier argmax | 36 questions | accuracy 0.722 (26/36) |
+| Intent: classifier + 0.4 confidence threshold, red flags first (the Docker default, no Laya) | same 36 | accuracy 0.611 (22/36) |
+| Intent: base Laya argmax | same 36 | accuracy 0.694 (25/36), median 139 ms on a laptop CPU |
+| Intent: average of both, argmax | same 36 | accuracy 0.750 (27/36) |
+| Intent: average of both + 0.4 threshold, red flags first | same 36 | accuracy 0.694 (25/36) |
 
-A Laya fine-tuned head scored 0.694 on the same 36 questions, so it is not shipped. Sources: `backend/app/ai/models/*metrics.json`. These sets are tiny; read them as a sanity check, not a validation.
+The Docker image runs without Laya unless `requirements-laya.txt` is installed, so the default deployment is the classifier row with the 0.4 threshold (0.611): about four questions in ten fall to "ask your nurse" or the wrong template. On 2026-10-06 the evaluation sets were rewritten to remove leakage into the training data (a test now guards this), which is why these numbers are lower than earlier ones. A Laya fine-tuned head was tried before the fix (0.694 on the old set) and is not shipped. The one urgent-missed triage case is a Darija chest/faint complaint scored 4 instead of 5, and no keyword rule covers it. Sources: `backend/app/ai/models/*metrics.json`. These sets are tiny; read them as a sanity check, not a validation.
 
 **Rules for every module:**
 - Every module works with no LLM. A trained model is optional too: without its file the module drops to rules.
@@ -285,5 +287,5 @@ Partial score → severity:
 - Everything runs from one `docker compose` on the hospital's server.
 - RBAC is enforced in FastAPI dependencies. Every read of a patient record appends an `audit_log` row. Postgres RLS is the Day 4 stretch / production plan.
 - No data leaves the server unless `LLM_PROVIDER` is set (default `none`). When it is, `llm.py` replaces names, phone numbers and IDs with placeholders first. `LLM_PROVIDER=local` sends nothing off the machine (Ollama); `groq` calls the Groq API with an open model.
-- Laya, when installed, runs locally on the CPU; its weights are downloaded once from the Hugging Face Hub.
+- Laya, when installed, runs locally on the CPU; its weights are downloaded once from the Hugging Face Hub. `snapshot_download` contacts the Hub on each process start (metadata only), so set `HF_HUB_OFFLINE=1` after the first download.
 - Seed data is synthetic (`backend/app/seed.py`).

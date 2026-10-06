@@ -17,18 +17,22 @@
 
 ## Measured results
 
-All numbers come from `backend/app/ai/models/*metrics.json`. The evaluation sets are hand-written, separate from the generated training rows, and small.
+All numbers come from `backend/app/ai/models/*metrics.json`. The evaluation sets are hand-written, separate from the generated training rows (checked by `tests/test_eval_leakage.py`), and small.
 
 | Model | Eval set | Result |
 |---|---|---|
-| Triage classifier alone (trained on 450 rows) | 29 referrals | exact 0.966, within one 1.0, under-triaged 0, urgent missed 0 |
-| Triage rules + classifier | same 29 | exact 0.966, within one 1.0, under-triaged 0, urgent missed 0 |
-| Intent, char n-gram classifier (300 rows) | 36 questions | accuracy 0.75 |
-| Intent, base Laya | same 36 | accuracy 0.75, median 356 ms on a laptop CPU (ensemble measurement run) |
-| Intent, Laya fine-tuned head | same 36 | accuracy 0.694 (not shipped) |
-| Intent, average of Laya and classifier | same 36 | accuracy 0.778 |
+| Triage classifier alone (trained on 450 rows) | 29 referrals | exact 0.897, within one 1.0, under-triaged 2, urgent missed 1 |
+| Triage rules + classifier | same 29 | exact 0.897, within one 1.0, under-triaged 2, urgent missed 1 |
+| Intent, classifier argmax (300 rows) | 36 questions | accuracy 0.722 (26/36) |
+| Intent, classifier + 0.4 threshold, red flags first (Docker default, no Laya) | same 36 | accuracy 0.611 (22/36) |
+| Intent, base Laya argmax | same 36 | accuracy 0.694 (25/36), median 139 ms on a laptop CPU |
+| Intent, average of both, argmax | same 36 | accuracy 0.750 (27/36) |
+| Intent, average of both + 0.4 threshold, red flags first | same 36 | accuracy 0.694 (25/36) |
+| Intent, Laya fine-tuned head | same 36 | 0.694 on the pre-fix set, not re-run, not shipped |
 
-The one triage miss is "Headaches every day for a month, worse in the morning" (expected 3, got 4), an over-triage.
+The triage misses: a Darija complaint ("9albi yedhrab bezzef w nhess rouhi bech nghib", expected 5, got 4, no red-flag keyword matches it), "فحص الأشعة أظهر ورما صغيرا في الرئة يستوجب متابعة" (expected 3, got 2) and "Headaches every day for a month, worse in the morning" (expected 3, got 4, an over-triage).
+
+The Docker image runs without Laya unless `requirements-laya.txt` is installed, so the default deployment is the threshold row (0.611). Eval-set fix, 2026-10-06: 15 evaluation rows leaked into the training templates and were replaced with new phrasings; models were retrained and re-measured, and `tests/test_eval_leakage.py` now guards it.
 
 ## How to retrain
 
@@ -49,5 +53,5 @@ Scores are always measured on `app/ai/data/*_eval.v1.jsonl`, never on generated 
 
 - Synthetic data only; the evaluation sets are 29 and 36 items, so the numbers are a sanity check and carry wide error bars.
 - Not clinically validated and not medical-grade. A human confirms every AI output (`ai_suggested` + `human_confirmed_by`).
-- Intent accuracy of 0.778 means roughly one question in four falls to "ask your nurse" or gets the wrong template. The red-flag rules run before any model for that reason.
+- Intent accuracy of 0.611 (default deployment) means roughly four questions in ten fall to "ask your nurse" or gets the wrong template. The red-flag rules run before any model for that reason.
 - Laya needs about 50 s for its first load and a CPU with room for torch; it is optional.

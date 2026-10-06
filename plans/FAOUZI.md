@@ -56,16 +56,23 @@
 # backend/app/ai/llm.py
 class LLMUnavailable(Exception): ...
 def strip_pii(text: str, names: Iterable[str] = ()) -> str
-def complete_json(prompt_name: str, user_text: str, schema: type[T], *,
-                  names: Iterable[str] = (), images: Sequence[tuple[bytes, str]] = ()) -> T
-    # images: (bytes, media_type); raises LLMUnavailable on any failure
+def complete_json(prompt_name: str, user_text: str, schema: type[T], *, names: Iterable[str] = ()) -> T
+    # raises LLMUnavailable on any failure (provider none, network, bad JSON)
 
 # backend/app/ai/triage.py
-class TriageResult(BaseModel): urgency: int; reasons: list[str]; red_flags: list[str]; source: str
-def triage(referral_text: str, symptoms: list[str], age: int | None, history: str = "") -> TriageResult
+class TriageResult(BaseModel):
+    urgency: int; reasons: list[str]; red_flags: list[str]; source: str  # "model" | "rules"
+    model_urgency: int | None; confidence: float | None
+def triage(referral_text: str, symptoms: list[str], age: int | None) -> TriageResult
 
-# backend/app/ai/copilot.py
-def daily_summary(db, patient_id: str) -> dict   # {"summary","interactions","source","generated_at"}
+# backend/app/ai/copilot.py (DB-free; the router loads the rows)
+def summarize(vitals: list[dict], notes: list[str], meds: list[str], names: list[str]) -> dict
+    # {"summary", "interactions", "source", "generated_at"}: "rules" by default, "llm" if an open LLM rewrote the text
+def check_interactions(med_names: list[str]) -> list[dict]
+
+# backend/app/ai/assistant.py (DB-free; the router loads only the caller's own rows)
+def assistant_context(patient, doses_today, next_visit, latest_vital, *, now) -> dict
+def answer(question: str, ctx: dict) -> dict   # {"answer", "sources", "intent", "source": "model"|"rules"}
 ```
 
 REST: `api.md` → Appointments, AI and Integrations sections (you implement those routers on Wali's models and deps).

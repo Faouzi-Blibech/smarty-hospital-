@@ -1,8 +1,8 @@
 {
   "base": {
-    "accuracy": 0.75,
+    "accuracy": 0.694,
     "n": 36,
-    "median_ms": 293,
+    "median_ms": 139,
     "misses": [
       {
         "text": "Did I miss my evening tablets?",
@@ -25,6 +25,11 @@
         "got": "next_dose"
       },
       {
+        "text": "Is my body running hot at the moment?",
+        "expected": "my_vitals",
+        "got": "ask_staff"
+      },
+      {
         "text": "How fast is my heart beating right now?",
         "expected": "my_vitals",
         "got": "ask_staff"
@@ -37,6 +42,11 @@
       {
         "text": "chnowa 9al el capteur 3la l'oxygène",
         "expected": "my_vitals",
+        "got": "next_dose"
+      },
+      {
+        "text": "À quoi sert ce sirop que l'infirmière m'a donné ?",
+        "expected": "ask_staff",
         "got": "next_dose"
       },
       {
@@ -111,7 +121,8 @@
         "expected": "ask_staff",
         "got": "my_vitals"
       }
-    ]
+    ],
+    "stale": "Measured on the eval set before the 2026-10-06 leakage fix (15 rows were replaced); not re-run, so not comparable with 'base'."
   },
   "train_items": 300,
   "epoch_loss": [
@@ -124,12 +135,15 @@
     0.9273441002557152,
     0.9206620617524574
   ],
-  "note": "Run 2 (8 epochs, head lr 1e-3, frozen encoder). Fine-tuned head scored below base Laya, so it is not shipped; laya_intent.py runs base Laya zero-shot. Run 1 (4 epochs, lr 1e-4) left accuracy unchanged at 0.75.",
+  "note": "Eval set rewritten 2026-10-06 to remove leakage into the training data. 'base' was re-measured on the new set. 'fine_tuned' (0.694) predates the fix and was not re-run; no fine-tuned head is shipped, laya_intent.py runs base Laya zero-shot. Run 2 (8 epochs, head lr 1e-3, frozen encoder); run 1 (4 epochs, lr 1e-4) left accuracy unchanged. The Docker image runs without Laya unless requirements-laya.txt is installed, so the default deployment is the classifier with the 0.4 confidence threshold.",
   "shipped": {
-    "laya_base": 0.75,
-    "textclf_intent_v1": 0.75,
-    "average_of_both": 0.778,
+    "classifier_argmax": 0.722,
+    "classifier_threshold_0.4_docker_default": 0.611,
+    "laya_base_argmax": 0.694,
+    "average_argmax": 0.75,
+    "average_threshold_0.4": 0.694,
     "n": 36,
-    "laya_median_ms_cpu": 356
+    "laya_median_ms_cpu": 139,
+    "threshold_rows_apply_red_flags_first": true
   }
 }
