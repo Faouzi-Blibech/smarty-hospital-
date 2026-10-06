@@ -11,7 +11,6 @@ from app.ai import laya_intent, textclf
 from app.ai.triage import _normalize, match_red_flags
 
 TUNIS = timezone(timedelta(hours=1))  # Africa/Tunis: UTC+1, no DST
-SOURCES = ("med_doses", "appointments", "vitals")
 DOSE_WORDS = ("dose", "medic", "pill", "comprime", "traitement", "dwa", "دواء", "حبوب")
 VISIT_WORDS = ("appointment", "rendez-vous", "rendez vous", "rdv", "visit", "consultation", "maw3ed", "موعد")
 VITAL_WORDS = ("temperature", "température", "oxygen", "oxygène", "pulse", "pouls", "heart", "tension",

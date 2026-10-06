@@ -31,3 +31,9 @@ def test_triage_model_probabilities():
 
 def test_missing_model_is_none():
     assert textclf.load("nope.v1") is None
+
+
+def test_shipped_triage_model_scores_chest_pain_as_most_urgent():
+    m = textclf.load("triage.v1")
+    p = textclf.predict_proba(m, "douleur dans la poitrine depuis ce matin")
+    assert max(p, key=p.get) == 5

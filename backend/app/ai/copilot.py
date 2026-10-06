@@ -1,4 +1,6 @@
-"""Doctor copilot: templated daily summary (optional LLM rewrite) + drug-interaction check from a curated rule list (never the LLM).
+"""Doctor copilot: templated daily summary (optional LLM rewrite) + drug-interaction check.
+
+Interactions come from a curated rule list, never from the LLM.
 
 `summarize` is DB-free; `daily_summary(db, patient_id)` wraps it once the models exist (plans/FAOUZI.md Task 7).
 """
@@ -32,9 +34,9 @@ def check_interactions(med_names: list[str]) -> list[dict]:
 
 
 def _trend(vals: list) -> str:
-    first, last = vals[0], vals[-1]
-    if len(vals) < 2 or not first:
+    if len(vals) < 2 or not vals[0]:
         return "stable"
+    first, last = vals[0], vals[-1]
     change = (last - first) / abs(first)
     return "rising" if change > 0.05 else "falling" if change < -0.05 else "stable"
 

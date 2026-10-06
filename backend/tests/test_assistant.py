@@ -126,3 +126,15 @@ def test_averages_available_maps(monkeypatch):
 def test_context_without_data():
     c = A.assistant_context(NS(first_name="X", last_name="Y"), [], None, None, now=NOW)
     assert c["next_dose"] is None and c["next_visit"] is None and c["latest_vitals"] is None
+
+
+@pytest.mark.parametrize("question,intent", [
+    ("What is my blood oxygen level today?", "my_vitals"),
+    pytest.param("Do I have any more tablets to take this evening?", "next_dose",
+                 marks=pytest.mark.xfail(strict=True, reason="known miss: the classifier alone routes it to ask_staff")),
+    ("Can I go on holiday after my operation?", "ask_staff"),
+])
+def test_shipped_intent_model_classifies_unseen_questions(monkeypatch, question, intent):
+    monkeypatch.setattr(A.laya_intent, "classify", lambda q: None)
+    got, _conf, source = A.classify_intent(question)
+    assert (got, source) == (intent, "model")

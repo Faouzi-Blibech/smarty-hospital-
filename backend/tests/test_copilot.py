@@ -1,6 +1,5 @@
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
-from types import SimpleNamespace as NS
 
 from app.ai import copilot as C
 from app.ai.llm import LLMUnavailable
@@ -94,11 +93,11 @@ T0 = datetime(2026, 10, 8, 9, 0, tzinfo=UTC)
 
 
 def test_summary_inputs_from_rows():
-    patient = NS(first_name="Amira", last_name="Ben Salah")
-    vitals = [NS(hr=72, spo2=97, temp=36.8, news2=0, ts=T0), NS(hr=118, spo2=None, temp=38.4, news2=5, ts=T0)]
-    notes = [NS(text="Slept poorly"), NS(text="  ")]
-    rxs = [NS(active=True, items=[{"med": "Warfarin 5mg"}, {"med": "Aspirin 100mg"}]),
-           NS(active=False, items=[{"med": "Ibuprofen 400mg"}])]
+    patient = SimpleNamespace(first_name="Amira", last_name="Ben Salah")
+    vitals = [SimpleNamespace(hr=72, spo2=97, temp=36.8, news2=0, ts=T0), SimpleNamespace(hr=118, spo2=None, temp=38.4, news2=5, ts=T0)]
+    notes = [SimpleNamespace(text="Slept poorly"), SimpleNamespace(text="  ")]
+    rxs = [SimpleNamespace(active=True, items=[{"med": "Warfarin 5mg"}, {"med": "Aspirin 100mg"}]),
+           SimpleNamespace(active=False, items=[{"med": "Ibuprofen 400mg"}])]
     got = C.summary_inputs(patient, vitals, notes, rxs)
     assert got["vitals"] == [{"hr": 72, "spo2": 97, "temp": 36.8, "news2": 0},
                              {"hr": 118, "spo2": None, "temp": 38.4, "news2": 5}]
@@ -108,20 +107,20 @@ def test_summary_inputs_from_rows():
 
 
 def test_cached_summary_is_fresh_for_10_minutes():
-    row = NS(created_at=T0)
+    row = SimpleNamespace(created_at=T0)
     assert C.is_fresh(row, now=T0 + timedelta(minutes=9, seconds=59)) is True
     assert C.is_fresh(row, now=T0 + timedelta(minutes=10)) is False
     assert C.is_fresh(None, now=T0) is False
 
 
 def test_review_marks_confirmer():
-    row = NS(human_confirmed_by=None)
+    row = SimpleNamespace(human_confirmed_by=None)
     C.apply_review(row, user_id="u-0001")
     assert row.human_confirmed_by == "u-0001"
 
 
 def test_summary_payload_shape():
-    row = NS(created_at=T0, human_confirmed_by=None,
+    row = SimpleNamespace(created_at=T0, human_confirmed_by=None,
              ai_suggested={"summary": "Stable.", "interactions": [], "source": "rules"})
     assert C.summary_payload(row) == {"summary": "Stable.", "interactions": [], "source": "rules",
                                       "generated_at": "2026-10-08T09:00:00Z", "human_confirmed_by": None}
