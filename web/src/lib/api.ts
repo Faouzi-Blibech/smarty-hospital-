@@ -5,7 +5,7 @@
 // store, so a later read reflects them (until a full page reload).
 // Real mode: calls NEXT_PUBLIC_API_URL with the paths of docs/contracts/api.md.
 // Paths marked NOT IN CONTRACT have no api.md 1.4 endpoint yet (see the Task 1 report).
-import { createStore, mockAssistant, USERS, userName, type MockStore } from "@/mocks";
+import { createStore, mockAssistant, USERS, userName, type AssistantContext, type MockStore } from "@/mocks";
 import { now, tunisDate, USE_MOCKS } from "./time";
 import type {
   Alert,
@@ -16,6 +16,7 @@ import type {
   CreatePrescriptionRequest,
   Device,
   Dose,
+  HomeCarePlan,
   Me,
   MedRoundGroup,
   Note,
@@ -23,6 +24,7 @@ import type {
   PatientSummary,
   Prescription,
   Role,
+  SlotOffer,
   StaffMember,
   Urgency,
   Vital,
@@ -308,9 +310,32 @@ export function reviewSummary(patientId: string, opts: ActorOpts & { fallback?: 
   return http<AiSummary>("POST", `/ai/summary/${encodeURIComponent(patientId)}/review`, {});
 }
 
+/** The mock assistant's only data: the caller's own next dose, next visit and latest vitals. */
+function assistantContext(s: MockStore, patientId: string): AssistantContext {
+  const t = now().getTime();
+  const next = s.doses
+    .filter((d) => d.patient_id === patientId && d.status === "scheduled" && Date.parse(d.scheduled_at) >= t)
+    .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at));
+  const first = next[0];
+  const nextDose =
+    first && tunisDate(first.scheduled_at) === tunisDate(iso(now()))
+      ? { time: first.time_of_day, meds: next.filter((d) => d.scheduled_at === first.scheduled_at).flatMap((d) => d.meds) }
+      : null;
+  const visit = s.appointments
+    .filter((a) => a.patient_id === patientId && a.status === "confirmed" && a.slot_at && Date.parse(a.slot_at) >= t)
+    .sort((a, b) => (a.slot_at ?? "").localeCompare(b.slot_at ?? ""))[0];
+  const vitals = s.vitals[patientId] ?? [];
+  const v = vitals[vitals.length - 1];
+  return {
+    nextDose,
+    nextVisit: visit?.slot_at ? { slot_at: visit.slot_at, doctor_name: visit.doctor_name ?? null } : null,
+    latestVitals: v ? { ts: v.ts, hr: v.hr, spo2: v.spo2, temp: v.temp } : null,
+  };
+}
+
 /** POST /ai/assistant `{"question"}` (patient, own record only). */
 export function askAssistant(question: string): Promise<AssistantResponse> {
-  if (USE_MOCKS) return mock(() => mockAssistant(question));
+  if (USE_MOCKS) return mock((s) => mockAssistant(question, assistantContext(s, USERS.patient.patient_id)));
   return http<AssistantResponse>("POST", "/ai/assistant", { question });
 }
 
@@ -393,6 +418,42 @@ export function replyAppointment(id: string, reply: "confirm" | "cancel"): Promi
       return a;
     });
   return http<Appointment>("POST", `/appointments/${encodeURIComponent(id)}/reply`, { reply });
+}
+
+// ── Patient app extras (NOT IN CONTRACT) ────────────────────────────────────
+
+/** GET /offers/{id} — NOT IN CONTRACT. A freed slot offered to the patient (n8n W2 backfill). */
+export function getOffer(id: string): Promise<SlotOffer> {
+  if (USE_MOCKS) return mock((s) => s.offers.find((o) => o.id === id) ?? notFound(`Offer ${id}`));
+  return http<SlotOffer>("GET", `/offers/${encodeURIComponent(id)}`);
+}
+
+/**
+ * POST /offers/{id}/accept — NOT IN CONTRACT (the contract only has the n8n `backfill-accept`
+ * callback, with the same 409 `slot_taken` / `not_waiting`). Returns the patient's moved appointment.
+ * Mock: `simulateTaken` is the design's "Demo: simulate “someone was faster”" → 409 `slot_taken`.
+ */
+export function acceptOffer(id: string, opts: { simulateTaken?: boolean } = {}): Promise<Appointment> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      const offer = s.offers.find((o) => o.id === id) ?? notFound(`Offer ${id}`);
+      if (opts.simulateTaken || offer.status === "taken") {
+        throw new ApiError(409, "slot_taken", "This slot was just taken");
+      }
+      const appt = s.appointments.find((a) => a.id === offer.appointment_id) ?? notFound(`Appointment ${offer.appointment_id}`);
+      if (offer.status === "accepted") return appt;
+      if (appt.status !== "confirmed" && appt.status !== "requested") throw new ApiError(409, "not_waiting", "Appointment is no longer waiting");
+      offer.status = "accepted";
+      Object.assign(appt, { status: "confirmed", slot_at: offer.slot_at, doctor_id: offer.doctor_id, doctor_name: offer.doctor_name, room: offer.room, patient_confirmed_at: iso(now()) });
+      return appt;
+    });
+  return http<Appointment>("POST", `/offers/${encodeURIComponent(id)}/accept`, {});
+}
+
+/** GET /patients/{id}/home-care — NOT IN CONTRACT. The "After discharge" screen. */
+export function getHomeCare(patientId: string): Promise<HomeCarePlan> {
+  if (USE_MOCKS) return mock((s) => s.homeCare[patientId] ?? notFound(`Home care for ${patientId}`));
+  return http<HomeCarePlan>("GET", `/patients/${encodeURIComponent(patientId)}/home-care`);
 }
 
 // ── Alerts ──────────────────────────────────────────────────────────────────

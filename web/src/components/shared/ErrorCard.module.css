@@ -106,3 +106,33 @@
 .boxButton:hover {
   background: var(--ink-hover);
 }
+
+/* variant="patient" (Patient / States · error) */
+.patient {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-line);
+  color: var(--danger-ink);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.patientButton {
+  align-self: flex-start;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: none;
+  background: var(--ink);
+  color: var(--paper);
+  font: 700 16px/1 var(--sans);
+  cursor: pointer;
+}
+
+.patientButton:hover {
+  background: var(--ink-hover);
+}

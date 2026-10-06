@@ -1,0 +1,1055 @@
+/* Patient PWA (Ward Patient.dc.html): 390 × 844 phone, body text 17–18 px, buttons ≥ 52 px. */
+
+/* ── Frame ─────────────────────────────────────────────────────────────── */
+
+.stage {
+  min-height: 100vh;
+  background: var(--backdrop);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 16px;
+}
+
+.phone {
+  position: relative;
+  width: 390px;
+  height: 844px;
+  border-radius: 46px;
+  background: var(--canvas);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-phone);
+  font-family: var(--font-public-sans), "Public Sans", var(--font-noto-arabic), "Noto Sans Arabic", system-ui, sans-serif;
+  color: var(--text);
+}
+
+.statusBar {
+  height: 46px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  font: 600 15px/1 var(--sans);
+  color: var(--ink);
+}
+
+.statusIcons {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.signal {
+  width: 16px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--ink);
+}
+
+.battery {
+  width: 22px;
+  height: 11px;
+  border-radius: 3px;
+  border: 1.5px solid var(--ink);
+}
+
+@media (max-width: 480px) {
+  .stage {
+    display: block;
+    padding: 0;
+  }
+  .phone {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .statusBar {
+    display: none;
+  }
+}
+
+.brand {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 22px 10px;
+}
+
+.brandMark {
+  width: 10px;
+  height: 10px;
+  background: var(--teal);
+  border-radius: 2px;
+}
+
+.brandName {
+  font: 600 20px/1 var(--serif);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.flex {
+  flex: 1;
+}
+
+.protoTag {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--teal-deep);
+  border: 1px solid var(--proto-line);
+  padding: 4px 7px;
+  border-radius: 4px;
+}
+
+/* ── Tab bar ───────────────────────────────────────────────────────────── */
+
+.tabBar {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 8px 10px 24px;
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 0;
+  min-height: 56px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tabActive {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.tabIcon {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  background: transparent;
+}
+
+.tabActive .tabIcon {
+  background: var(--ink);
+}
+
+.tabHome {
+  border-radius: 3px;
+}
+
+.tabVitals {
+  border-radius: 50%;
+}
+
+.tabAssistant {
+  border-radius: 2px;
+  transform: rotate(45deg) scale(0.85);
+}
+
+.tabAppts {
+  border-radius: 5px;
+}
+
+/* ── Shared bits ───────────────────────────────────────────────────────── */
+
+.scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 20px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.h1 {
+  margin: 0;
+  font: 600 32px/1.1 var(--serif);
+  color: var(--ink);
+}
+
+.h1Small {
+  margin: 0;
+  font: 600 30px/1.1 var(--serif);
+  color: var(--ink);
+}
+
+.subline {
+  font-size: 17px;
+  color: var(--muted);
+}
+
+.sublineSmall {
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardTitle {
+  margin: 0 0 6px;
+  font: 600 21px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.primaryBtn,
+.secondaryBtn,
+.outlineBtn {
+  min-height: 60px;
+  border-radius: 16px;
+  font: 700 18px/1 var(--sans);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.primaryBtn {
+  border: none;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.primaryBtn:hover {
+  background: var(--ink-hover);
+  color: var(--paper);
+}
+
+.primaryBtn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.secondaryBtn {
+  min-height: 56px;
+  border: 2px solid var(--line-strong);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.secondaryBtn:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.outlineBtn {
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.outlineBtn:hover {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+/* States: loading, offline, empty */
+
+.skelCard {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: none;
+}
+
+.skelTitle {
+  display: block;
+  height: 22px;
+  width: 60%;
+  border-radius: 6px;
+}
+
+.skelRow {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.skelTime,
+.skelText,
+.skelPill {
+  height: 18px;
+  border-radius: 4px;
+  background: var(--line-soft);
+}
+
+.skelTime {
+  width: 50px;
+}
+
+.skelText {
+  flex: 1;
+}
+
+.skelPill {
+  width: 70px;
+  height: 28px;
+  border-radius: 999px;
+}
+
+.offline {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-line);
+  color: var(--warn-ink);
+  font-size: 16px;
+  line-height: 1.45;
+  flex: none;
+}
+
+.offlineRing {
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--warn-dot);
+}
+
+.emptyCard {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  flex: none;
+}
+
+.emptyTitle {
+  font: 600 21px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.emptyText {
+  font-size: 16px;
+  color: var(--muted);
+}
+
+/* ── Home ──────────────────────────────────────────────────────────────── */
+
+.homeBody {
+  gap: 18px;
+}
+
+.medsCard {
+  padding: 18px 18px 6px;
+}
+
+.medRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.medTime {
+  width: 58px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.medText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.medName {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.medSub {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.medPill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid;
+}
+
+.med_taken {
+  background: var(--news-normal-bg);
+  color: var(--news-normal-fg);
+  border-color: var(--given-line);
+}
+
+.med_upcoming {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.med_missed {
+  background: var(--news-crit-bg);
+  color: var(--news-crit-fg);
+  border-color: var(--missed-line);
+}
+
+.missed {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-line);
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--danger-ink);
+  flex: none;
+}
+
+.missedDot {
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+.nextAppt {
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--ink);
+  color: var(--paper);
+  flex: none;
+}
+
+.nextAppt:hover {
+  background: var(--ink-hover);
+  color: var(--paper);
+}
+
+.nextEyebrow {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--teal-bright);
+}
+
+.nextWhen {
+  font: 600 24px/1.15 var(--serif);
+}
+
+.nextWho {
+  font-size: 16px;
+  color: var(--side-muted);
+}
+
+.nextCta {
+  margin-top: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--paper);
+}
+
+.ask {
+  flex: none;
+}
+
+/* ── Appointment ───────────────────────────────────────────────────────── */
+
+.apptBody {
+  flex: 1;
+  overflow: auto;
+  padding: 14px 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.apptCard {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  flex: none;
+  overflow: hidden;
+}
+
+.apptHead {
+  padding: 22px 22px 18px;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.apptWeekday {
+  font-size: 15px;
+  color: var(--side-muted);
+}
+
+.apptDate {
+  font: 600 40px/1 var(--serif);
+}
+
+.apptTime {
+  font: 600 28px/1.1 var(--sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--teal-bright);
+}
+
+.apptFacts {
+  padding: 16px 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 17px;
+  color: var(--ink);
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.factLabel {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.apptActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.apptNote {
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--muted);
+  text-align: center;
+}
+
+.apptDone {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border-radius: 20px;
+  flex: none;
+}
+
+.apptDone_yes {
+  background: var(--news-normal-bg);
+  color: var(--news-normal-fg);
+}
+
+.apptDone_no {
+  background: var(--segment);
+  color: var(--text);
+}
+
+.apptDoneIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: currentColor;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.apptDoneIcon > span {
+  color: var(--paper);
+}
+
+.apptDoneMsg {
+  font: 600 22px/1.25 var(--serif);
+}
+
+.linkBtn {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  font: 600 15px/1 var(--sans);
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Full-screen result (Appointment · Confirmed, offer Booked / Taken) */
+
+.result {
+  flex: 1;
+  overflow: auto;
+  padding: 80px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.resultOffer {
+  padding-top: 70px;
+  gap: 18px;
+}
+
+.resultIcon {
+  width: 88px;
+  height: 88px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--teal);
+  color: var(--paper);
+  display: grid;
+  place-items: center;
+  font-size: 40px;
+  font-weight: 700;
+}
+
+.resultIconMuted {
+  background: var(--segment);
+  color: var(--muted);
+  font-size: 36px;
+}
+
+.resultTitle {
+  margin: 0;
+  font: 600 32px/1.2 var(--serif);
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.resultTitleBig {
+  font-size: 34px;
+  line-height: 1.15;
+}
+
+.resultTitleMid {
+  font-size: 30px;
+}
+
+.resultText {
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.resultTextBig {
+  font-size: 18px;
+}
+
+/* ── Freed slot offer ──────────────────────────────────────────────────── */
+
+.goodNews {
+  align-self: flex-start;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--news-normal-fg);
+  background: var(--news-normal-bg);
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.offerTitle {
+  margin: 0;
+  font: 600 30px/1.15 var(--serif);
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.offerCard {
+  background: var(--paper);
+  border: 2px solid var(--teal);
+  border-radius: 22px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: none;
+}
+
+.offerWhen {
+  font: 600 26px/1.15 var(--serif);
+  color: var(--ink);
+}
+
+.offerWho {
+  font-size: 17px;
+  color: var(--text);
+}
+
+.offerInstead {
+  margin-top: 8px;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.offerText {
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.demoLink {
+  min-height: 44px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font: 600 14px/1 var(--sans);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.keepBtn {
+  font-size: 17px;
+}
+
+/* ── My vitals ─────────────────────────────────────────────────────────── */
+
+.vitalsBody {
+  gap: 14px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+
+.tileWide {
+  grid-column: 1 / -1;
+}
+
+.paused {
+  opacity: 0.55;
+}
+
+.tileLabel {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.tileValue {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.tileNum {
+  font: 600 38px/1 var(--serif);
+  font-variant-numeric: tabular-nums;
+}
+
+.word {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.wordDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.word_ok {
+  background: var(--news-normal-bg);
+  color: var(--news-normal-fg);
+}
+
+.word_attention {
+  background: var(--news-low-bg);
+  color: var(--news-low-fg);
+}
+
+.chartCard {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: none;
+}
+
+.chartTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.chart {
+  width: 100%;
+  height: 96px;
+}
+
+.band {
+  fill: var(--news-normal-bg);
+}
+
+.line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+}
+
+.axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.legendSwatch {
+  width: 16px;
+  height: 10px;
+  background: var(--news-normal-bg);
+  border-radius: 2px;
+}
+
+.careNote {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--teal-tint);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink);
+  flex: none;
+}
+
+/* ── After discharge ───────────────────────────────────────────────────── */
+
+.homeCareBody {
+  gap: 16px;
+}
+
+.followCard {
+  padding: 18px;
+  gap: 12px;
+}
+
+.followEyebrow {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--news-low-fg);
+}
+
+.followTitle {
+  margin: 0;
+  font: 600 21px/1.25 var(--serif);
+  color: var(--ink);
+}
+
+.step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.stepMark {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--paper);
+  border: 2px solid;
+}
+
+.step_done {
+  background: var(--teal);
+  border-color: var(--teal);
+}
+
+.step_next {
+  background: var(--news-low-edge);
+  border-color: var(--news-low-edge);
+}
+
+.step_pending {
+  background: var(--step-pending);
+  border-color: var(--step-pending);
+}
+
+.stepText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stepTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.stepSub {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.homeMedsCard {
+  padding: 18px 18px 8px;
+}
+
+.homeMedRow {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.homeMedWhen {
+  width: 76px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.homeMedSub {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.deskCard {
+  background: var(--ink);
+  border-radius: 20px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--paper);
+  flex: none;
+}
+
+.deskText {
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.deskBtn {
+  min-height: 56px;
+  border-radius: 14px;
+  border: none;
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 17px/1 var(--sans);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.deskBtn:hover {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+.emergency {
+  font-size: 14px;
+  color: var(--teal-bright);
+}
+
+/* Toast inside the phone frame */
+.phone .phoneToast {
+  left: 16px;
+  right: 16px;
+  bottom: 96px;
+  max-width: none;
+}

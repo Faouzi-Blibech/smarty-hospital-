@@ -1,55 +1,145 @@
-// Mock patient assistant (POST /ai/assistant). Mirrors the design's `reply()` in
-// Ward Patient.dc.html, using the api.md 1.4 intents. No diagnosis, ever.
+// Mock patient assistant (POST /ai/assistant, api.md 1.4). Mirrors backend/app/ai/assistant.py:
+// red flags first (always `urgent` + the URGENT text, source "rules"), then simple keyword
+// intents, answered only from the caller's own record (`AssistantContext`). No diagnosis, ever.
+// English copy follows the design's `reply()` in Ward Patient.dc.html; Arabic is the design's.
 import type { AssistantResponse } from "@/lib/types";
+import { tunisTime } from "@/lib/time";
+
+/** The only data the assistant may use: the patient's own doses, next visit and latest vitals. */
+export interface AssistantContext {
+  nextDose: { time: string; meds: string[] } | null;
+  nextVisit: { slot_at: string; doctor_name: string | null } | null;
+  latestVitals: { ts: string; hr: number | null; spo2: number | null; temp: number | null } | null;
+}
+
+/** Backend `URGENT` (assistant.py). */
+export const URGENT =
+  "This could be urgent. Press the call-nurse button on your bedside unit now, or tell any member of staff straight away.";
+const URGENT_AR = "من فضلك اتصل بالممرضة الآن.";
+const ASK_STAFF = "I can’t answer medical questions. Please ask your nurse or doctor.";
+const ASK_STAFF_AR = "ما نجمش نجاوب على أسئلة طبية. اسأل الممرضة ولا الطبيب.";
 
 const AR = /[؀-ۿ]/;
 
-export function mockAssistant(question: string): AssistantResponse {
-  const s = question.toLowerCase();
-  const ar = AR.test(question);
+/** Same normalisation as backend triage._normalize: lowercase, no combining marks, ى→ي, ة→ه. */
+function normalize(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ًͯ-ٰٟ]/g, "")
+    .replace(/ى/g, "ي")
+    .replace(/ة/g, "ه")
+    .replace(/ـ/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-  if (/sadr|sadri|chest|thorac|poitrine|صدر|breath|respir|nitnaffes|تنفس|faint|evanoui/.test(s)) {
-    return {
-      intent: "urgent",
-      source: "rules",
-      sources: [],
-      answer: ar ? "من فضلك اتصل بالممرضة الآن." : "Please call your nurse now. I’ve shown the button above.",
-    };
+// Copy of backend/app/ai/rules/red_flags.v1.json keywords (a string, or every term of an array),
+// plus the design's extra short forms. Errs towards urgent.
+const RED_FLAGS: (string | string[])[] = [
+  // chest_pain
+  "douleur thoracique", "douleurs thoraciques", "douleur poitrine", "chest pain", "ألم في الصدر", "وجع في صدري",
+  "waja3 fi sadri", "sadri yoja3ni", ["douleur", "poitrine"], ["ألم", "صدر"], ["وجع", "صدر"], ["pain", "chest"],
+  // stroke_signs
+  "avc", "paralysie", "bouche deviee", "stroke", "شلل", "جلطة", "fama chalal",
+  // severe_bleeding
+  "hemorragie", "saignement abondant", "severe bleeding", "نزيف", "dam barcha",
+  // breathing
+  "dyspnee", "essoufflement", "difficulty breathing", "ضيق في التنفس", "ضيق التنفس", "ma najjamch nitnaffes",
+  ["ضيق", "تنفس"], ["najjamch", "nitnaffes"], ["short", "breath"],
+  // loss_of_consciousness
+  "perte de connaissance", "syncope", "fainted", "إغماء", "ghabt",
+  // pregnancy_bleeding, high_fever_child
+  ["enceinte", "saignement"], ["pregnant", "bleeding"], ["حامل", "نزيف"],
+  ["fievre", "nourrisson"], ["fievre", "bebe"], ["baby", "fever"], ["سخانة", "رضيع"],
+  // design extras
+  "sadr", "chest", "thorac", "poitrine", "صدر", "breath", "nitnaffes", "تنفس", "faint", "evanoui",
+].map((k) => (Array.isArray(k) ? k.map(normalize) : normalize(k)));
+
+export function isRedFlag(question: string): boolean {
+  const t = normalize(question);
+  return RED_FLAGS.some((k) => (Array.isArray(k) ? k.every((term) => t.includes(term)) : t.includes(k)));
+}
+
+const DOSE = /next|pill|dose|medic|comprim|traitement|dwa|دواء|حبوب/;
+const VISIT = /appoint|rendez|rdv|visit|consultation|maw3ed|موعد/;
+const VITALS = /vital|heart|pulse|pouls|oxygen|oxyg|temperature|tension|skhana|سخانه|حراره|نبض/;
+/** "Is my heart rate dangerous?" asks for an interpretation: staff answer that. */
+const JUDGEMENT = /danger|normal|bad|serious|grave|worried|ok\b|خطير|خطر/;
+
+// Arabic display names for the mock record (synthetic).
+const AR_MEDS: Record<string, string> = {
+  "Amoxicillin 1g": "أموكسيسيلين 1 غ",
+  "Paracetamol 500mg": "باراسيتامول 500 مغ",
+  "Warfarin 5mg": "وارفارين 5 مغ",
+  "Aspirin 100mg": "أسبرين 100 مغ",
+};
+const AR_DOCTORS: Record<string, string> = { "Dr Trabelsi": "الدكتور الطرابلسي" };
+const AR_DAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+const AR_MONTHS = ["جانفي", "فيفري", "مارس", "أفريل", "ماي", "جوان", "جويلية", "أوت", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+const EN_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const EN_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** Tunis calendar parts (UTC+1, no DST). */
+function tunisParts(iso: string) {
+  const d = new Date(Date.parse(iso) + 3_600_000);
+  return { wd: d.getUTCDay(), day: d.getUTCDate(), mon: d.getUTCMonth() };
+}
+
+export function mockAssistant(question: string, ctx: AssistantContext): AssistantResponse {
+  const ar = AR.test(question);
+  const s = normalize(question);
+
+  if (isRedFlag(question)) {
+    return { intent: "urgent", source: "rules", sources: ["safety_rules"], answer: ar ? URGENT_AR : URGENT };
   }
-  if (/next|pill|dose|médicament|dwa|دواء|الدواء/.test(s)) {
-    return {
-      intent: "next_dose",
-      source: "model",
-      sources: [ar ? "المصدر: جدول أدويتك" : "Source: your medication schedule"],
-      answer: ar ? "الدواء الجاي على الساعة 14:00: أموكسيسيلين 1 غ." : "Your next dose is at 14:00: Amoxicillin 1g.",
-    };
+
+  if (DOSE.test(s)) {
+    const d = ctx.nextDose;
+    const answer = d
+      ? ar
+        ? `الدواء الجاي على الساعة ${d.time}: ${d.meds.map((m) => AR_MEDS[m] ?? m).join("، ")}.`
+        : `Your next dose is at ${d.time}: ${d.meds.join(", ")}.`
+      : ar
+        ? "ما عندكش دواء آخر اليوم."
+        : "You have no more doses scheduled today.";
+    return { intent: "next_dose", source: "rules", sources: ["med_doses"], answer };
   }
-  if (/appoint|rendez|rdv|maw3ed|موعد/.test(s)) {
-    return {
-      intent: "next_visit",
-      source: "model",
-      sources: [ar ? "المصدر: مواعيدك" : "Source: your appointments"],
-      answer: ar
-        ? "موعدك القادم يوم الاثنين 12 أكتوبر على الساعة 10:00 مع الدكتور الطرابلسي."
-        : "Your next appointment is Monday 12 Oct at 10:00 with Dr Trabelsi.",
-    };
+
+  if (VISIT.test(s)) {
+    const v = ctx.nextVisit;
+    let answer: string;
+    if (!v) {
+      answer = ar
+        ? "ما عندكش موعد مؤكد توة، المستشفى باش يتصل بيك."
+        : "You have no confirmed appointment yet; the hospital will contact you.";
+    } else {
+      const p = tunisParts(v.slot_at);
+      const t = tunisTime(v.slot_at);
+      const doc = v.doctor_name ?? "";
+      answer = ar
+        ? `موعدك القادم يوم ${AR_DAYS[p.wd]} ${p.day} ${AR_MONTHS[p.mon]} على الساعة ${t}${doc ? ` مع ${AR_DOCTORS[doc] ?? doc}` : ""}.`
+        : `Your next appointment is ${EN_DAYS[p.wd]} ${p.day} ${EN_MONTHS[p.mon]} at ${t}${doc ? ` with ${doc}` : ""}.`;
+    }
+    return { intent: "next_visit", source: "rules", sources: ["appointments"], answer };
   }
-  if (/vital|heart rate|pulse|oxygen|temperature|tension|نبض|حرارة/.test(s) && !/danger|normal|bad|grave|خطير/.test(s)) {
-    return {
-      intent: "my_vitals",
-      source: "model",
-      sources: [ar ? "المصدر: قياساتك" : "Source: your vitals"],
-      answer: ar
-        ? "آخر قياساتك: نبض القلب 96، الأكسجين 93%، الحرارة 37.4 درجة. الممرضة تتابعها."
-        : "Your latest readings: heart rate 96 beats/min, oxygen 93%, temperature 37.4 °C. Your nurse is following them.",
-    };
+
+  if (VITALS.test(s) && !JUDGEMENT.test(s)) {
+    const v = ctx.latestVitals;
+    const en: string[] = [];
+    const arParts: string[] = [];
+    if (v?.hr != null) (en.push(`heart rate ${v.hr} bpm`), arParts.push(`نبض القلب ${v.hr}`));
+    if (v?.spo2 != null) (en.push(`oxygen ${v.spo2}%`), arParts.push(`الأكسجين ${v.spo2}%`));
+    if (v?.temp != null) (en.push(`temperature ${v.temp} °C`), arParts.push(`الحرارة ${v.temp} درجة`));
+    const answer = !v || en.length === 0
+      ? ar
+        ? "ما فماش قياسات اليوم."
+        : "No readings yet today."
+      : ar
+        ? `آخر قياساتك (على الساعة ${tunisTime(v.ts)}): ${arParts.join("، ")}.`
+        : `Your latest readings (at ${tunisTime(v.ts)}): ${en.join(", ")}.`;
+    return { intent: "my_vitals", source: "rules", sources: ["vitals"], answer };
   }
-  return {
-    intent: "ask_staff",
-    source: "rules",
-    sources: [],
-    answer: ar
-      ? "ما نجمش نجاوب على أسئلة طبية. اسأل الممرضة ولا الطبيب."
-      : "I can’t answer medical questions. Please ask your nurse or doctor.",
-  };
+
+  return { intent: "ask_staff", source: "rules", sources: [], answer: ar ? ASK_STAFF_AR : ASK_STAFF };
 }

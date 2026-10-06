@@ -20,8 +20,10 @@ export interface ErrorCardProps {
    * "card" (default): a card holding the red alert box, then the buttons.
    * "box": the nurse States "Ward board · Error" — one red box with the title,
    * the message and the primary button inside it (no icon, no secondary button).
+   * "patient": Patient / States — one red box, bold title and message on one line,
+   * then a 48 px "Try again" button (patient app sizes: 16 px text, 12 px radius).
    */
-  variant?: "card" | "box";
+  variant?: "card" | "box" | "patient";
   className?: string;
 }
 
@@ -35,6 +37,21 @@ export function ErrorCard({
   variant = "card",
   className,
 }: ErrorCardProps) {
+  if (variant === "patient") {
+    return (
+      <div role="alert" className={`${styles.patient} ${className ?? ""}`}>
+        <span>
+          <b>{title}</b>
+          {message ? <> {message}</> : null}
+        </span>
+        {onRetry ? (
+          <button type="button" className={styles.patientButton} onClick={onRetry}>
+            {retryLabel}
+          </button>
+        ) : null}
+      </div>
+    );
+  }
   if (variant === "box") {
     return (
       <div role="alert" className={`${styles.box} ${className ?? ""}`}>

@@ -225,6 +225,37 @@ export interface ConfirmAppointmentRequest {
   urgency_final?: Urgency;
 }
 
+// ── Patient app extras (NOT IN CONTRACT: no api.md 1.4 endpoint yet) ────────
+
+/**
+ * A freed slot offered to the patient (n8n W2 backfill). The contract only has the
+ * n8n `backfill-accept` callback; the patient web view needs these two shapes.
+ */
+export interface SlotOffer {
+  id: string; // of-0001
+  /** The patient's own appointment the offer would replace. */
+  appointment_id: string;
+  slot_at: string;
+  doctor_id: string;
+  doctor_name: string;
+  room: string;
+  status: "open" | "accepted" | "taken";
+  expires_at: string;
+}
+
+export type HomeCareStepState = "done" | "next" | "pending";
+
+/** The "After discharge" screen: follow-up progress and the medicines to take at home. */
+export interface HomeCarePlan {
+  patient_id: string;
+  discharged_at: string;
+  ward_label: string; // "Ward C"
+  follow_up: { title: string; steps: { title: string; sub: string; state: HomeCareStepState }[] };
+  medicines: { when: string; name: string; sub: string }[];
+  desk_phone: string; // "+216 71 000 000"
+  emergency_number: string; // "190"
+}
+
 // ── Alerts ──────────────────────────────────────────────────────────────────
 
 export type AlertKind = "news2" | "trend" | "call_nurse" | "dose_missed" | "device_offline";
