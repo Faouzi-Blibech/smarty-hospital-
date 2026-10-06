@@ -2,7 +2,7 @@
 
     pip install -r requirements-laya.txt
     python -m app.ai.training.make_data
-    python -m app.ai.training.finetune_laya          # ~10 min on a laptop CPU
+    python -m app.ai.training.finetune_laya          # ~30 min on a laptop CPU
 
 The multilingual encoder (mmBERT, 307M parameters) stays frozen; only Laya's decision head (about 15M parameters)
 is trained. So the repo ships only the head, in fp16 (`models/laya_intent_head.safetensors`), and the base weights
@@ -49,7 +49,7 @@ def evaluate(agent, question: dict) -> dict:
             "misses": misses}
 
 
-def main() -> None:
+def main(epochs: int, head_lr: float) -> None:
     import laya
     from safetensors.torch import load_file, save_file
     from laya.train import TrainConfig, finetune
@@ -61,7 +61,7 @@ def main() -> None:
     print("base:", {k: v for k, v in base.items() if k != "misses"}, flush=True)
 
     with tempfile.TemporaryDirectory() as out:
-        cfg = TrainConfig(epochs=4, micro_batch=8, grad_accum=2, freeze_encoder=True, loss="soft-ce",
+        cfg = TrainConfig(epochs=epochs, micro_batch=8, grad_accum=1, head_lr=head_lr, freeze_encoder=True, loss="soft-ce",
                           shuffle_options=("choice",), calib_frac=0.0, log_every=10)
         summary = finetune(str(DATA / "intent_train.v1.jsonl"), src, out, config=cfg, device="cpu")
         print("train:", {"items": summary["train_items"], "epoch_loss": summary["epoch_loss"]}, flush=True)
@@ -79,4 +79,10 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--epochs", type=int, default=8)
+    ap.add_argument("--head-lr", type=float, default=1e-3)
+    args = ap.parse_args()
+    main(args.epochs, args.head_lr)

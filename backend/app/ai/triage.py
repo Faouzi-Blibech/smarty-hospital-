@@ -12,7 +12,7 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from app.ai import triage_model
+from app.ai import textclf
 
 RULES = Path(__file__).parent / "rules" / "red_flags.v1.json"
 ELDERLY_AGE = 75
@@ -65,9 +65,9 @@ def triage(referral_text: str, symptoms: list[str], age: int | None) -> TriageRe
                for i, f in zip(flag_ids, matched)]
 
     urgency, model_u, conf = floor, None, None
-    proba = triage_model.predict_proba(_normalize(full_text))
-    if proba is not None:
-        model_u, conf = max(proba.items(), key=lambda kv: kv[1])
+    model = textclf.load("triage.v1")
+    if model is not None:
+        model_u, conf = max(textclf.predict_proba(model, _normalize(full_text)).items(), key=lambda kv: kv[1])
         conf = round(conf, 2)
         reasons.append(f"Similar referrals were urgency {model_u} (model confidence {conf:.0%})")
         urgency = max(urgency, model_u)
@@ -77,4 +77,4 @@ def triage(referral_text: str, symptoms: list[str], age: int | None) -> TriageRe
     if not reasons:
         reasons = ["No red flag found; routine priority"]
     return TriageResult(urgency=urgency, reasons=reasons, red_flags=flag_ids,
-                        source="model" if proba is not None else "rules", model_urgency=model_u, confidence=conf)
+                        source="model" if model is not None else "rules", model_urgency=model_u, confidence=conf)
