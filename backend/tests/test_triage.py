@@ -1,40 +1,16 @@
 import pytest
 
 from app.ai import triage as T
-from app.ai.llm import LLMUnavailable
 
 
-def fake_llm(urgency):
-    def _f(prompt_name, user_text, schema, **kw):
-        return schema(urgency=urgency, reasons=["llm"], red_flags=[])
-
-    return _f
-
-
-def test_red_flag_floor_beats_llm(monkeypatch):
-    monkeypatch.setattr(T, "complete_json", fake_llm(2))
+def test_red_flag_floor_chest_pain():
     r = T.triage("Douleur thoracique depuis 2 jours", [], 55)
-    assert r.urgency == 5 and "chest_pain" in r.red_flags and r.source == "llm"
+    assert r.urgency == 5 and "chest_pain" in r.red_flags and r.source == "model"
 
 
 @pytest.mark.parametrize("text", ["ألم في الصدر منذ يومين", "3andi waja3 fi sadri", "chest pain at rest"])
-def test_red_flag_arabic_and_darija(monkeypatch, text):
-    monkeypatch.setattr(T, "complete_json", fake_llm(1))
+def test_red_flag_arabic_and_darija(text):
     assert T.triage(text, [], 40).urgency == 5
-
-
-def test_triage_fallback_when_llm_unavailable(monkeypatch):
-    def boom(*a, **k):
-        raise LLMUnavailable("down")
-
-    monkeypatch.setattr(T, "complete_json", boom)
-    r = T.triage("Contrôle de routine, pas de plainte", [], 30)
-    assert r.source == "fallback" and 1 <= r.urgency <= 2
-
-
-def test_no_flag_keeps_llm_score(monkeypatch):
-    monkeypatch.setattr(T, "complete_json", fake_llm(4))
-    assert T.triage("toux légère", [], 30).urgency == 4
 
 
 @pytest.mark.parametrize("text,flag", [
@@ -49,13 +25,26 @@ def test_red_flag_common_phrasings(text, flag):
     assert flag in [f["id"] for f in T.match_red_flags(text)]
 
 
-def test_triage_passes_names_for_pii_stripping(monkeypatch):
-    seen = {}
+def test_routine_text_is_low_urgency():
+    r = T.triage("Demande de justificatif administratif pour mon employeur", [], 30)
+    assert r.urgency in (1, 2) and r.model_urgency is not None
 
-    def capture(prompt_name, user_text, schema, **kw):
-        seen.update(kw)
-        return schema(urgency=2, reasons=["x"], red_flags=[])
 
-    monkeypatch.setattr(T, "complete_json", capture)
-    T.triage("Je suis Amira, toux", [], 30, names=["Amira", "Ben Salah"])
-    assert list(seen["names"]) == ["Amira", "Ben Salah"]
+def test_elderly_routine_is_raised():
+    r = T.triage("Demande de justificatif administratif pour mon employeur", [], 80)
+    assert r.urgency >= 2 and any("Age 80" in x for x in r.reasons)
+
+
+def test_without_model_falls_back_to_rules(monkeypatch):
+    monkeypatch.setattr(T.textclf, "load", lambda name: None)
+    r = T.triage("Demande de justificatif administratif pour mon employeur", [], 30)
+    assert r.source == "rules" and r.urgency == T.rule_floor("Demande de justificatif administratif pour mon employeur") == 1
+    assert r.reasons == ["No red flag found; routine priority"]
+    assert r.model_urgency is None
+
+
+def test_model_can_raise_but_never_lower(monkeypatch):
+    monkeypatch.setattr(T.textclf, "load", lambda name: {"fake": True})
+    monkeypatch.setattr(T.textclf, "predict_proba", lambda m, text: {1: 0.9, 5: 0.1})
+    r = T.triage("Douleur thoracique depuis 2 jours", [], 40)
+    assert r.urgency == 5 and r.model_urgency == 1

@@ -32,7 +32,7 @@ update the ownership table below and the table above in one PR titled `chore: sw
 | `simulator/` | Hedi | Python fake devices speaking the MQTT contract |
 | `backend/` (default) | Wali | FastAPI app, models, migrations, auth, IoT, alerts |
 | `backend/app/routers/appointments.py`, `backend/app/routers/ai.py`, `backend/app/routers/integrations.py` | Faouzi | |
-| `backend/app/ai/` (default) | Faouzi | LLM wrapper, triage, copilot, assistant, prompts, rules |
+| `backend/app/ai/` (default) | Faouzi | Triage, copilot, assistant, trained models + training scripts, optional LLM wrapper, prompts, rules |
 | `backend/app/ai/early_warning.py` | Wali | NEWS2 + trend |
 | `backend/app/ai/no_show/` | Hedi | No-show model + backfill ranking |
 | `web/` | Faouzi | Next.js PWA |
@@ -52,9 +52,10 @@ Never change a payload shape silently in code. If the code and the contract disa
 
 ## Locked rules (do not relitigate)
 
-- **Human in the loop:** AI only suggests. Every AI output is stored with `ai_suggested` (JSON incl. `source: llm|fallback`) and `human_confirmed_by`.
-- **Every AI module has a deterministic fallback.** The demo must work with the Wi-Fi off and the LLM down.
-- **All LLM calls go through `backend/app/ai/llm.py`**, which strips names, phone numbers and IDs before any cloud call. Prompts and rule lists live in versioned files under `backend/app/ai/prompts/` and `backend/app/ai/rules/`, never inline.
+- **Human in the loop:** AI only suggests. Every AI output is stored with `ai_suggested` (JSON incl. `source: model|rules|llm`) and `human_confirmed_by`.
+- **Every AI module works with no LLM.** The demo must work with the Wi-Fi off and `LLM_PROVIDER=none`.
+- **Models are trained only on synthetic data in `backend/app/ai/data/`;** the training scripts live in `backend/app/ai/training/`.
+- **Any optional LLM call goes through `backend/app/ai/llm.py`** (open models only), which strips names, phone numbers and IDs first. Prompts and rule lists live in versioned files under `backend/app/ai/prompts/` and `backend/app/ai/rules/`, never inline.
 - **Privacy:** self-hosted only (n8n too). Every read of a patient record writes `audit_log`. Synthetic data only, never real patients.
 - **On-device reminders never depend on the server or n8n** (NVS schedule + DS1307 RTC).
 - **n8n is not the source of truth.** The backend emits events; n8n calls back `/integrations/n8n/*`.

@@ -8,8 +8,6 @@ from types import SimpleNamespace as NS
 
 import pytest
 
-from app.ai import triage as T
-from app.ai.llm import LLMUnavailable
 from app.services import appointments as S
 
 NOW = datetime(2026, 10, 6, 9, 0, tzinfo=UTC)
@@ -30,30 +28,11 @@ def appt(aid, urgency_ai=3, urgency_final=None, created=NOW, status="requested",
     return NS(**base)
 
 
-@pytest.fixture()
-def llm_down(monkeypatch):
-    def boom(*a, **k):
-        raise LLMUnavailable("down")
-    monkeypatch.setattr(T, "complete_json", boom)
-
-
-def test_request_runs_triage_with_red_flag(llm_down):
+def test_request_runs_triage_with_red_flag():
     f = S.new_appointment_fields(patient(), "douleur thoracique depuis hier", [], today=NOW.date())
     assert f["status"] == "requested" and f["urgency_ai"] == 5
-    assert f["ai_suggested"]["source"] == "fallback" and "chest_pain" in f["ai_suggested"]["red_flags"]
+    assert f["ai_suggested"]["source"] == "model" and "chest_pain" in f["ai_suggested"]["red_flags"]
     assert 0.0 <= f["no_show_prob"] <= 1.0
-
-
-def test_request_strips_patient_names(monkeypatch):
-    seen = {}
-
-    def capture(prompt_name, user_text, schema, **kw):
-        seen["names"] = list(kw.get("names", []))
-        return schema(urgency=2, reasons=["x"], red_flags=[])
-
-    monkeypatch.setattr(T, "complete_json", capture)
-    S.new_appointment_fields(patient(), "Je suis Sami Gharbi, toux", [], today=NOW.date())
-    assert seen["names"] == ["Sami", "Gharbi"]
 
 
 def test_waitlist_uses_final_over_ai_then_oldest():
@@ -140,7 +119,7 @@ def test_backfill_accept_rules():
     assert e.value.code == "not_waiting"
 
 
-def test_follow_up_fields_go_through_triage(llm_down):
+def test_follow_up_fields_go_through_triage():
     f = S.follow_up_fields(patient(), days=14, today=NOW.date())
     assert f["status"] == "requested" and f["referral_text"] == "Post-discharge follow-up in 14 days"
-    assert 1 <= f["urgency_ai"] <= 5 and f["ai_suggested"]["source"] == "fallback"
+    assert 1 <= f["urgency_ai"] <= 5 and f["ai_suggested"]["source"] == "model"

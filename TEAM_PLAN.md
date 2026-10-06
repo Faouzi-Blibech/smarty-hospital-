@@ -95,7 +95,7 @@ flowchart LR
 ### Day 2 — Wed 10-07 (parallel build)
 - **Hedi:** ESP listener in Wokwi: NVS schedule + RTC reminders + OLED dose screen + servo + acks; `--companion` simulator answers `dose_taken`.
 - **Wali:** prescriptions → `med_doses` → retained schedule publish; dose events update `med_doses`; early warning + alerts + `alert.critical` / `dose.missed` emits.
-- **Faouzi:** `llm.py`, triage (rules + LLM + fallback), appointments + waitlist endpoints, admin view (waitlist confirm/override, devices/beds), patient view (meds, next visit, request appointment); copilot summary; digitizer; n8n W3 + W1.
+- **Faouzi:** `llm.py`, triage (rules + trained model), appointments + waitlist endpoints, admin view (waitlist confirm/override, devices/beds), patient view (meds, next visit, request appointment); copilot summary; n8n W3 + W1.
 - **Checkpoint CP2 (end of Day 2):** a prescription written in the doctor view reaches the **Wokwi** device's OLED, and a dose event comes back.
 
 ### Day 3 — Thu 10-08 (integration day)
@@ -104,7 +104,7 @@ flowchart LR
 - Afternoon: Hedi → no-show model; Wali → trend alerts + device-offline alert; Faouzi → W6 if time allows.
 
 ### Day 4 — Fri 10-09 (polish)
-- Deterministic fallbacks verified with the network unplugged and `LLM_PROVIDER=fallback`.
+- AI verified with the network unplugged and `LLM_PROVIDER=none` (rules and trained models only).
 - Record a **backup demo video** of the full path.
 - Pitch rehearsal ×3 (timed). Stretch items only if the path is green.
 
@@ -140,10 +140,10 @@ flowchart LR
 6. **(30 s) Discharge:** the device clears; a follow-up is booked (W6 or seeded); the patient sees it in the app.
 7. **(45 s) Trust:**
    - Self-hosted, with an audit log on screen.
-   - Anonymized LLM calls; INPDP (Law 2004-63).
+   - No patient data leaves the server by default; any optional LLM call is anonymized; INPDP (Law 2004-63).
    - Human-in-the-loop everywhere; not medical-grade, which is our production plan.
 
-**Backup:** the Day 4 video, plus the simulator-only run (no hardware), plus `LLM_PROVIDER=fallback`.
+**Backup:** the Day 4 video, plus the simulator-only run (no hardware), plus `LLM_PROVIDER=none`.
 
 ## 6. Risks
 
@@ -153,7 +153,7 @@ flowchart LR
 | Real board not built or unreliable | M | L | The demo uses the Wokwi device on the projector; events are identical | Hedi + Wali |
 | Judges expect real sensors | M | M | Honesty slide: vitals are simulated; the architecture takes real sensors over the same contract | Faouzi |
 | Venue Wi-Fi blocks MQTT/ports | M | H | Bring a phone hotspot / travel router; run the stack on one laptop on that LAN | Wali |
-| LLM slow, offline or out of quota | M | H | 15 s timeout → deterministic fallback; `source` badge in the UI | Faouzi |
+| Optional LLM slow, offline or out of quota | L | L | Off by default (`LLM_PROVIDER=none`); 15 s timeout → templated text; `source` badge in the UI | Faouzi |
 | Telegram blocked at venue | L | M | Show the n8n execution log + email as backup | Faouzi |
 | Faouzi overloaded (web + AI + n8n + pitch) | H | H | Stretch items cut first; Wali takes the integrations router if he is ahead after CP2 | Faouzi |
 | Contract drift between lanes | M | H | Contract-change rule; contract tests in the backend (`tests/test_contracts.py`) | all |

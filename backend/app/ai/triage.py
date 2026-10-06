@@ -1,33 +1,30 @@
-"""Triage scorer: LLM urgency 1-5 with a hard red-flag floor the LLM cannot lower.
+"""Triage scorer: hard red-flag rules + a trained classifier, no LLM (owner: Faouzi).
 
-Falls back to rules only when the LLM is unavailable. A human always confirms the result.
+urgency = max(red-flag floor, trained model, 2 if age >= 75). The model can only raise urgency above the floor,
+never lower it. Without the shipped model file it degrades to the rules alone. A human always confirms the result.
 """
 
 import json
 import re
 import unicodedata
-from collections.abc import Iterable
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from app.ai.llm import LLMUnavailable, complete_json
+from app.ai import textclf
 
 RULES = Path(__file__).parent / "rules" / "red_flags.v1.json"
+ELDERLY_AGE = 75
 
 
 class TriageResult(BaseModel):
     urgency: int
     reasons: list[str]
     red_flags: list[str]
-    source: str
-
-
-class _LlmTriage(BaseModel):
-    urgency: int = Field(ge=1, le=5)
-    reasons: list[str]
-    red_flags: list[str]
+    source: str  # "model" (rules + trained classifier) | "rules" (no model file shipped)
+    model_urgency: int | None = None
+    confidence: float | None = None
 
 
 _ARABIC_VARIANTS = str.maketrans({"ى": "ي", "ة": "ه", "ـ": None})
@@ -55,23 +52,29 @@ def match_red_flags(text: str) -> list[dict]:
     return [f for f in _flags() if any(all(term in t for term in k) for k in f["norm_keywords"])]
 
 
-def triage(referral_text: str, symptoms: list[str], age: int | None, history: str = "",
-           names: Iterable[str] = ()) -> TriageResult:
-    """`names`: the patient's first/last names, stripped before any cloud LLM call."""
+def rule_floor(text: str) -> int:
+    return max((f["min_urgency"] for f in match_red_flags(text)), default=1)
+
+
+def triage(referral_text: str, symptoms: list[str], age: int | None) -> TriageResult:
     full_text = " ".join([referral_text, *symptoms])
     matched = match_red_flags(full_text)
-    floor = max((f["min_urgency"] for f in matched), default=1)
     flag_ids = [f["id"] for f in matched]
+    floor = max((f["min_urgency"] for f in matched), default=1)
+    reasons = [f"Red flag: {i.replace('_', ' ')} (urgency at least {f['min_urgency']})"
+               for i, f in zip(flag_ids, matched)]
 
-    user_text = (f"Referral / complaint: {referral_text}\nSymptoms: {', '.join(symptoms) or 'none listed'}\n"
-                 f"Age: {age if age is not None else 'unknown'}\nHistory: {history or 'none given'}")
-    try:
-        out = complete_json("triage", user_text, _LlmTriage, names=list(names))
-    except LLMUnavailable:
-        urgency = max(floor, 2 if (age or 0) >= 75 else 1)
-        reasons = [f"Red flag: {i.replace('_', ' ')}" for i in flag_ids] or ["No red flag found; routine priority"]
-        return TriageResult(urgency=urgency, reasons=reasons, red_flags=flag_ids, source="fallback")
-
-    urgency = max(min(max(out.urgency, 1), 5), floor)
-    red_flags = list(dict.fromkeys(flag_ids + out.red_flags))
-    return TriageResult(urgency=urgency, reasons=out.reasons, red_flags=red_flags, source="llm")
+    urgency, model_u, conf = floor, None, None
+    model = textclf.load("triage.v1")
+    if model is not None:
+        model_u, conf = max(textclf.predict_proba(model, _normalize(full_text)).items(), key=lambda kv: kv[1])
+        conf = round(conf, 2)
+        reasons.append(f"Similar referrals were urgency {model_u} (model confidence {conf:.0%})")
+        urgency = max(urgency, model_u)
+    if (age or 0) >= ELDERLY_AGE and urgency < 2:
+        urgency = 2
+        reasons.append(f"Age {age}: routine requests are raised to urgency 2")
+    if not reasons:
+        reasons = ["No red flag found; routine priority"]
+    return TriageResult(urgency=urgency, reasons=reasons, red_flags=flag_ids,
+                        source="model" if model is not None else "rules", model_urgency=model_u, confidence=conf)

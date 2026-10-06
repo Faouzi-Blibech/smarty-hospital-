@@ -24,7 +24,7 @@ In Tunisian public hospitals:
 
 **Principles:**
 - **Human in the loop:** AI only suggests, and a person confirms every change to care or bookings.
-- **Privacy by design:** self-hosted, role-based access, an audit log of every record read, and anonymised LLM calls (Tunisian Organic Law 2004-63 / INPDP).
+- **Privacy by design:** self-hosted, role-based access, an audit log of every record read, and no patient data leaves the server unless an optional open LLM is switched on, and then it is anonymised (Tunisian Organic Law 2004-63 / INPDP).
 - **Honest prototype:** vitals are simulated (the bedside unit has no sensors) and the AI is not clinically validated.
 - **Synthetic data only.**
 
@@ -53,7 +53,7 @@ Full diagrams (use cases, patient-journey swimlane, hardware, AI layer): [`docs/
 | Data | PostgreSQL + TimescaleDB, MinIO |
 | Web | Next.js PWA |
 | Automation | n8n (self-hosted) |
-| AI | Claude API or a local model through one privacy wrapper, with deterministic fallbacks |
+| AI | Hand-coded rules + small trained models (scikit-learn, optional Laya); an optional open LLM (Groq or Ollama) through one privacy wrapper |
 | Deploy | Docker Compose |
 
 ## Quick start

@@ -1,4 +1,6 @@
-"""Doctor copilot: LLM daily summary + drug-interaction check from a curated rule list (never the LLM).
+"""Doctor copilot: templated daily summary (optional LLM rewrite) + drug-interaction check.
+
+Interactions come from a curated rule list, never from the LLM.
 
 `summarize` is DB-free; `daily_summary(db, patient_id)` wraps it once the models exist (plans/FAOUZI.md Task 7).
 """
@@ -11,6 +13,7 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from app.ai.llm import LLMUnavailable, complete_json
+from app.config import get_settings
 
 RULES = Path(__file__).parent / "rules" / "interactions.v1.json"
 
@@ -30,9 +33,17 @@ def check_interactions(med_names: list[str]) -> list[dict]:
             for p in _pairs() if all(d in meds for d in p["drugs"])]
 
 
+def _trend(vals: list) -> str:
+    if len(vals) < 2 or not vals[0]:
+        return "stable"
+    first, last = vals[0], vals[-1]
+    change = (last - first) / abs(first)
+    return "rising" if change > 0.05 else "falling" if change < -0.05 else "stable"
+
+
 def _range(vitals: list[dict], key: str) -> tuple | None:
     vals = [v[key] for v in vitals if v.get(key) is not None]
-    return (min(vals), max(vals), vals[-1]) if vals else None
+    return (min(vals), max(vals), vals[-1], _trend(vals)) if vals else None
 
 
 def _stats_text(vitals: list[dict]) -> str:
@@ -42,27 +53,38 @@ def _stats_text(vitals: list[dict]) -> str:
     for key, label, unit in (("hr", "HR", ""), ("spo2", "SpO2", "%"), ("temp", "Temp", "°C")):
         r = _range(vitals, key)
         if r:
-            parts.append(f"{label} {r[0]}–{r[1]}{unit} (latest {r[2]}{unit})")
+            parts.append(f"{label} {r[0]}–{r[1]}{unit} (latest {r[2]}{unit}, {r[3]})")
     news2 = _range(vitals, "news2")
     if news2:
         parts.append(f"max NEWS2 {news2[1]}")
     return "Last 24h: " + ", ".join(parts) + "."
 
 
-def fallback_summary(vitals: list[dict], notes: list[str], meds: list[str]) -> str:
+def _notes_text(notes: list[str]) -> str:
     n = len(notes)
-    return (f"{_stats_text(vitals)} {n} nurse note{'s' if n != 1 else ''}. "
-            f"Active meds: {', '.join(meds) if meds else 'none'}.")
+    text = f"{n} nurse note{'s' if n != 1 else ''}."
+    if notes:
+        latest = notes[-1]
+        latest = latest[:117] + "..." if len(latest) > 120 else latest
+        text += f' Latest: "{latest}".'
+    return text
+
+
+def template_summary(vitals: list[dict], notes: list[str], meds: list[str], interactions: list[dict]) -> str:
+    lines = [_stats_text(vitals), _notes_text(notes), f"Active meds: {', '.join(meds) if meds else 'none'}."]
+    lines += [f"Interaction ({i['severity']}): {' + '.join(i['drugs'])}: {i['note']}" for i in interactions]
+    return "\n".join(lines)
 
 
 def summarize(vitals: list[dict], notes: list[str], meds: list[str], names: list[str]) -> dict:
     interactions = check_interactions(meds)
-    user_text = (f"{_stats_text(vitals)}\nNurse notes:\n" + ("\n".join(f"- {t}" for t in notes) or "- none")
-                 + f"\nActive medications: {', '.join(meds) or 'none'}")
-    try:
-        summary, source = complete_json("summary", user_text, _LlmSummary, names=names).summary, "llm"
-    except LLMUnavailable:
-        summary, source = fallback_summary(vitals, notes, meds), "fallback"
+    summary, source = template_summary(vitals, notes, meds, interactions), "rules"
+    if get_settings().llm_provider != "none":
+        try:
+            summary = complete_json("summary", summary, _LlmSummary, names=names).summary
+            source = "llm"
+        except LLMUnavailable:
+            pass
     return {"summary": summary, "interactions": interactions, "source": source,
             "generated_at": datetime.now(UTC).isoformat()}
 

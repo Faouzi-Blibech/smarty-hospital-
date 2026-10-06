@@ -1,6 +1,6 @@
 # REST + WebSocket contract — v1.0
 
-> **Version:** 1.3 (2026-10-05) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations)
+> **Version:** 1.4 (2026-10-06) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Conventions
@@ -79,7 +79,7 @@ Seed accounts (password `ward1234` for all): `doctor@ward.tn`, `nurse@ward.tn`, 
 
 | Method & path | Roles | Notes |
 |---|---|---|
-| `POST /appointments` | patient (self), admin | Runs triage synchronously (fallback if the LLM is slow) → `Appointment` with `status:"requested"` |
+| `POST /appointments` | patient (self), admin | Runs triage synchronously (rules + trained model, no LLM) → `Appointment` with `status:"requested"` |
 | `GET /appointments/waitlist` | admin, doctor | Requested appointments sorted by `urgency_final ?? urgency_ai` desc, then `created_at` asc |
 | `GET /appointments?patient_id=&status=` | admin, doctor, patient (self) | |
 | `PATCH /appointments/{id}` | admin, doctor | `{"urgency_final": 1-5}`: human override of the AI urgency without booking a slot; sets `human_confirmed_by` |
@@ -93,7 +93,7 @@ Seed accounts (password `ward1234` for all): `doctor@ward.tn`, `nurse@ward.tn`, 
   "preferred_dates": ["2026-10-12"] }
 // Appointment
 { "id": "a-0001", "patient_id": "p-0003", "status": "requested|confirmed|cancelled|done|no_show",
-  "urgency_ai": 5, "urgency_final": null, "triage": { "urgency": 5, "reasons": ["..."], "red_flags": ["chest_pain"], "source": "llm|fallback" },
+  "urgency_ai": 5, "urgency_final": null, "triage": { "urgency": 5, "reasons": ["..."], "red_flags": ["chest_pain"], "source": "model|rules" },
   "slot_at": null, "doctor_id": null, "confirmed_by": null, "patient_confirmed_at": null, "no_show_prob": 0.18, "created_at": "..." }
 ```
 
@@ -116,12 +116,12 @@ Seed accounts (password `ward1234` for all): `doctor@ward.tn`, `nurse@ward.tn`, 
 
 | Method & path | Roles | Notes |
 |---|---|---|
-| `POST /ai/triage` | admin, doctor | `{"referral_text","symptoms[]","age","history"}` → `{"urgency":1-5,"reasons[]","red_flags[]","source"}`. Preview only, nothing stored |
+| `POST /ai/triage` | admin, doctor | `{"referral_text","symptoms[]","age"}` → `{"urgency":1-5,"reasons[]","red_flags[]","model_urgency","confidence","source"}`. `model_urgency` and `confidence` are null when no trained model is loaded. Preview only, nothing stored |
 | `GET /ai/summary/{patient_id}` | doctor | → `{"summary","interactions":[{"drugs":[a,b],"severity","note"}],"source","generated_at","human_confirmed_by"}` (cached 10 min; `human_confirmed_by` is null until a doctor reviews it, and the UI shows "needs review" until then) |
 | `POST /ai/summary/{patient_id}/review` | doctor | Marks the latest summary as reviewed (`human_confirmed_by`) |
-| `POST /ai/assistant` *(stretch)* | patient | `{"question"}` → `{"answer","sources[]"}`, scoped to the caller's own record |
+| `POST /ai/assistant` *(stretch)* | patient | `{"question"}` → `{"answer","sources[]","intent","source"}`, scoped to the caller's own record |
 
-`source` is `"llm"` or `"fallback"` on every AI response, so the UI can show a badge.
+`source` is `"model"` (a trained model decided), `"rules"` (deterministic rules only) or `"llm"` (the optional open LLM wrote the text) on every AI response, so the UI can show a badge.
 
 ## Integrations (n8n callbacks — Faouzi)
 
@@ -153,6 +153,8 @@ All are authenticated with the header `X-N8N-Secret: ${N8N_CALLBACK_SECRET}` (no
 Filtering: a nurse receives frames for their ward, a doctor for their own patients, an admin only `device_status`. Patients do not connect.
 
 ## Changelog
+
+- **1.4** (2026-10-06): AI layer reworked onto rules and trained models. `POST /ai/triage` drops `history` and adds `model_urgency` and `confidence`; `POST /ai/assistant` also returns `intent` and `source`; `source` is now `"model" | "rules" | "llm"` (was `"llm" | "fallback"`), including `Appointment.triage.source`. Owner: Faouzi.
 
 - **1.3** (2026-10-05): removes `POST /ai/digitize` and `/ai/digitize/{id}/approve` (paper digitizer dropped) and the `doc-` ID. Owner: Faouzi; nothing else called them.
 

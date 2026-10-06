@@ -10,11 +10,13 @@
   - A typed API client that switches between fixtures (`NEXT_PUBLIC_USE_MOCKS=1`) and the real FastAPI.
   - One WebSocket hook for live frames.
 - **AI:**
-  - Modules in `backend/app/ai/` call a single wrapper, `llm.py`. It strips PII, routes on `LLM_PROVIDER` (`anthropic` | `local` | `fallback`), times out at 15 s and raises `LLMUnavailable`.
-  - Every module catches that and returns its deterministic fallback, with `source: "fallback"`.
+  - Reworked 2026-10-06 (spec: `docs/superpowers/specs/2026-10-06-ai-rework-design.md`). Hand-coded rules plus small trained models decide; no LLM is needed.
+  - Triage = red-flag rules + a trained char n-gram classifier. Assistant = Laya (optional) + the same kind of classifier, templated answers. Copilot = templates + rule interactions.
+  - An optional open LLM (`LLM_PROVIDER=groq|local`) may rewrite the copilot summary through `llm.py`. It strips PII, times out at 15 s and raises `LLMUnavailable`; the template text is kept then.
+  - `source` is `"model"`, `"rules"` or `"llm"`.
 - **n8n:** one router workflow on `/webhook/ward-events` that fans out on `event`.
 
-**Tech stack:** Next.js 16 + React 19 + TypeScript (strict) + Tailwind v4 + Recharts · Python 3.12, FastAPI, Pydantic v2, `anthropic` SDK (Claude `claude-opus-5-5`), httpx (Ollama for local), MinIO · n8n self-hosted, Telegram Bot API, SMTP.
+**Tech stack:** Next.js 16 + React 19 + TypeScript (strict) + Tailwind v4 + Recharts · Python 3.12, FastAPI, Pydantic v2, scikit-learn (training only), optional Laya, httpx (Groq or Ollama, optional), MinIO · n8n self-hosted, Telegram Bot API, SMTP.
 
 **Spec:** `docs/superpowers/specs/2026-10-05-ward-foundation-design.md` · read also `CLAUDE.md`, `docs/architecture.md`, `TEAM_PLAN.md` and all of `docs/contracts/` (you own `api.md` → Appointments/AI/Integrations and all of `n8n-webhooks.md`).
 
@@ -29,18 +31,19 @@
 
 - Contracts v1.0 are frozen; changes need a version bump, an announcement and a 👍.
 - **Human in the loop:** every AI output is stored with `ai_suggested` (including `source`) plus a confirmer, and the UI shows the badge "AI suggestion · needs confirmation" until a human confirms it.
-- **Every AI module has a deterministic fallback.** The full demo must run with `LLM_PROVIDER=fallback` and no internet.
-- All LLM calls go through `backend/app/ai/llm.py`. Prompts live in `backend/app/ai/prompts/<name>.v1.md`, rules in `backend/app/ai/rules/*.v1.json`; never inline them.
-- PII stripping before any cloud call: patient names, phone numbers, emails, `p-\d{4}`-style IDs, 8-digit Tunisian CIN numbers.
+- **Every AI module works with no LLM.** The full demo must run with `LLM_PROVIDER=none` and no internet.
+- Models are trained only on synthetic data in `backend/app/ai/data/`; training scripts live in `backend/app/ai/training/`.
+- Any optional LLM call goes through `backend/app/ai/llm.py` (open models only). Prompts live in `backend/app/ai/prompts/<name>.v1.md`, rules in `backend/app/ai/rules/*.v1.json`; never inline them.
+- PII stripping before any optional LLM call: patient names, phone numbers, emails, `p-\d{4}`-style IDs, 8-digit Tunisian CIN numbers.
 - UI copy never claims medical-grade sensing or clinically validated AI; vitals are simulated (the bedside unit has no sensors since PR #13). Pitch framing: "automates the patient process; shorter waits are a result".
-- Model: `claude-opus-5-5` (default in `.env.example` → `LLM_MODEL`).
+- Optional LLM model: `LLM_MODEL` in `.env.example` (open models only: Groq or Ollama). Anthropic is removed.
 - No AI attribution in commits/PRs. Branches: `faouzi/<feature>`. Conventional Commits.
 - Your lane is the widest. **Cut order if you fall behind:** patient assistant → W6 → W5 → W2 → patient view polish. Then hand the patient view to Hedi and `routers/integrations.py` to Wali (`TEAM_PLAN.md` §7).
 
 ## Review Focus
 
-1. **LLM down, slow or refusing** (no key, timeout, `stop_reason == "refusal"`, invalid JSON): every AI endpoint still returns 200 with `source: "fallback"` within ~16 s (Task 5 test `test_triage_fallback_when_llm_unavailable` + same pattern in Tasks 7–8).
-2. **Red flag + a low LLM score:** "douleur thoracique" scored 2 by the LLM must come out ≥ 5. The rules set a floor the LLM cannot lower (Task 5 test `test_red_flag_floor_beats_llm`).
+1. **No LLM, or a broken one** (`LLM_PROVIDER=none`, no key, timeout, invalid JSON): every AI endpoint still returns 200 with `source` `"model"` or `"rules"` (the tests in `test_triage.py`, `test_copilot.py`, `test_assistant.py`).
+2. **Red flag + a low model score:** "douleur thoracique" must come out ≥ 5 whatever the trained model says. The rules set a floor the model cannot lower.
 3. **Arabic / Darija / mixed-script referral text** (`ألم في الصدر`, `waja3 fi sadri`): red-flag matching must work across scripts and accents (Task 5 test `test_red_flag_arabic_and_darija`).
 4. **The admin overrides the AI urgency,** and the waitlist re-sorts using `urgency_final` first (Task 6 test `test_waitlist_uses_final_over_ai`).
 5. **WebSocket drops mid-demo:** the nurse dashboard must auto-reconnect (backoff 1 s → 10 s) and show a "reconnecting" pill, never a blank page (Task 3, manual check: restart the `api` container).
@@ -53,16 +56,23 @@
 # backend/app/ai/llm.py
 class LLMUnavailable(Exception): ...
 def strip_pii(text: str, names: Iterable[str] = ()) -> str
-def complete_json(prompt_name: str, user_text: str, schema: type[T], *,
-                  names: Iterable[str] = (), images: Sequence[tuple[bytes, str]] = ()) -> T
-    # images: (bytes, media_type); raises LLMUnavailable on any failure
+def complete_json(prompt_name: str, user_text: str, schema: type[T], *, names: Iterable[str] = ()) -> T
+    # raises LLMUnavailable on any failure (provider none, network, bad JSON)
 
 # backend/app/ai/triage.py
-class TriageResult(BaseModel): urgency: int; reasons: list[str]; red_flags: list[str]; source: str
-def triage(referral_text: str, symptoms: list[str], age: int | None, history: str = "") -> TriageResult
+class TriageResult(BaseModel):
+    urgency: int; reasons: list[str]; red_flags: list[str]; source: str  # "model" | "rules"
+    model_urgency: int | None; confidence: float | None
+def triage(referral_text: str, symptoms: list[str], age: int | None) -> TriageResult
 
-# backend/app/ai/copilot.py
-def daily_summary(db, patient_id: str) -> dict   # {"summary","interactions","source","generated_at"}
+# backend/app/ai/copilot.py (DB-free; the router loads the rows)
+def summarize(vitals: list[dict], notes: list[str], meds: list[str], names: list[str]) -> dict
+    # {"summary", "interactions", "source", "generated_at"}: "rules" by default, "llm" if an open LLM rewrote the text
+def check_interactions(med_names: list[str]) -> list[dict]
+
+# backend/app/ai/assistant.py (DB-free; the router loads only the caller's own rows)
+def assistant_context(patient, doses_today, next_visit, latest_vital, *, now) -> dict
+def answer(question: str, ctx: dict) -> dict   # {"answer", "sources", "intent", "source": "model"|"rules"}
 ```
 
 REST: `api.md` → Appointments, AI and Integrations sections (you implement those routers on Wali's models and deps).
@@ -178,6 +188,8 @@ export async function api<T>(method: string, path: string, body?: unknown): Prom
 ## Day 2 — Wed 10-07
 
 ### Task 5: LLM wrapper + triage
+
+> **Historical (superseded 2026-10-06).** The steps and code below describe the original LLM-first design. The shipped design is in the AI rework spec; triage no longer calls an LLM and takes no `history`.
 
 **Files:**
 - Create:
@@ -379,6 +391,8 @@ def test_patient_cannot_confirm(client):
 
 ### Task 7: Doctor copilot summary
 
+> **Historical (superseded 2026-10-06).** The summary is now a template; an LLM only rewrites it when `LLM_PROVIDER` is set.
+
 **Files:**
 - Create: `backend/app/ai/copilot.py`, `backend/app/ai/prompts/summary.v1.md`, `backend/app/ai/rules/interactions.v1.json`, `backend/app/routers/ai.py`
 - Test: `backend/tests/test_copilot.py`
@@ -414,7 +428,7 @@ Removed from scope: code, routes (`api.md` v1.3) and the `documents` table (`dat
 - [ ] Export the workflows. **CP2** (with Hedi): the prescription you write reaches the real device.
 - [ ] Commit `feat(web,n8n): patient view, W1 reminder, W3 missed dose`.
 
-**Day 2 done when:** CP2 passes. Triage, waitlist and summary all work with `LLM_PROVIDER=anthropic` **and** `LLM_PROVIDER=fallback`; W1, W3 and W4 deliver to Telegram.
+**Day 2 done when:** CP2 passes. Triage, waitlist and summary all work with `LLM_PROVIDER=none` (and with `groq` or `local` if you want to try the optional rewrite); W1, W3 and W4 deliver to Telegram.
 
 ---
 
@@ -445,21 +459,23 @@ Built ahead against the contracts (all DB-free and tested): `app/services/appoin
   - `POST /ai/triage` (`triage`, preview only)
   - `GET /ai/summary/{patient_id}`: `summary_inputs` over the last 24 h, `is_fresh` cache, else `summarize` + new `ai_summaries` row, `summary_payload`
   - `POST /ai/summary/{patient_id}/review` (`apply_review`)
-  - `POST /ai/assistant` (patient): the caller's own today's doses, next appointment, latest vital → `assistant.answer(q, assistant_context(...))`
+  - `POST /ai/assistant` (patient): the caller's own today's doses, next appointment, latest vital → `assistant.answer(q, assistant_context(...))`; the response carries `intent` and `source` too
+  - `summary_inputs` takes notes and vitals oldest-first, so the router loads them oldest-first
+  - call `laya_intent.preload()` at startup (first Laya load takes about 50 s; skip it when `LAYA_ENABLED=false` or Laya is not installed)
 - [ ] Mount the three routers in `app/main.py` (one-line PR to Wali, he owns `main.py`).
 - [ ] API tests with Wali's `client` fixture and `tests/helpers.login` for each route above, including the 403s from the role matrix and the 409s.
 - [ ] Run W2/W5/W6 against the real API (no stub): `WARD_API_URL` back to the default.
 
 ### Task 11 (stretch): Patient assistant
 
-- [ ] `POST /ai/assistant`: tools limited to the caller's own record (`get_my_meds`, `get_my_next_visit`, `get_my_latest_vitals`). The system prompt forbids diagnosis and redirects medical questions to the nurse. Fallback: answers "next dose" and "next visit" questions from the DB by keyword, and otherwise says "Please ask your nurse".
+- [ ] `POST /ai/assistant`: built (rework 2026-10-06). It classifies the question into an intent (`next_dose`, `next_visit`, `my_vitals`, `ask_staff`, `urgent`) with Laya plus a trained classifier, then fills a template from the caller's own record. A red-flag question gets the URGENT message with no model call. No LLM, no diagnosis; otherwise "Please ask your nurse".
 
 ## Day 4 — Fri 10-09 (polish + pitch)
 
-- [ ] Verify the whole demo with `LLM_PROVIDER=fallback` and the Wi-Fi off (local stack only).
+- [ ] Verify the whole demo with `LLM_PROVIDER=none` and the Wi-Fi off (local stack only).
 - [ ] Record the **backup demo video** of the full golden path.
-- [ ] Pitch deck (≤ 10 slides): problem → Ward (one line) → the live demo → architecture → AI with a human in the loop → privacy (self-hosted, audit, anonymised LLM, INPDP Law 2004-63) → honesty slide (vitals simulated, AI not clinically validated, production path) → impact metrics we'd track (no-show rate, time-to-appointment for urgency ≥ 4, paper hours saved) → team.
-- [ ] Rehearse ×3 with a timer. Q&A prep: cost per bed, scaling to a hospital, data residency, what if the LLM is wrong (rules floor + human confirm), and offline behaviour.
+- [ ] Pitch deck (≤ 10 slides): problem → Ward (one line) → the live demo → architecture → AI with a human in the loop → privacy (self-hosted, audit, no data leaves the server by default, optional LLM anonymised, INPDP Law 2004-63) → honesty slide (vitals simulated, AI not clinically validated, production path) → impact metrics we'd track (no-show rate, time-to-appointment for urgency ≥ 4, paper hours saved) → team.
+- [ ] Rehearse ×3 with a timer. Q&A prep: cost per bed, scaling to a hospital, data residency, what if the AI is wrong (rules floor + human confirm), and offline behaviour.
 
 **Day 4 done when:** the backup video is recorded, the deck is done, and the team has rehearsed three times.
 
