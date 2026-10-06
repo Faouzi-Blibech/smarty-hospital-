@@ -7,6 +7,12 @@
 .aside {
   width: 248px;
   flex: none;
+  align-self: stretch; /* the ink column runs the full page height */
+  background: var(--ink);
+}
+
+/* The nav itself stays pinned to the viewport while the page scrolls. */
+.asideInner {
   position: sticky;
   top: 0;
   height: 100vh;

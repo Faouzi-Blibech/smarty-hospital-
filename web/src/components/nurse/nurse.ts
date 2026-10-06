@@ -166,11 +166,11 @@ function subOf(d: Dose, ctx: DoseContext): { sub: string; subAlert: boolean } {
   switch (d.status) {
     case "missed": {
       const alert = missedAlert(d, ctx.alerts);
-      const base = d.slot != null ? "Not confirmed at bedside" : "Not given by hand";
+      const base = d.slot != null ? `Not marked taken by ${tunisTime(d.updated_at)}` : "Not given by hand";
       return { sub: alert ? `${base} · alert sent ${tunisTime(alert.created_at)}` : base, subAlert: false };
     }
     case "dispensed":
-      return { sub: `Dispensed ${tunisTime(d.updated_at)} · waiting for confirmation`, subAlert: false };
+      return { sub: `Dispensed ${tunisTime(d.updated_at)} · waiting to be marked taken`, subAlert: false };
     case "taken":
       if (d.given_by) return { sub: d.instructions ?? "Give by hand", subAlert: false };
       return { sub: `Dispensed ${tunisTime(d.scheduled_at)}`, subAlert: false };
@@ -196,7 +196,7 @@ export function doseView(dose: Dose, ctx: DoseContext, original: Dose = dose): D
     status === "Given"
       ? `${dose.given_by_name ?? dose.given_by} · ${at}`
       : status === "Taken"
-        ? `Confirmed at bedside ${at}`.trim()
+        ? `Marked taken ${at}`.trim()
         : "Not yet due";
   return {
     id: dose.id,

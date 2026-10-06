@@ -36,9 +36,11 @@ export function RoleShell({ role, active, live, tablet, children }: RoleShellPro
   return (
     <div className={styles.shell}>
       <aside className={`${styles.aside} ${tablet ? styles.asideTablet : ""}`}>
-        <Suspense fallback={<StaticSidebar role={role} active={active} live={live} />}>
-          <ShellSidebar role={role} active={active} live={live} />
-        </Suspense>
+        <div className={styles.asideInner}>
+          <Suspense fallback={<StaticSidebar role={role} active={active} live={live} />}>
+            <ShellSidebar role={role} active={active} live={live} />
+          </Suspense>
+        </div>
       </aside>
       <main className={styles.main}>{children}</main>
     </div>

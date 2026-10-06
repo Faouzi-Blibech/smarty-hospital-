@@ -126,7 +126,7 @@ export function WardBoard() {
           <ErrorCard
             variant="box"
             title="Couldn’t load the ward."
-            message="Alerts still sound on bedside units. Check patients in person."
+            message="Check patients in person until the board is back."
             onRetry={retry}
             className={styles.error}
           />
@@ -162,7 +162,7 @@ export function WardBoard() {
           <ErrorCard
             variant="box"
             title="Couldn’t load alerts."
-            message="Alerts still sound on bedside units. Check patients in person."
+            message="Check patients in person until the board is back."
             onRetry={wardAlerts.reload}
           />
         ) : alertsState === "loading" ? (
@@ -187,15 +187,10 @@ export function WardBoard() {
       {showCall && callAlert ? (
         <div role="alert" className={`${styles.call} ${styles.desk}`}>
           <div className={styles.callTop}>
-            <span aria-hidden="true" className={styles.speaker}>
-              <span className={styles.spkBody} />
-              <span className={styles.spkCone} />
-              <span className={styles.spkWave} />
-            </span>
             <div className={styles.callText}>
               <span className={styles.callTitle}>Bed {callAlert.bed ?? "—"} is calling</span>
               <span dir="auto" className={styles.callSub}>
-                {callAlert.patient_first_name ?? callAlert.patient_id} · call button pressed {tunisTimeSeconds(callAlert.created_at)}
+                {callAlert.patient_first_name ?? callAlert.patient_id} · call request {tunisTimeSeconds(callAlert.created_at)}
               </span>
             </div>
           </div>
@@ -209,7 +204,7 @@ export function WardBoard() {
               On my way
             </button>
             <button type="button" className={styles.mute} onClick={() => mute(callAlert.id)}>
-              Mute 1 min
+              Snooze 1 min
             </button>
           </div>
         </div>

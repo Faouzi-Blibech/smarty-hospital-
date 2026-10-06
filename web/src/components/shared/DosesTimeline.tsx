@@ -1,4 +1,4 @@
-// Doses timeline card: Scheduled → Dispensed by unit → Taken (confirmed) or Missed.
+// Doses timeline card: Scheduled → Dispensed by unit → Taken or Missed.
 // Shared by the doctor patient detail and the nurse views.
 import type { ReactNode } from "react";
 import { dayLabel, tunisTime } from "@/lib/time";
@@ -39,13 +39,13 @@ function detailOf(d: Dose): string {
   switch (d.status) {
     case "missed":
       return d.slot != null
-        ? `Dispensed ${t} · not confirmed by ${tunisTime(d.updated_at)}`
+        ? `Dispensed ${t} · not marked taken by ${tunisTime(d.updated_at)}`
         : `Not given by ${tunisTime(d.updated_at)}`;
     case "taken":
       if (d.given_by_name) return `Given by ${d.given_by_name} ${d.taken_at ? tunisTime(d.taken_at) : ""}`.trim();
       return `Dispensed ${t} · taken ${d.taken_at ? tunisTime(d.taken_at) : t}`;
     case "dispensed":
-      return `Dispensed ${tunisTime(d.updated_at)} · waiting for confirmation`;
+      return `Dispensed ${tunisTime(d.updated_at)} · waiting to be marked taken`;
     case "scheduled":
       return d.slot != null ? `Unit will open slot ${d.slot} at ${t}` : (d.instructions ?? "Reminder only · nurse gives by hand");
   }
@@ -103,7 +103,7 @@ export interface DosesTimelineProps {
 export function DosesTimeline({
   doses,
   title = "Doses · last 24 h",
-  subtitle = "Scheduled → Dispensed by unit → Taken (confirmed) or Missed",
+  subtitle = "Scheduled → Dispensed by unit → Taken or Missed",
   now,
   renderExtra,
   className,

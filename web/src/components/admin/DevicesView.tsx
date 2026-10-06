@@ -207,7 +207,7 @@ export function DevicesView() {
                 </select>
               </span>
             </label>
-            <span className={page.help}>The unit will show the patient’s schedule and start streaming vitals within a minute.</span>
+            <span className={page.help}>The unit will show the patient’s schedule within a minute.</span>
             <div className={styles.dialogActions}>
               <button type="button" className={page.btn} onClick={() => setAssignId(null)}>
                 Cancel

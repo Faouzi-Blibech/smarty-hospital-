@@ -151,43 +151,6 @@
   gap: 16px;
 }
 
-.speaker {
-  width: 52px;
-  height: 52px;
-  flex: none;
-  border-radius: 50%;
-  background: rgba(252, 253, 253, 0.18);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-}
-
-.spkBody {
-  width: 8px;
-  height: 12px;
-  background: var(--paper);
-  border-radius: 1px;
-}
-
-.spkCone {
-  width: 0;
-  height: 0;
-  border-top: 11px solid transparent;
-  border-bottom: 11px solid transparent;
-  border-right: 12px solid var(--paper);
-  margin-left: -3px;
-}
-
-.spkWave {
-  width: 5px;
-  height: 14px;
-  border: 2px solid var(--paper);
-  border-left: none;
-  border-radius: 0 10px 10px 0;
-  margin-left: 4px;
-}
-
 .callText {
   display: flex;
   flex-direction: column;

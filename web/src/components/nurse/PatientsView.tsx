@@ -51,7 +51,7 @@ export function PatientsView() {
         <ErrorCard
           variant="box"
           title="Couldn’t load the ward."
-          message="Alerts still sound on bedside units. Check patients in person."
+          message="Check patients in person until the board is back."
           onRetry={load}
           className={styles.error}
         />

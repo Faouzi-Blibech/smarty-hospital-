@@ -4,7 +4,7 @@
 // `{answer, sources[], intent, source}`. Red flags come back as intent "urgent" (source "rules")
 // and show the red "This could be urgent" block. The patient never sees a score or an AI badge.
 // Nothing pages staff from here (no endpoint, and the bedside unit has no call button):
-// "Call nurse" shows a hint to ask any member of staff, without claiming anyone was told.
+// "How to reach a nurse" shows a hint to ask any member of staff, without claiming anyone was told.
 import { useEffect, useRef, useState } from "react";
 import { askAssistant } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
@@ -100,7 +100,7 @@ export function AssistantView() {
         <div className={styles.headRow}>
           <h1 className={styles.title}>Assistant</h1>
           <button type="button" className={styles.callBtn} onClick={callNurse}>
-            Call nurse
+            How to reach a nurse
           </button>
         </div>
         <span className={styles.headSub}>Answers only from your own record · not a doctor</span>
@@ -129,7 +129,7 @@ export function AssistantView() {
                 <div role="alert" className={styles.urgent}>
                   <span className={styles.urgentTitle}>This could be urgent. Call your nurse now.</span>
                   <button type="button" className={styles.urgentBtn} onClick={callNurse}>
-                    Call nurse now
+                    How to reach a nurse
                   </button>
                   <span className={styles.urgentSub}>If you are not in hospital, call 190.</span>
                 </div>
@@ -145,7 +145,7 @@ export function AssistantView() {
               ) : null}
               {m.kind === "bot" && m.intent === "ask_staff" ? (
                 <button type="button" className={styles.askNurse} onClick={callNurse}>
-                  Call nurse
+                  How to reach a nurse
                 </button>
               ) : null}
             </div>

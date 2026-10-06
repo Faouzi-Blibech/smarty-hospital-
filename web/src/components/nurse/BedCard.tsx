@@ -93,7 +93,7 @@ export function BedCard({ bed, index, live, tick, call }: BedCardProps) {
       {call ? (
         <span className={styles.calling}>
           <span className={`${styles.callDot} ${styles.desk}`} />
-          Calling nurse · {tunisTime(call.created_at)}
+          Call request · {tunisTime(call.created_at)}
         </span>
       ) : null}
       {empty ? <span className={`${styles.idle} ${styles.desk}`}>Ready for admission · unit idle</span> : null}

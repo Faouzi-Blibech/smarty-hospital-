@@ -32,7 +32,7 @@ export function AlertsView() {
           <ErrorCard
             variant="box"
             title="Couldn’t load alerts."
-            message="Alerts still sound on bedside units. Check patients in person."
+            message="Check patients in person until the board is back."
             onRetry={reload}
           />
         ) : state === "loading" || !alerts ? (
