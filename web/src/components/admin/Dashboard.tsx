@@ -53,6 +53,8 @@ interface Todo {
   href: string;
 }
 
+// Every row here is unconfirmed: GET /appointments/waitlist returns only status "requested" (api.md line 83,
+// mock filter in lib/api.ts getWaitlist); an urgency override sets urgency_final but does not confirm.
 const urgencyOf = (a: Appointment) => a.urgency_final ?? a.urgency_ai;
 
 function buildKpis({ waitlist, devices, alerts }: Data): Kpi[] {
@@ -162,12 +164,13 @@ export function Dashboard() {
   const [data, setData] = useState<Data | null>(null);
   const [failed, setFailed] = useState(false);
 
+  const fallback = flags.aiFallback;
   const load = useCallback((quiet = false) => {
     if (!quiet) {
       setFailed(false);
       setData(null);
     }
-    Promise.all([getWaitlist(), getDevices(), getAlerts({ status: "open" })])
+    Promise.all([getWaitlist({ fallback }), getDevices(), getAlerts({ status: "open" })])
       .then(([waitlist, devices, alerts]) => {
         setData({ waitlist, devices, alerts });
         setFailed(false);
@@ -175,7 +178,7 @@ export function Dashboard() {
       .catch(() => {
         if (!quiet) setFailed(true);
       });
-  }, []);
+  }, [fallback]);
 
   useEffect(() => load(), [load]);
 

@@ -16,7 +16,9 @@ import page from "./AdminPage.module.css";
 import styles from "./WaitlistView.module.css";
 
 const csvCell = (v: unknown) => {
-  const s = v == null ? "" : String(v);
+  let s = v == null ? "" : String(v);
+  // Neutralise spreadsheet formulas (CSV injection).
+  if (/^[=+\-@]/.test(s)) s = `'${s}`;
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
