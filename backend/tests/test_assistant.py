@@ -6,7 +6,6 @@ from types import SimpleNamespace as NS
 import pytest
 
 from app.ai import assistant as A
-from app.ai.llm import LLMUnavailable
 
 NOW = datetime(2026, 10, 8, 10, 30, tzinfo=UTC)  # 11:30 in Tunis
 
@@ -21,11 +20,8 @@ def ctx():
     return A.assistant_context(patient, doses, visit, vital, now=NOW)
 
 
-@pytest.fixture()
-def llm_down(monkeypatch):
-    def boom(*a, **k):
-        raise LLMUnavailable("down")
-    monkeypatch.setattr(A, "complete_json", boom)
+def force(monkeypatch, intent, conf=0.9, source="model"):
+    monkeypatch.setattr(A, "classify_intent", lambda q: (intent, conf, source))
 
 
 def test_context_picks_next_scheduled_dose_and_formats_tunis_time():
@@ -36,48 +32,95 @@ def test_context_picks_next_scheduled_dose_and_formats_tunis_time():
     assert c["names"] == ["Amira", "Ben Salah"]
 
 
-def test_red_flag_question_goes_to_staff_without_llm(monkeypatch):
+def test_red_flag_question_goes_to_staff_without_model(monkeypatch):
     def must_not_call(*a, **k):
-        raise AssertionError("LLM must not be called for a red-flag question")
-    monkeypatch.setattr(A, "complete_json", must_not_call)
+        raise AssertionError("classifier must not be called for a red-flag question")
+    monkeypatch.setattr(A, "classify_intent", must_not_call)
     out = A.answer("J'ai une douleur thoracique depuis 10 minutes", ctx())
     assert "call-nurse button" in out["answer"] and out["sources"] == ["safety_rules"]
+    assert out["intent"] == "urgent" and out["source"] == "rules"
 
 
-@pytest.mark.parametrize("q", ["When is my next dose?", "C'est quand mon prochain médicament ?", "وقتاش الدواء الجاي"])
-def test_fallback_next_dose(llm_down, q):
-    out = A.answer(q, ctx())
+def test_urgent_intent(monkeypatch):
+    force(monkeypatch, "urgent")
+    out = A.answer("something", ctx())
+    assert out["answer"] == A.URGENT and out["intent"] == "urgent" and out["source"] == "model"
+    assert out["sources"] == ["safety_rules"]
+
+
+def test_next_dose_intent(monkeypatch):
+    force(monkeypatch, "next_dose")
+    out = A.answer("x", ctx())
     assert "14:00" in out["answer"] and "Amoxicillin 1g" in out["answer"] and out["sources"] == ["med_doses"]
+    assert out["intent"] == "next_dose"
 
 
-@pytest.mark.parametrize("q", ["When is my next appointment?", "mon prochain rendez-vous", "وقتاش الموعد"])
-def test_fallback_next_visit(llm_down, q):
-    out = A.answer(q, ctx())
+def test_next_visit_intent(monkeypatch):
+    force(monkeypatch, "next_visit")
+    out = A.answer("x", ctx())
     assert "Monday 12 Oct at 10:00" in out["answer"] and out["sources"] == ["appointments"]
 
 
-def test_fallback_anything_else_points_to_staff(llm_down):
-    out = A.answer("Is my illness serious?", ctx())
-    assert "nurse" in out["answer"].lower() and out["sources"] == []
+def test_my_vitals_intent(monkeypatch):
+    force(monkeypatch, "my_vitals")
+    out = A.answer("x", ctx())
+    assert out["answer"] == ("Your latest readings (at 11:00): heart rate 82 bpm, oxygen 97%, "
+                             "temperature 37.1 °C.")
+    assert out["sources"] == ["vitals"]
 
 
-def test_llm_path_gets_only_this_patients_context_and_names(monkeypatch):
-    seen = {}
-
-    def fake(prompt_name, user_text, schema, **kw):
-        seen.update(text=user_text, names=list(kw.get("names", [])))
-        return schema(answer="Your next dose is at 14:00.", sources=["med_doses"])
-
-    monkeypatch.setattr(A, "complete_json", fake)
-    out = A.answer("next dose?", ctx())
-    assert out == {"answer": "Your next dose is at 14:00.", "sources": ["med_doses"]}
-    assert "Amoxicillin 1g" in seen["text"] and seen["names"] == ["Amira", "Ben Salah"]
+def test_my_vitals_skips_missing_value(monkeypatch):
+    force(monkeypatch, "my_vitals")
+    c = ctx()
+    c["latest_vitals"]["spo2"] = None
+    out = A.answer("x", c)
+    assert "oxygen" not in out["answer"] and "heart rate 82 bpm, temperature 37.1" in out["answer"]
 
 
-def test_llm_sources_are_restricted_to_known_ones(monkeypatch):
-    monkeypatch.setattr(A, "complete_json",
-                        lambda *a, **k: k.get("schema", a[2])(answer="ok", sources=["med_doses", "other_patients"]))
-    assert A.answer("hi", ctx())["sources"] == ["med_doses"]
+def test_my_vitals_none_yet(monkeypatch):
+    force(monkeypatch, "my_vitals")
+    c = ctx()
+    c["latest_vitals"] = None
+    assert A.answer("x", c)["answer"] == "No readings yet today."
+
+
+def test_ask_staff_intent(monkeypatch):
+    force(monkeypatch, "ask_staff")
+    out = A.answer("x", ctx())
+    assert out["answer"] == A.ASK_STAFF and out["sources"] == [] and out["intent"] == "ask_staff"
+
+
+@pytest.fixture()
+def no_models(monkeypatch):
+    monkeypatch.setattr(A.laya_intent, "classify", lambda q: None)
+    monkeypatch.setattr(A.textclf, "load", lambda name: None)
+
+
+@pytest.mark.parametrize("q,intent", [
+    ("When is my next dose?", "next_dose"), ("C'est quand mon prochain médicament ?", "next_dose"),
+    ("وقتاش الدواء الجاي", "next_dose"), ("mon prochain rendez-vous", "next_visit"),
+    ("وقتاش الموعد", "next_visit"), ("quelle est ma température", "my_vitals"),
+    ("شنو نبض متاعي", "my_vitals"), ("Is my illness serious?", "ask_staff")])
+def test_keyword_path_with_no_models(no_models, q, intent):
+    assert A.classify_intent(q) == (intent, 1.0, "rules")
+    assert A.answer(q, ctx())["source"] == "rules"
+
+
+def test_low_confidence_becomes_ask_staff(monkeypatch):
+    monkeypatch.setattr(A.laya_intent, "classify", lambda q: None)
+    monkeypatch.setattr(A.textclf, "load", lambda name: {})
+    monkeypatch.setattr(A.textclf, "predict_proba",
+                        lambda m, t: {"next_dose": 0.3, "next_visit": 0.25, "ask_staff": 0.25,
+                                      "urgent": 0.1, "my_vitals": 0.1})
+    assert A.classify_intent("whatever") == ("ask_staff", 0.3, "model")
+
+
+def test_averages_available_maps(monkeypatch):
+    monkeypatch.setattr(A.laya_intent, "classify", lambda q: {"next_dose": 0.2, "my_vitals": 0.8})
+    monkeypatch.setattr(A.textclf, "load", lambda name: {})
+    monkeypatch.setattr(A.textclf, "predict_proba", lambda m, t: {"next_dose": 0.6, "my_vitals": 0.4})
+    intent, conf, src = A.classify_intent("x")
+    assert (intent, src) == ("my_vitals", "model") and conf == pytest.approx(0.6)
 
 
 def test_context_without_data():
