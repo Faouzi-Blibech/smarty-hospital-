@@ -68,3 +68,23 @@ def emitted(monkeypatch):
     events: list[tuple[str, dict]] = []
     monkeypatch.setattr(n8n, "emit", lambda event, data: events.append((event, data)))
     return events
+
+
+class _FakeMqtt:
+    def __init__(self):
+        self.sent: list[tuple[str, dict, int, bool]] = []
+
+    def publish(self, topic, payload, qos=0, retain=False):
+        import json
+
+        self.sent.append((topic, json.loads(payload), qos, retain))
+
+
+@pytest.fixture(autouse=True)
+def published(monkeypatch):
+    """Everything published to MQTT in a test, as (topic, payload, qos, retain); no broker needed."""
+    from app.iot import publisher
+
+    fake = _FakeMqtt()
+    monkeypatch.setattr(publisher, "_client", fake)
+    return fake.sent
