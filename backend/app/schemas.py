@@ -1,0 +1,138 @@
+"""Pydantic shapes for docs/contracts/api.md, field-for-field. Timestamps serialize as ISO-8601 UTC with `Z`.
+
+A few additive fields from the api.md 1.5 proposals are included where they cost nothing
+(`sex`, `last_vital_at`, `device_online`, `admitted_at`, `attending_doctor_name`, `author_name`).
+"""
+
+from datetime import UTC, date, datetime
+from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, Field, PlainSerializer
+
+
+def iso(dt: datetime | None) -> str | None:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+Ts = Annotated[datetime, PlainSerializer(iso, return_type=str)]
+
+
+class Orm(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+
+# --- auth ---
+class LoginIn(BaseModel):
+    email: str
+    password: str
+
+
+class LoginUser(BaseModel):
+    id: str
+    name: str
+    role: str
+    patient_id: str | None
+
+
+class LoginOut(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: LoginUser
+
+
+class Me(Orm):
+    id: str
+    name: str
+    email: str
+    role: str
+    patient_id: str | None
+
+
+# --- patients ---
+class PatientListItem(BaseModel):
+    """Admin view of the list: name, bed and device only (data-model.md → role matrix)."""
+
+    id: str
+    first_name: str
+    last_name: str
+    ward: str | None
+    bed: str | None
+    device_id: str | None
+    admission_id: str | None
+
+
+class PatientSummary(PatientListItem):
+    age: int | None
+    sex: str | None
+    latest_news2: int | None
+    open_alerts: int
+    last_vital_at: Ts | None
+    device_online: bool | None
+
+
+class PatientOut(PatientSummary):
+    date_of_birth: date | None
+    allergies: list
+    history: str
+    attending_doctor_id: str | None
+    attending_doctor_name: str | None
+    admitted_at: Ts | None
+
+
+class PatientPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    first_name: str | None = None
+    last_name: str | None = None
+    date_of_birth: date | None = None
+    sex: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    telegram_chat_id: str | None = None
+    ward: str | None = None
+    allergies: list[str] | None = None
+    history: str | None = None
+
+
+class VitalOut(Orm):
+    ts: Ts
+    hr: int | None
+    spo2: int | None
+    temp: float | None
+    nurse_id: str | None
+    news2: int | None
+    source: str
+
+
+class NoteIn(BaseModel):
+    text: str = Field(min_length=1, max_length=5000)
+
+
+class NoteOut(BaseModel):
+    id: str
+    author_id: str
+    author_role: str | None
+    author_name: str | None
+    text: str
+    created_at: Ts
+
+
+# --- prescriptions ---
+class RxItem(BaseModel):
+    med: str = Field(min_length=1)
+    times: list[str] = Field(min_length=1)
+    slot: int | None = Field(default=None, ge=1, le=4)
+    days: int = Field(default=1, ge=1, le=60)
+
+
+class PrescriptionOut(Orm):
+    id: str
+    patient_id: str
+    doctor_id: str
+    items: list
+    care_plan: str
+    active: bool
+    created_at: Ts

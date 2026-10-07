@@ -1,4 +1,6 @@
 import os
+
+os.environ.setdefault("BCRYPT_ROUNDS", "4")  # fast hashes in tests; must be set before settings load
 import uuid
 
 import pytest
@@ -36,3 +38,23 @@ def db(engine):
     s.close()
     tx.rollback()
     conn.close()
+
+
+@pytest.fixture()
+def seeded(db):
+    from app.seed import seed
+
+    seed(db)
+    return db
+
+
+@pytest.fixture()
+def client(db, seeded):
+    from fastapi.testclient import TestClient
+
+    from app.db import get_db
+    from app.main import app
+
+    app.dependency_overrides[get_db] = lambda: db
+    yield TestClient(app)
+    app.dependency_overrides.clear()

@@ -4,8 +4,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
+from app import errors
 from app.config import get_settings
 from app.db import engine
+from app.routers import auth, patients
 
 app = FastAPI(title="Ward API", version="0.1.0")
 
@@ -16,6 +18,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+errors.install(app)
+app.include_router(auth.router)
+app.include_router(patients.router)
 
 
 def _db_ok() -> bool:
