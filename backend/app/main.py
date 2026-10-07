@@ -9,6 +9,7 @@ from sqlalchemy import text
 from app import errors
 from app.config import get_settings
 from app.db import engine
+from app.iot import publisher
 from app.routers import alerts, auth, devices, doses, patients, prescriptions
 from app.ws import relay
 from app.ws import router as ws_router
@@ -20,6 +21,7 @@ from app.ws.hub import hub
 async def lifespan(_: FastAPI):
     hub.loop = asyncio.get_running_loop()
     client = relay.start()
+    publisher.use(client)  # publish on the client that connected at startup
     yield
     client.loop_stop()
     client.disconnect()

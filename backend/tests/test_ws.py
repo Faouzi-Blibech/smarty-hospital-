@@ -67,3 +67,22 @@ def test_publisher_topics(monkeypatch):
     assert fake.sent[0] == ("hospital/device/bsu-001/schedule", {"schedule_version": 1}, 1, True)
     assert fake.sent[1][0] == "hospital/device/bsu-001/command" and fake.sent[1][2:] == (1, False)
     assert fake.sent[2][0] == "ward/internal/ws" and fake.sent[2][2:] == (0, False)
+
+
+def test_api_publishes_through_the_connected_relay_client(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+    from app.ws import relay
+
+    class FakeRelay:
+        def loop_stop(self):
+            pass
+
+        def disconnect(self):
+            pass
+
+    fake = FakeRelay()
+    monkeypatch.setattr(relay, "start", lambda: fake)
+    with TestClient(app):
+        assert publisher._client is fake  # not a lazily-connecting client that drops the first QoS 0 frame
