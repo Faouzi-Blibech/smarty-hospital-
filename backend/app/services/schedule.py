@@ -31,8 +31,9 @@ def local_to_utc(day: date, hhmm: str) -> datetime:
 
 
 def rebuild_doses(db: Session, prescription: Prescription) -> list[MedDose]:
-    """Drop the prescription's future `scheduled` doses, then (if active) create one row per
-    day × time starting today. Existing rows for the same occurrence are kept, so it's idempotent."""
+    """Drop the prescription's future `scheduled` doses, then (if active) create `days × times` rows:
+    the first occurrences at or after the moment the prescription was written (a time already past on
+    day 0 moves to the end of the course). Existing rows are kept, so it's idempotent."""
     rx = prescription
     db.execute(delete(MedDose).where(MedDose.prescription_id == rx.id, MedDose.status == "scheduled",
                                      MedDose.scheduled_at > now_utc()))
@@ -41,21 +42,24 @@ def rebuild_doses(db: Session, prescription: Prescription) -> list[MedDose]:
         return []
     existing = {(d.scheduled_at, d.slot, tuple(d.meds)): d
                 for d in db.scalars(select(MedDose).where(MedDose.prescription_id == rx.id))}
-    start = (rx.created_at.astimezone(TUNIS).date() if rx.created_at else today_local())
+    written = rx.created_at or now_utc()
+    start = written.astimezone(TUNIS).date()
     out: list[MedDose] = []
     for item in rx.items:
-        for i in range(int(item.get("days", 1))):
-            for hhmm in item["times"]:
-                at = local_to_utc(start + timedelta(days=i), hhmm)
-                key = (at, item.get("slot"), (item["med"],))
-                dose = existing.get(key)
-                if dose is None:
-                    dose = MedDose(id=new_id(db, "d", 6), prescription_id=rx.id, patient_id=rx.patient_id,
-                                   scheduled_at=at, time_of_day=hhmm, meds=[item["med"]], slot=item.get("slot"),
-                                   status="scheduled")
-                    db.add(dose)
-                    existing[key] = dose
-                out.append(dose)
+        days = int(item.get("days", 1))
+        candidates = sorted(at for i in range(days + 1) for hhmm in item["times"]
+                            if (at := local_to_utc(start + timedelta(days=i), hhmm)) >= written)
+        for at in candidates[:days * len(item["times"])]:
+            hhmm = at.astimezone(TUNIS).strftime("%H:%M")
+            key = (at, item.get("slot"), (item["med"],))
+            dose = existing.get(key)
+            if dose is None:
+                dose = MedDose(id=new_id(db, "d", 6), prescription_id=rx.id, patient_id=rx.patient_id,
+                               scheduled_at=at, time_of_day=hhmm, meds=[item["med"]], slot=item.get("slot"),
+                               status="scheduled")
+                db.add(dose)
+                existing[key] = dose
+            out.append(dose)
     db.flush()
     return out
 
@@ -69,18 +73,32 @@ def todays_doses(db: Session, patient_id: str) -> list[MedDose]:
                            .order_by(MedDose.scheduled_at, MedDose.slot, MedDose.id)))
 
 
+def upcoming_doses(db: Session, patient_id: str) -> list[MedDose]:
+    """Active-prescription doses from local midnight today on, earliest first."""
+    lo = local_to_utc(today_local(), "00:00")
+    return list(db.scalars(select(MedDose).join(Prescription, Prescription.id == MedDose.prescription_id)
+                           .where(MedDose.patient_id == patient_id, Prescription.active.is_(True),
+                                  MedDose.scheduled_at >= lo)
+                           .order_by(MedDose.scheduled_at, MedDose.slot, MedDose.id)))
+
+
 def build_schedule_payload(db: Session, patient_id: str | None) -> dict:
     """The MQTT `schedule` body without `schedule_version` (the push sets it). One entry per distinct
-    (time, slot) of today's doses, meds merged, sorted by time, at most 8."""
+    (time, slot) of the active doses from today on, using the earliest occurrence's dose_id (today's,
+    or the next day's when today's was never due), meds merged, sorted by time, at most 8."""
     p = db.get(Patient, patient_id) if patient_id else None
     if p is None:
         return {"patient_id": None, "patient_first_name": None, "doses": []}
     entries: dict[tuple[str, int | None], dict] = {}
-    for d in todays_doses(db, p.id):
+    for d in upcoming_doses(db, p.id):
         e = entries.setdefault((d.time_of_day, d.slot),
-                               {"dose_id": d.id, "time": d.time_of_day, "meds": [], "slot": d.slot})
-        e["meds"] += [m for m in d.meds if m not in e["meds"]]
+                               {"dose_id": d.id, "time": d.time_of_day, "meds": [], "slot": d.slot,
+                                "_at": d.scheduled_at})
+        if d.scheduled_at == e["_at"]:
+            e["meds"] += [m for m in d.meds if m not in e["meds"]]
     doses = sorted(entries.values(), key=lambda e: (e["time"], e["slot"] or 0))[:MAX_DOSES]
+    for e in doses:
+        del e["_at"]
     return {"patient_id": p.id, "patient_first_name": p.first_name, "doses": doses}
 
 

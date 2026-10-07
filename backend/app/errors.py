@@ -1,6 +1,7 @@
 """Error envelope from api.md → Conventions: `{"detail": "human readable", "code": "snake_case_code"}`."""
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 _DEFAULT_CODES = {400: "bad_request", 401: "unauthorized", 403: "forbidden", 404: "not_found",
@@ -27,3 +28,11 @@ def install(app: FastAPI) -> None:
         code = getattr(exc, "code", None) or _DEFAULT_CODES.get(exc.status_code, "error")
         return JSONResponse({"detail": exc.detail, "code": code}, status_code=exc.status_code,
                             headers=getattr(exc, "headers", None))
+
+    @app.exception_handler(RequestValidationError)
+    async def _invalid(request: Request, exc: RequestValidationError) -> JSONResponse:
+        errs = exc.errors()
+        first = errs[0] if errs else {}
+        where = ".".join(str(x) for x in first.get("loc", ()) if x != "body")
+        detail = f"{where}: {first.get('msg', 'invalid request')}" if where else first.get("msg", "invalid request")
+        return JSONResponse({"detail": detail, "code": "invalid"}, status_code=422)

@@ -71,10 +71,13 @@ def _num(v, cast):
 
 def _vitals(db: Session, device_id: str, p: dict) -> list[dict]:
     ts = _ts(p)
-    patient_id = p.get("patient_id") or active_patient_for_device(db, device_id)
-    if patient_id and db.get(Patient, patient_id) is None:
-        log.warning("vitals from %s for unknown patient %s: stored without patient", device_id, patient_id)
-        patient_id = None
+    # The active admission decides whose vitals these are: a device with a stale schedule (after a
+    # discharge or a move) must not keep charging readings and alerts to its previous patient.
+    patient_id = active_patient_for_device(db, device_id)
+    claimed = p.get("patient_id")
+    if claimed and claimed != patient_id:
+        log.warning("vitals from %s claim %s but the device is assigned to %s: using the admission",
+                    device_id, claimed, patient_id)
     nurse_id = None
     if p.get("nurse_rfid"):
         uid = str(p["nurse_rfid"]).upper()

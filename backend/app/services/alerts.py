@@ -57,8 +57,10 @@ def chat_ids(db: Session, p: Patient | None) -> tuple[list[str], str | None]:
     return list(nurses), doc.telegram_chat_id if doc else None
 
 
-def _recent_open(db: Session, patient_id: str, kind: str, severity: str | None = None) -> bool:
-    stmt = select(Alert.id).where(Alert.patient_id == patient_id, Alert.kind == kind, Alert.acked_at.is_(None),
+def _recent(db: Session, patient_id: str, kind: str, severity: str | None = None) -> bool:
+    """An alert of this kind (acked or not) in the last 10 min: an ack must not be undone seconds later
+    by the same ongoing deterioration (and a second Telegram message)."""
+    stmt = select(Alert.id).where(Alert.patient_id == patient_id, Alert.kind == kind,
                                   Alert.created_at >= datetime.now(UTC) - DEDUPE_WINDOW)
     if severity:
         stmt = stmt.where(Alert.severity == severity)
@@ -88,7 +90,7 @@ def _message(news: News2Result, values: dict) -> str:
 
 
 def _trend(db: Session, patient_id: str, device_id: str, values: dict) -> Alert | None:
-    if _recent_open(db, patient_id, "trend"):
+    if _recent(db, patient_id, "trend"):
         return None
     for param in ("hr", "spo2"):
         value = values.get(param)
@@ -114,7 +116,7 @@ def on_vital(db: Session, patient_id: str, device_id: str, news: News2Result, hr
     values = {"hr": hr, "spo2": spo2, "temp": temp}
     created: list[Alert] = []
     if news.severity in ALERTING:
-        if not _recent_open(db, patient_id, "news2", news.severity):
+        if not _recent(db, patient_id, "news2", news.severity):
             created.append(create_alert(db, patient_id, device_id, "news2", news.severity, news.score,
                                         _message(news, values),
                                         {"source": "rules", "score": news.score, "severity": news.severity,

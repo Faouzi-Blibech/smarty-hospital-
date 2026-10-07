@@ -10,13 +10,23 @@ import logging
 import time
 
 import paho.mqtt.client as mqtt
+from sqlalchemy import inspect
 
 from app.config import get_settings
-from app.db import SessionLocal
+from app.db import SessionLocal, engine
 from app.iot import ingest, publisher
 
 log = logging.getLogger("ward.worker")
 TOPICS = [("hospital/device/+/vitals", 1), ("hospital/device/+/events", 1), ("hospital/device/+/status", 1)]
+
+
+def schema_ready(eng=engine) -> bool:
+    """True once the api container's `alembic upgrade head` has created the tables we write to."""
+    try:
+        insp = inspect(eng)
+        return all(insp.has_table(t) for t in ("ingested_messages", "vitals", "devices"))
+    except Exception:
+        return False
 
 
 def parse_topic(topic: str) -> tuple[str, str] | None:
@@ -59,6 +69,9 @@ def on_message(client, userdata, msg):
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
     s = get_settings()
+    while not schema_ready():  # on a fresh volume, retained status would arrive before the migration
+        log.info("waiting for the database schema (api runs the migrations)")
+        time.sleep(2)
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="ward-worker")
     client.on_connect = on_connect
     client.on_message = on_message

@@ -7,6 +7,7 @@ from app.services import schedule
 
 def make_rx(db, rx_id="rx-9001", items=None):
     rx = Prescription(id=rx_id, patient_id="p-0001", doctor_id="u-0001", active=True, care_plan="",
+                      created_at=schedule.local_to_utc(schedule.today_local(), "00:00"),  # whole day ahead
                       items=items or [{"med": "Paracetamol 500mg", "times": ["08:00", "20:00"], "slot": 1,
                                        "days": 2}])
     db.add(rx)

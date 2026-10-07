@@ -44,7 +44,7 @@ def test_open_alert_deduped(db, seeded):
     assert db.query(Alert).filter_by(kind="news2").count() == 1
 
 
-def test_old_or_acked_alert_does_not_dedupe(db, seeded):
+def test_old_alert_does_not_dedupe(db, seeded):
     ingest.handle(db, "bsu-001", "vitals", vital(6, spo2=88))
     a = db.query(Alert).one()
     a.created_at = datetime.now(UTC) - timedelta(minutes=11)

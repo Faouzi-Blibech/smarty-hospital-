@@ -55,7 +55,11 @@ def assign(device_id: str, body: AssignIn, request: Request, user: User = Depend
                         device_id=device_id, bed=body.bed)
         db.add(adm)
     else:
+        old_device = adm.device_id
         adm.device_id, adm.bed = device_id, body.bed
+        db.flush()
+        if old_device and old_device != device_id:  # the old unit must stop dosing this patient
+            schedule.push_unassigned(db, old_device)
     db.flush()
     audit(db, user, "update", "admission", adm.id, patient_id=body.patient_id, ip=_ip(request))
     sent = schedule.push_schedule(db, body.patient_id)

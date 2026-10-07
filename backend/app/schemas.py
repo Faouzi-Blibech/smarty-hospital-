@@ -7,7 +7,7 @@ A few additive fields from the api.md 1.5 proposals are included where they cost
 from datetime import UTC, date, datetime
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, PlainSerializer
+from pydantic import BaseModel, ConfigDict, Field, PlainSerializer, model_validator
 
 
 def iso(dt: datetime | None) -> str | None:
@@ -95,6 +95,14 @@ class PatientPatch(BaseModel):
     ward: str | None = None
     allergies: list[str] | None = None
     history: str | None = None
+
+    @model_validator(mode="after")
+    def _not_null(self):
+        bad = [k for k in ("first_name", "last_name", "allergies", "history")
+               if k in self.model_fields_set and getattr(self, k) is None]
+        if bad:
+            raise ValueError(f"{', '.join(bad)} cannot be null")
+        return self
 
 
 class VitalOut(Orm):

@@ -15,7 +15,7 @@ from app.db import SessionLocal
 from app.ids import reserve_upto
 from app.models import Admission, Appointment, Device, Patient, Prescription, Staff, User, Vital
 from app.services.appointments import new_appointment_fields
-from app.services.schedule import rebuild_doses
+from app.services.schedule import local_to_utc, rebuild_doses, today_local
 
 PASSWORD = "ward1234"
 
@@ -100,7 +100,9 @@ def seed(db: Session) -> bool:
                      hr=rng.randint(65, 90), spo2=rng.randint(96, 99),
                      temp=round(rng.uniform(36.5, 37.4), 1), news2=0, source="manual"))
 
+    # written at local midnight so all of today's doses exist for the demo
     db.add(Prescription(id="rx-0001", patient_id="p-0001", doctor_id="u-0001", active=True,
+                        created_at=local_to_utc(today_local(), "00:00"),
                         care_plan="Monitor blood pressure twice a day",
                         items=[{"med": "Amlodipine 5mg", "times": ["08:00"], "slot": 1, "days": 5},
                                {"med": "Paracetamol 500mg", "times": ["08:00", "20:00"], "slot": 2,
