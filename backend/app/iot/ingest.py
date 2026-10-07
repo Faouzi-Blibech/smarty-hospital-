@@ -103,14 +103,26 @@ def _vitals(db: Session, device_id: str, p: dict) -> list[dict]:
 
 
 def _status(db: Session, device_id: str, p: dict) -> list[dict]:
+    known = db.get(Device, device_id) is not None
     dev = _touch_device(db, device_id)
+    was_online = known and bool(dev.online)
     dev.online = bool(p.get("online"))
     if p.get("fw_version"):
         dev.fw_version = str(p["fw_version"])
     db.flush()
     patient_id = active_patient_for_device(db, device_id)
     data = {"device_id": device_id, "online": dev.online, "ts": iso(dev.last_seen)}
-    return [frame(db, "device_status", data, patient_id)]
+    frames = [frame(db, "device_status", data, patient_id)]
+    # alert on the online → offline transition only (the retained last-will is re-delivered on reconnect)
+    if was_online and not dev.online and patient_id:
+        from app.services import alerts
+
+        bed = db.scalar(select(Admission.bed).where(Admission.patient_id == patient_id,
+                                                    Admission.discharged_at.is_(None)))
+        a = alerts.create_alert(db, patient_id, device_id, "device_offline", "medium", None,
+                                f"Bedside unit {device_id} (bed {bed}) went offline", None)
+        frames.append(alerts.frame(db, a))
+    return frames
 
 
 def handle(db: Session, device_id: str, kind: str, payload: dict) -> list[dict]:
