@@ -1,0 +1,109 @@
+"""Prescriptions → med_doses → the retained MQTT `schedule` (data-model.md → med_doses, mqtt-topics.md).
+
+Dose times are wall-clock HH:MM in Africa/Tunis, which is UTC+1 with no DST, so a fixed offset is exact
+(and needs no tzdata on Windows laptops).
+"""
+
+from datetime import UTC, date, datetime, time, timedelta, timezone
+
+from sqlalchemy import delete, select
+from sqlalchemy.orm import Session
+
+from app.ids import new_id
+from app.iot import publisher
+from app.models import Admission, Device, MedDose, Patient, Prescription
+
+TUNIS = timezone(timedelta(hours=1), "Africa/Tunis")
+MAX_DOSES = 8
+
+
+def now_utc() -> datetime:
+    return datetime.now(UTC)
+
+
+def today_local() -> date:
+    return now_utc().astimezone(TUNIS).date()
+
+
+def local_to_utc(day: date, hhmm: str) -> datetime:
+    h, m = (int(x) for x in hhmm.split(":"))
+    return datetime.combine(day, time(h, m), TUNIS).astimezone(UTC)
+
+
+def rebuild_doses(db: Session, prescription: Prescription) -> list[MedDose]:
+    """Drop the prescription's future `scheduled` doses, then (if active) create one row per
+    day × time starting today. Existing rows for the same occurrence are kept, so it's idempotent."""
+    rx = prescription
+    db.execute(delete(MedDose).where(MedDose.prescription_id == rx.id, MedDose.status == "scheduled",
+                                     MedDose.scheduled_at > now_utc()))
+    if not rx.active:
+        db.flush()
+        return []
+    existing = {(d.scheduled_at, d.slot, tuple(d.meds)): d
+                for d in db.scalars(select(MedDose).where(MedDose.prescription_id == rx.id))}
+    start = (rx.created_at.astimezone(TUNIS).date() if rx.created_at else today_local())
+    out: list[MedDose] = []
+    for item in rx.items:
+        for i in range(int(item.get("days", 1))):
+            for hhmm in item["times"]:
+                at = local_to_utc(start + timedelta(days=i), hhmm)
+                key = (at, item.get("slot"), (item["med"],))
+                dose = existing.get(key)
+                if dose is None:
+                    dose = MedDose(id=new_id(db, "d", 6), prescription_id=rx.id, patient_id=rx.patient_id,
+                                   scheduled_at=at, time_of_day=hhmm, meds=[item["med"]], slot=item.get("slot"),
+                                   status="scheduled")
+                    db.add(dose)
+                    existing[key] = dose
+                out.append(dose)
+    db.flush()
+    return out
+
+
+def todays_doses(db: Session, patient_id: str) -> list[MedDose]:
+    day = today_local()
+    lo, hi = local_to_utc(day, "00:00"), local_to_utc(day + timedelta(days=1), "00:00")
+    return list(db.scalars(select(MedDose).join(Prescription, Prescription.id == MedDose.prescription_id)
+                           .where(MedDose.patient_id == patient_id, Prescription.active.is_(True),
+                                  MedDose.scheduled_at >= lo, MedDose.scheduled_at < hi)
+                           .order_by(MedDose.scheduled_at, MedDose.slot, MedDose.id)))
+
+
+def build_schedule_payload(db: Session, patient_id: str | None) -> dict:
+    """The MQTT `schedule` body without `schedule_version` (the push sets it). One entry per distinct
+    (time, slot) of today's doses, meds merged, sorted by time, at most 8."""
+    p = db.get(Patient, patient_id) if patient_id else None
+    if p is None:
+        return {"patient_id": None, "patient_first_name": None, "doses": []}
+    entries: dict[tuple[str, int | None], dict] = {}
+    for d in todays_doses(db, p.id):
+        e = entries.setdefault((d.time_of_day, d.slot),
+                               {"dose_id": d.id, "time": d.time_of_day, "meds": [], "slot": d.slot})
+        e["meds"] += [m for m in d.meds if m not in e["meds"]]
+    doses = sorted(entries.values(), key=lambda e: (e["time"], e["slot"] or 0))[:MAX_DOSES]
+    return {"patient_id": p.id, "patient_first_name": p.first_name, "doses": doses}
+
+
+def _publish(db: Session, device: Device, payload: dict) -> bool:
+    device.schedule_version = (device.schedule_version or 0) + 1
+    db.flush()
+    return publisher.publish_schedule(device.id, {"schedule_version": device.schedule_version, **payload})
+
+
+def device_of(db: Session, patient_id: str) -> Device | None:
+    device_id = db.scalar(select(Admission.device_id).where(Admission.patient_id == patient_id,
+                                                            Admission.discharged_at.is_(None)))
+    return db.get(Device, device_id) if device_id else None
+
+
+def push_schedule(db: Session, patient_id: str) -> bool:
+    """Publish the patient's schedule (retained, QoS 1) to their bedside unit. False if no device."""
+    dev = device_of(db, patient_id)
+    if dev is None:
+        return False
+    return _publish(db, dev, build_schedule_payload(db, patient_id))
+
+
+def push_unassigned(db: Session, device_id: str) -> bool:
+    dev = db.get(Device, device_id)
+    return _publish(db, dev, build_schedule_payload(db, None)) if dev else False

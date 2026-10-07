@@ -15,6 +15,7 @@ from app.db import SessionLocal
 from app.ids import reserve_upto
 from app.models import Admission, Appointment, Device, Patient, Prescription, Staff, User, Vital
 from app.services.appointments import new_appointment_fields
+from app.services.schedule import rebuild_doses
 
 PASSWORD = "ward1234"
 
@@ -104,6 +105,8 @@ def seed(db: Session) -> bool:
                         items=[{"med": "Amlodipine 5mg", "times": ["08:00"], "slot": 1, "days": 5},
                                {"med": "Paracetamol 500mg", "times": ["08:00", "20:00"], "slot": 2,
                                 "days": 5}]))
+    db.flush()
+    rebuild_doses(db, db.get(Prescription, "rx-0001"))
 
     patients = {p.id: p for p in db.scalars(select(Patient))}
     for n, (pi, text_, symptoms, days_ago) in enumerate(REQUESTS, start=1):

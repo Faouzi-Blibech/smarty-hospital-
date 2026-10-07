@@ -121,13 +121,6 @@ class NoteOut(BaseModel):
 
 
 # --- prescriptions ---
-class RxItem(BaseModel):
-    med: str = Field(min_length=1)
-    times: list[str] = Field(min_length=1)
-    slot: int | None = Field(default=None, ge=1, le=4)
-    days: int = Field(default=1, ge=1, le=60)
-
-
 class PrescriptionOut(Orm):
     id: str
     patient_id: str
@@ -136,3 +129,52 @@ class PrescriptionOut(Orm):
     care_plan: str
     active: bool
     created_at: Ts
+
+
+HHMM = r"^([01]\d|2[0-3]):[0-5]\d$"
+
+
+class RxItemIn(BaseModel):
+    med: str = Field(min_length=1, max_length=80)
+    times: list[Annotated[str, Field(pattern=HHMM)]] = Field(min_length=1, max_length=8)
+    slot: int | None = Field(default=None, ge=1, le=4)
+    days: int = Field(default=1, ge=1, le=60)
+
+
+class PrescriptionIn(BaseModel):
+    patient_id: str
+    items: list[RxItemIn] = Field(min_length=1, max_length=8)
+    care_plan: str = ""
+
+
+class PrescriptionPatch(BaseModel):
+    active: bool
+
+
+class PrescriptionPublished(PrescriptionOut):
+    schedule_version: int | None
+    published_to_device: bool
+
+
+class AssignIn(BaseModel):
+    patient_id: str
+    bed: str = Field(min_length=1, max_length=20)
+
+
+class CommandIn(BaseModel):
+    type: str = Field(pattern=r"^(alert|message|dispense_now|rotate_home)$")
+    text: str | None = Field(default=None, max_length=120)
+    dose_id: str | None = None
+
+
+class DoseOut(Orm):
+    id: str
+    prescription_id: str
+    patient_id: str
+    scheduled_at: Ts
+    time_of_day: str
+    meds: list
+    slot: int | None
+    status: str
+    taken_method: str | None
+    updated_at: Ts

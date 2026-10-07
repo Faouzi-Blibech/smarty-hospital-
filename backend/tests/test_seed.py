@@ -33,3 +33,11 @@ def test_seed_is_idempotent(db):
 def test_seed_advances_sequences(db):
     seed(db)
     assert int(new_id(db, "p")[2:]) > 12
+
+
+def test_seed_generates_doses(db):
+    from app.models import MedDose
+
+    seed(db)
+    # rx-0001: Amlodipine 08:00 × 5 days + Paracetamol 08:00/20:00 × 5 days
+    assert db.query(MedDose).filter_by(prescription_id="rx-0001").count() == 15

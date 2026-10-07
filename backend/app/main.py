@@ -9,7 +9,7 @@ from sqlalchemy import text
 from app import errors
 from app.config import get_settings
 from app.db import engine
-from app.routers import alerts, auth, patients
+from app.routers import alerts, auth, devices, doses, patients, prescriptions
 from app.ws import relay
 from app.ws import router as ws_router
 from app.ws.hub import hub
@@ -38,6 +38,9 @@ errors.install(app)
 app.include_router(auth.router)
 app.include_router(patients.router)
 app.include_router(alerts.router)
+app.include_router(prescriptions.router)
+app.include_router(devices.router)
+app.include_router(doses.router)
 app.include_router(ws_router.router)
 
 
