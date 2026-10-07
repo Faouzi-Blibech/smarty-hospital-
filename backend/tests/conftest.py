@@ -58,3 +58,13 @@ def client(db, seeded):
     app.dependency_overrides[get_db] = lambda: db
     yield TestClient(app)
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def emitted(monkeypatch):
+    """Every n8n event a test triggers, as (event, data); nothing leaves the process."""
+    from app.integrations import n8n
+
+    events: list[tuple[str, dict]] = []
+    monkeypatch.setattr(n8n, "emit", lambda event, data: events.append((event, data)))
+    return events
