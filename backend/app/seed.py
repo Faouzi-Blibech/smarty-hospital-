@@ -87,7 +87,8 @@ def seed(db: Session) -> bool:
     db.add(User(id="u-0005", email="patient@ward.tn", name="Amira Ben Salah", role="patient",
                 patient_id="p-0001", password_hash=pw))
 
-    db.add(Device(id="bsu-001", fw_version="0.1.0", online=False))
+    if db.get(Device, "bsu-001") is None:  # the worker may have registered it from its retained status
+        db.add(Device(id="bsu-001", fw_version="0.1.0", online=False))
     db.flush()
     db.add(Admission(id="adm-0001", patient_id="p-0001", device_id="bsu-001", bed="C-12",
                      admitted_at=now - timedelta(days=2)))

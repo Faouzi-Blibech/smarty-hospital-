@@ -41,3 +41,14 @@ def test_seed_generates_doses(db):
     seed(db)
     # rx-0001: Amlodipine 08:00 × 5 days + Paracetamol 08:00/20:00 × 5 days
     assert db.query(MedDose).filter_by(prescription_id="rx-0001").count() == 15
+
+
+def test_seed_after_device_auto_registered(db):
+    # the worker can register bsu-001 from its retained `status` before anyone runs the seed
+    from app.iot import ingest
+    from app.models import Device
+
+    ingest.handle(db, "bsu-001", "status", {"online": True, "fw_version": "0.2.0"})
+    seed(db)
+    assert db.get(Device, "bsu-001").fw_version == "0.2.0"
+    assert db.query(Admission).filter_by(device_id="bsu-001").count() == 1
