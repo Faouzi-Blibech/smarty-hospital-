@@ -10,8 +10,10 @@ import { ErrorCard } from "@/components/shared/ErrorCard";
 import { getAlerts, getDevices, getWaitlist } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
 import { URGENCY_BAR } from "@/lib/labels";
-import { daysSince, now, tunisDay, tunisTime } from "@/lib/time";
+import { daysSince, greeting, now, tunisDay, tunisTime, USE_MOCKS } from "@/lib/time";
+import { useMe } from "@/lib/useMe";
 import type { Alert, Appointment, Device, Urgency } from "@/lib/types";
+import { usePatientWards, wardsOf } from "./wards";
 import page from "./AdminPage.module.css";
 import styles from "./Dashboard.module.css";
 
@@ -32,8 +34,12 @@ const LEGEND = ([5, 4, 3, 2, 1] as Urgency[]).map((n) => ({ c: URGENCY_BAR[n], l
 
 interface Data {
   waitlist: Appointment[];
+  /** GET /appointments/waitlist failed (not built yet in real mode): the tiles say so instead of failing the page. */
+  waitlistFailed: boolean;
   devices: Device[];
   alerts: Alert[];
+  /** "Ward C" (mock) or the wards of the device patients (real), null when unknown. */
+  ward: string | null;
 }
 
 interface Kpi {
@@ -57,7 +63,7 @@ interface Todo {
 // mock filter in lib/api.ts getWaitlist); an urgency override sets urgency_final but does not confirm.
 const urgencyOf = (a: Appointment) => a.urgency_final ?? a.urgency_ai;
 
-function buildKpis({ waitlist, devices, alerts }: Data): Kpi[] {
+function buildKpis({ waitlist, waitlistFailed, devices, alerts, ward }: Data): Kpi[] {
   const assigned = devices.filter((d) => d.patient_id).length;
   const free = devices.length - assigned;
   const crit = alerts.filter((a) => a.severity === "critical");
@@ -69,7 +75,7 @@ function buildKpis({ waitlist, devices, alerts }: Data): Kpi[] {
       label: "Patients admitted",
       value: "42",
       of: "",
-      note: `Ward C: ${assigned} · ${free} bed${free === 1 ? "" : "s"} free`,
+      note: `${ward ?? "Beds"}: ${assigned} · ${free} bed${free === 1 ? "" : "s"} free`,
       noteFg: "var(--muted)",
       href: "/admin/devices",
     },
@@ -83,10 +89,10 @@ function buildKpis({ waitlist, devices, alerts }: Data): Kpi[] {
     },
     {
       label: "Waitlist",
-      value: waitlist.length,
-      of: "requests",
-      note: `${veryUrgent} very urgent not yet confirmed`,
-      noteFg: veryUrgent ? "var(--danger)" : "var(--muted)",
+      value: waitlistFailed ? "—" : waitlist.length,
+      of: waitlistFailed ? "" : "requests",
+      note: waitlistFailed ? "Waitlist unavailable" : `${veryUrgent} very urgent not yet confirmed`,
+      noteFg: veryUrgent && !waitlistFailed ? "var(--danger)" : "var(--muted)",
       href: "/admin/waitlist",
     },
     {
@@ -161,7 +167,9 @@ function buildTodo({ waitlist, devices }: Data): Todo[] {
 
 export function Dashboard() {
   const flags = useDemoFlags();
-  const [data, setData] = useState<Data | null>(null);
+  const me = useMe("admin");
+  const patientWards = usePatientWards();
+  const [data, setData] = useState<Omit<Data, "ward"> | null>(null);
   const [failed, setFailed] = useState(false);
 
   const fallback = flags.aiFallback;
@@ -171,9 +179,18 @@ export function Dashboard() {
       setData(null);
     }
     // GET /alerts is nurse/doctor only in api.md: without it the alert figures read 0 instead of failing the page.
-    Promise.all([getWaitlist({ fallback }), getDevices(), getAlerts({ status: "open" }).catch((): Alert[] => [])])
+    // The waitlist is optional too: a failure empties it and notes it on the tile; devices still decide the page.
+    let waitlistFailed = false;
+    Promise.all([
+      getWaitlist({ fallback }).catch((): Appointment[] => {
+        waitlistFailed = true;
+        return [];
+      }),
+      getDevices(),
+      getAlerts({ status: "open" }).catch((): Alert[] => []),
+    ])
       .then(([waitlist, devices, alerts]) => {
-        setData({ waitlist, devices, alerts });
+        setData({ waitlist, waitlistFailed, devices, alerts });
         setFailed(false);
       })
       .catch(() => {
@@ -192,12 +209,14 @@ export function Dashboard() {
 
   const state = flags.state === "empty" ? null : (flags.state ?? (failed ? "error" : data == null ? "loading" : null));
   const clock = now().toISOString();
+  const full: Data | null = data ? { ...data, ward: wardsOf(data.devices.map((d) => d.patient_id), patientWards) } : null;
+  const name = USE_MOCKS ? "Mme Gharbi" : me?.name;
 
   return (
     <div className={`${page.page} ${styles.page}`}>
       <div className={page.head}>
         <div className={page.titles}>
-          <h2 className={page.h2}>Good morning, Mme Gharbi</h2>
+          <h2 className={page.h2}>{name ? `${greeting()}, ${name}` : greeting()}</h2>
           <span className={page.sub}>
             Hôpital Régional · {tunisDay(clock)}, {tunisTime(clock)}
           </span>
@@ -214,11 +233,11 @@ export function Dashboard() {
             </div>
           ))}
         </div>
-      ) : state === "error" || !data ? (
+      ) : state === "error" || !full ? (
         <ErrorCard title="Couldn’t load today’s figures." onRetry={() => load()} />
       ) : (
         <div className={styles.kpis}>
-          {buildKpis(data).map((k) => (
+          {buildKpis(full).map((k) => (
             <Link key={k.label} href={k.href} className={styles.kpi}>
               <span className={styles.kpiLabel}>{k.label}</span>
               <span className={styles.kpiValueRow}>
@@ -283,8 +302,8 @@ export function Dashboard() {
 
         <section className={`${styles.card} ${styles.todoCard}`}>
           <h3 className={`${styles.h3} ${styles.todoTitle}`}>Needs a person</h3>
-          {data && state == null
-            ? buildTodo(data).map((t) => (
+          {full && state == null
+            ? buildTodo(full).map((t) => (
                 <Link key={t.title} href={t.href} className={styles.todo}>
                   <span className={styles.todoDot} style={{ background: t.c }} />
                   <span className={styles.todoText}>

@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { USE_MOCKS } from "@/lib/time";
+import { initialsOf, useMe } from "@/lib/useMe";
 import { NAV_COUNTS } from "@/mocks";
 import styles from "./Sidebar.module.css";
 
@@ -13,11 +17,15 @@ export interface NavItem {
   hot?: boolean;
 }
 
+/** The design's people (mock mode). Real mode shows the signed-in user from GET /me. */
 const USERS: Record<StaffRole, { name: string; sub: string; ini: string }> = {
   doctor: { name: "Dr Trabelsi", sub: "Doctor · Cardiology", ini: "DT" },
   nurse: { name: "Nurse Ines", sub: "Nurse · Ward C", ini: "NI" },
   admin: { name: "Mme Gharbi", sub: "Administration", ini: "MG" },
 };
+
+/** Real-mode subtitle: /me has no ward, so the role word is enough. */
+const ROLE_SUB: Record<string, string> = { doctor: "Doctor", nurse: "Nurse", admin: "Administration", patient: "Patient" };
 
 export const NAV: Record<StaffRole, NavItem[]> = {
   doctor: [
@@ -63,7 +71,10 @@ export interface SidebarProps {
 export function Sidebar({ role, active, live = true, counts }: SidebarProps) {
   const items = NAV[role];
   const current = active ?? items[0].key;
-  const u = USERS[role];
+  const me = useMe(role);
+  const u = USE_MOCKS
+    ? USERS[role]
+    : { name: me?.name ?? "", sub: me ? (ROLE_SUB[me.role] ?? me.role) : "", ini: me ? initialsOf(me.name) : "" };
   return (
     <div className={styles.root}>
       <div className={styles.brand}>
@@ -76,7 +87,8 @@ export function Sidebar({ role, active, live = true, counts }: SidebarProps) {
       <nav className={styles.nav}>
         {items.map((n) => {
           const on = n.key === current;
-          const count = String(counts?.[n.key] ?? n.count);
+          // Real mode: no stats endpoint yet (proposed in api.md), so no count pills.
+          const count = USE_MOCKS ? String(counts?.[n.key] ?? n.count) : String(counts?.[n.key] ?? "");
           return (
             <Link
               key={n.key}
@@ -96,10 +108,13 @@ export function Sidebar({ role, active, live = true, counts }: SidebarProps) {
       <div className={styles.spacer} />
       <div className={styles.foot}>
         {live ? (
-          <span className={styles.live}>
-            <span className={styles.liveDot} />
-            Live
-          </span>
+          // No live feed in real mode yet (snapshots only), so no "Live" pill there.
+          USE_MOCKS ? (
+            <span className={styles.live}>
+              <span className={styles.liveDot} />
+              Live
+            </span>
+          ) : null
         ) : (
           <span className={styles.paused}>
             <span className={styles.pausedDot} />

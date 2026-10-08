@@ -14,13 +14,14 @@ import { addNote, getDoses, getNotes, getPatient, getPrescriptions, getVitals } 
 import { useDemoFlags } from "@/lib/demo";
 import { now, pausedAt, tunisTime, USE_MOCKS } from "@/lib/time";
 import type { Dose, Note, Patient, Prescription, Vital } from "@/lib/types";
+import { useMe } from "@/lib/useMe";
 import { DailySummary } from "./DailySummary";
 import { PatientHeader } from "./PatientHeader";
 import { Prescriptions } from "./Prescriptions";
 import { VitalsCard } from "./VitalsCard";
 import styles from "./PatientDetail.module.css";
 
-/** The signed-in doctor in the demo (Dr Trabelsi). */
+/** The signed-in doctor in the mock demo (Dr Trabelsi). Real mode names the user from GET /me; ids are mock-only. */
 const DOCTOR_ID = "u-0001";
 const DOCTOR_NAME = "Dr Trabelsi";
 
@@ -38,7 +39,9 @@ interface Data {
 export function PatientDetail({ id }: { id: string }) {
   const flags = useDemoFlags();
   const router = useRouter();
-  const { sec, reading } = useLiveTick(flags.live);
+  const me = useMe("doctor");
+  const viewer = USE_MOCKS ? DOCTOR_NAME : (me?.name ?? "…");
+  const { sec, reading } = useLiveTick(flags.live && USE_MOCKS);
   const [data, setData] = useState<Data | null>(null);
   const [failed, setFailed] = useState(false);
   const [openedAt] = useState(() => tunisTime(now().toISOString()));
@@ -92,7 +95,7 @@ export function PatientDetail({ id }: { id: string }) {
         <span className={styles.spacer} />
         <span className={styles.audit}>
           <span className={styles.lock} />
-          Access logged · {DOCTOR_NAME} · {openedAt}
+          Access logged · {viewer} · {openedAt}
         </span>
       </div>
       {!flags.live ? <LiveBanner>Chart frozen at {pausedAt()}. New readings will fill in automatically.</LiveBanner> : null}

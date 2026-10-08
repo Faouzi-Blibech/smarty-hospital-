@@ -3,7 +3,7 @@
 // /nurse/patients — the design has no dedicated screen: the ward's patients as bed
 // cards (same component as the board), in bed order. Each card opens the detail.
 import { useCallback, useEffect, useState } from "react";
-import { pausedAt } from "@/lib/time";
+import { pausedAt, USE_MOCKS } from "@/lib/time";
 import { LiveBanner } from "@/components/LiveBanner";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { useLiveTick } from "@/components/shared/useLiveTick";
@@ -11,13 +11,13 @@ import { getWard } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
 import type { WardBed } from "@/lib/types";
 import { BedCard, BedCardSkeleton } from "./BedCard";
-import { byBed, WARD_LABEL } from "./nurse";
+import { byBed, wardLabel } from "./nurse";
 import { useWardAlerts } from "./useWardAlerts";
 import styles from "./NursePage.module.css";
 
 export function PatientsView() {
   const flags = useDemoFlags();
-  const { tick } = useLiveTick(flags.live);
+  const { tick } = useLiveTick(flags.live && USE_MOCKS);
   const { alerts } = useWardAlerts();
   const [beds, setBeds] = useState<WardBed[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -43,8 +43,9 @@ export function PatientsView() {
       <div className={styles.head}>
         <h2 className={styles.title}>Patients</h2>
         <span className={styles.sub}>
-          {WARD_LABEL}
-          {beds && !state ? ` · ${beds.length} patients · by bed` : ""}
+          {[wardLabel((beds ?? []).map((b) => b.patient?.ward)), beds && !state ? `${beds.length} patients · by bed` : null]
+            .filter(Boolean)
+            .join(" · ")}
         </span>
       </div>
       {state === "error" ? (

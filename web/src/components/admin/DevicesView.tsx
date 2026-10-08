@@ -10,6 +10,7 @@ import { assignDevice, dischargeAdmission, getDevices } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
 import { ago, now, tunisTime, USE_MOCKS } from "@/lib/time";
 import type { Device } from "@/lib/types";
+import { MOCK_WARD, usePatientWards, wardsOf } from "./wards";
 import page from "./AdminPage.module.css";
 import styles from "./DevicesView.module.css";
 
@@ -58,6 +59,9 @@ export function DevicesView() {
   const state = flags.state === "empty" ? null : (flags.state ?? (failed ? "error" : devices == null ? "loading" : null));
   const list = devices ?? [];
   const online = list.filter((d) => d.online).length;
+  const patientWards = usePatientWards();
+  const ward = wardsOf(list.map((d) => d.patient_id), patientWards);
+  const bedWard = (d: Device) => wardsOf([d.patient_id], patientWards);
 
   const patientOf = (d: Device) => assigned[d.id] ?? (discharged[d.id] ? null : d.patient_name ? { name: d.patient_name, bed: d.bed ?? "" } : d.patient_id ? { name: d.patient_id, bed: d.bed ?? "" } : null);
 
@@ -125,7 +129,8 @@ export function DevicesView() {
         <div className={page.titles}>
           <h2 className={page.h2}>Beds &amp; devices</h2>
           <span className={page.sub}>
-            Ward C · {state === "loading" ? "…" : online} of {state === "loading" ? 8 : list.length} bedside units online
+            {ward ? `${ward} · ` : ""}
+            {state === "loading" ? "…" : online} of {state === "loading" ? 8 : list.length} bedside units online
           </span>
         </div>
       </div>
@@ -188,7 +193,7 @@ export function DevicesView() {
                       <span dir="auto" className={styles.patient} style={{ color: p ? "var(--ink)" : "var(--muted)" }}>
                         {p ? p.name : "Unassigned"}
                       </span>
-                      <span className={styles.bed}>{p ? `Bed ${p.bed} · Ward C` : "Idle"}</span>
+                      <span className={styles.bed}>{p ? [`Bed ${p.bed}`, bedWard(d)].filter(Boolean).join(" · ") : "Idle"}</span>
                     </span>
                     <div className={styles.actions}>
                       {p ? (
@@ -225,7 +230,7 @@ export function DevicesView() {
               <span className={page.fieldLabel}>Bed</span>
               <span className={page.selectWrap}>
                 <select className={page.select} defaultValue={assignBed}>
-                  <option value={assignBed}>{assignBed} · Ward C</option>
+                  <option value={assignBed}>{USE_MOCKS ? `${assignBed} · ${MOCK_WARD}` : assignBed}</option>
                 </select>
               </span>
             </label>

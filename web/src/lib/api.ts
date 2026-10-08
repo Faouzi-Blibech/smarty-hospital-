@@ -137,6 +137,20 @@ export function getMe(role: Role = "doctor"): Promise<Me> {
   return http<Me>("GET", "/me");
 }
 
+const meCache = new Map<string, Promise<Me>>();
+
+/** getMe() remembered for this tab: per demo role in mock mode, per session token in real mode. */
+export function getMeCached(role: Role = "doctor"): Promise<Me> {
+  const key = USE_MOCKS ? `mock:${role}` : `token:${getToken() ?? ""}`;
+  let p = meCache.get(key);
+  if (!p) {
+    p = getMe(role);
+    meCache.set(key, p);
+    p.catch(() => meCache.delete(key));
+  }
+  return p;
+}
+
 // ── Patients and records ────────────────────────────────────────────────────
 
 /** GET /patients (the doctor's own), highest NEWS2 first. */

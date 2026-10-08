@@ -62,6 +62,12 @@ export function daysSince(iso: string, ref: Date = now()): number {
   return Math.round((b - a) / 86_400_000);
 }
 
+/** "Good morning" before 12:00, "Good afternoon" before 18:00, else "Good evening" (Tunis time). */
+export function greeting(ref: Date = now()): string {
+  const h = Number(tunisTime(ref.toISOString()).slice(0, 2));
+  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+}
+
 /** "8 s ago", "6 min ago", "2 h ago". */
 export function ago(iso: string, ref: Date = now()): string {
   const s = Math.max(0, Math.round((ref.getTime() - Date.parse(iso)) / 1000));
