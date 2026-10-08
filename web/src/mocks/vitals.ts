@@ -1,5 +1,7 @@
 // Vitals series. Amira (p-0001): the doctor chart's 25 hourly points (HR, SP, TP, NW).
 // Omar (p-0002): the nurse detail tiles' 7 points. Others: latest reading from `BEDS`.
+// The doctor chart reads NW as the max per 2-hour window (lib/series news2Every2h), so each
+// odd-hour score is ≤ the next even-hour one: the 13 dots stay the design's every-other-hour values.
 import type { Vital } from "@/lib/types";
 import { secondsAgo } from "./time";
 
@@ -8,7 +10,7 @@ const HOUR = 3600;
 const HR = [74, 72, 76, 78, 80, 79, 82, 85, 84, 88, 92, 98, 104, 110, 118, 112, 106, 102, 99, 97, 95, 96, 98, 97, 96];
 const SP = [97, 97, 96, 97, 97, 96, 97, 96, 96, 96, 96, 96, 96, 95, 96, 96, 95, 95, 95, 94, 94, 94, 93, 93, 93];
 const TP = [36.8, 36.9, 36.9, 37.0, 37.1, 37.0, 37.2, 37.4, 37.5, 37.6, 37.8, 38.0, 38.1, 37.9, 37.8, 37.7, 37.6, 37.6, 37.5, 37.5, 37.4, 37.5, 37.6, 37.5, 37.4];
-const NW = [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4, 5, 5, 4, 4, 4, 4, 5, 4, 5, 5, 5, 5];
+const NW = [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4, 5, 5, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5];
 
 const amira: Vital[] = HR.map((hr, i) => ({
   ts: i === HR.length - 1 ? secondsAgo(8) : secondsAgo((HR.length - 1 - i) * HOUR),

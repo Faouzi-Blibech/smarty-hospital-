@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import { level, PULSE } from "@/lib/news2";
-import { ago, pausedAt, tunisTime, USE_MOCKS } from "@/lib/time";
+import { pausedAt, tunisTime, USE_MOCKS } from "@/lib/time";
 import type { Alert, WardBed } from "@/lib/types";
 import { hrPoints, spo2Points, tempPoints } from "./nurse";
 import styles from "./BedCard.module.css";
@@ -67,7 +67,8 @@ export function BedCard({ bed, index, live, tick, call }: BedCardProps) {
   else if (offline) agoText = `Device offline · last seen ${bed.device ? tunisTime(bed.device.last_seen) : "—"}`;
   else if (!live) agoText = `paused ${pausedAt()}`;
   else if (USE_MOCKS) agoText = `updated ${((tick + index * 3) % 9) + 1} s ago`;
-  else agoText = bed.latest ? `updated ${ago(bed.latest.ts)}` : "no readings yet";
+  // Real mode shows a snapshot (no live feed yet): when the last reading was taken, never a counter.
+  else agoText = bed.latest ? `Last reading ${tunisTime(bed.latest.ts)}` : "No readings yet";
 
   const body: ReactNode = (
     <>
