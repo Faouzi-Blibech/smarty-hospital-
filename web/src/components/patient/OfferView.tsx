@@ -8,16 +8,23 @@ import { useState } from "react";
 import { acceptOffer, ApiError, getMyAppointments, getOffer } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
 import { tunisTime, USE_MOCKS } from "@/lib/time";
+import type { Appointment, SlotOffer } from "@/lib/types";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { daysBetween, longDay, myPatientId, useLoad } from "./patient";
-import { PatientScreen, SkeletonCard } from "./PatientScreen";
+import { EmptyCard, PatientScreen, SkeletonCard } from "./PatientScreen";
 import styles from "./Patient.module.css";
 
 type Result = "booked" | "taken" | null;
 
 async function loadOffer(id: string) {
-  const [offer, list] = await Promise.all([getOffer(id), myPatientId().then(getMyAppointments)]);
-  return { offer, current: list.find((a) => a.id === offer.appointment_id) ?? null };
+  // Both calls are optional: a missing offer shows "no longer available", missing appointments drop "Instead of …".
+  const [offer, list] = await Promise.all([
+    getOffer(id).catch((): SlotOffer | null => null),
+    myPatientId()
+      .then(getMyAppointments)
+      .catch((): Appointment[] => []),
+  ]);
+  return { offer, current: offer ? (list.find((a) => a.id === offer.appointment_id) ?? null) : null };
 }
 
 export function OfferView({ id }: { id: string }) {
@@ -105,8 +112,10 @@ export function OfferView({ id }: { id: string }) {
             message="We couldn’t load this offer."
             onRetry={flags.state === "error" ? undefined : res.retry}
           />
-        ) : !offer ? (
+        ) : !data ? (
           <SkeletonCard />
+        ) : !offer ? (
+          <EmptyCard title="This offer isn’t available">It may have been taken or withdrawn. Your current appointment stays as it is.</EmptyCard>
         ) : (
           <>
             <span className={styles.goodNews}>Good news</span>
