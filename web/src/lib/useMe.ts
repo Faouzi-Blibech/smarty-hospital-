@@ -6,20 +6,25 @@ import { useEffect, useState } from "react";
 import { getMeCached } from "./api";
 import type { Me, Role } from "./types";
 
-/** `getMe()` for this tab, or null while loading (or when it failed). `role` picks the mock user. */
-export function useMe(role?: Role): Me | null {
-  const [me, setMe] = useState<Me | null>(null);
+/** `getMe()` for this tab plus whether it failed; `me` is null while loading or after a failure. */
+export function useMeState(role?: Role): { me: Me | null; failed: boolean } {
+  const [state, setState] = useState<{ me: Me | null; failed: boolean }>({ me: null, failed: false });
   useEffect(() => {
     let alive = true;
     getMeCached(role).then(
-      (m) => alive && setMe(m),
-      () => undefined,
+      (me) => alive && setState({ me, failed: false }),
+      () => alive && setState({ me: null, failed: true }),
     );
     return () => {
       alive = false;
     };
   }, [role]);
-  return me;
+  return state;
+}
+
+/** `getMe()` for this tab, or null while loading (or when it failed). `role` picks the mock user. */
+export function useMe(role?: Role): Me | null {
+  return useMeState(role).me;
 }
 
 /** "DT" for "Dr Trabelsi", "HM" for "Hela Mejri". */

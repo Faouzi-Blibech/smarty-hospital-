@@ -59,7 +59,7 @@ export function Home() {
   const next = (data?.appts ?? []).find(
     (a) => a.status === "confirmed" && a.slot_at && Date.parse(a.slot_at) >= ref.getTime(),
   );
-  const place = data ? bedLine(data.patient.bed) : null;
+  const place = data ? bedLine(data.patient.bed, data.patient.ward) : null;
 
   return (
     <PatientScreen nav="home" apptHref={next ? `/patient/appointments/${next.id}` : undefined}>

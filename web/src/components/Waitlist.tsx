@@ -5,7 +5,7 @@ import { confirmAppointment, getStaff, getWaitlist, overrideUrgency } from "@/li
 import { doctorForSpecialty, LANG_LABELS, noShowWord, redFlagLabel, URGENCY, type ClinicDoctor } from "@/lib/labels";
 import { daysSince, tunisDay, USE_MOCKS } from "@/lib/time";
 import type { Appointment, StaffMember, Urgency } from "@/lib/types";
-import { useMe } from "@/lib/useMe";
+import { useMeState } from "@/lib/useMe";
 import { AiBadge } from "./AiBadge";
 import { Toast, useToast } from "./Toast";
 import styles from "./Waitlist.module.css";
@@ -64,21 +64,26 @@ export function Waitlist({
   const [time, setTime] = useState("10:00");
   const [busy, setBusy] = useState(false);
   const [toast, showToast] = useToast<{ text: string; tone: "ok" | "warn" }>(4500);
-  const me = useMe(caller);
+  const { me, failed: meFailed } = useMeState(caller);
   // Real-mode admin: the doctors on file, to book a row with its specialty's doctor (null while loading).
   const [staff, setStaff] = useState<StaffMember[] | null>(null);
+  const [staffFailed, setStaffFailed] = useState(false);
   useEffect(() => {
     if (USE_MOCKS || caller !== "admin") return;
     let alive = true;
     getStaff().then(
       (list) => alive && setStaff(list),
-      () => alive && setStaff([]),
+      () => {
+        if (!alive) return;
+        setStaff([]);
+        setStaffFailed(true);
+      },
     );
     return () => {
       alive = false;
     };
   }, [caller]);
-  const actor = USE_MOCKS ? mockActor : (me?.name ?? "you");
+  const actor = USE_MOCKS ? mockActor : (me?.name ?? "");
 
   /** The doctor a row books. Real mode never falls back to a hard-coded id: null when no doctor matches. */
   const doctorFor = (a: Appointment): ClinicDoctor | null => {
@@ -87,11 +92,12 @@ export function Waitlist({
     const doc = staff?.find((s) => s.role === "doctor" && s.ward === a.specialty);
     return doc ? { id: doc.id, name: doc.name, specialty: doc.ward ?? "" } : null;
   };
-  /** "No doctor on file for Pediatrics" once the lookup has finished and found no one. */
+  /** Why a row can't be booked (real mode), once the lookup has finished: load error or no matching doctor. */
   const noDoctorNote = (a: Appointment): string | null => {
     if (USE_MOCKS || doctorFor(a)) return null;
-    const settled = caller === "doctor" ? me != null : staff != null;
-    return settled ? `No doctor on file for ${a.specialty ?? "this specialty"}` : null;
+    if (caller === "doctor") return meFailed ? "Couldn’t load your account — refresh to book." : null;
+    if (staffFailed) return "Couldn’t load the doctor list";
+    return staff != null ? `No doctor on file for ${a.specialty ?? "this specialty"}` : null;
   };
 
   const load = useCallback(() => {
@@ -121,7 +127,7 @@ export function Waitlist({
     try {
       const upd = await overrideUrgency(a.id, n, by);
       const patch = (x: Appointment) =>
-        x.id === a.id ? { ...x, ...upd, human_confirmed_by_name: upd.human_confirmed_by_name ?? actor } : x;
+        x.id === a.id ? { ...x, ...upd, human_confirmed_by_name: upd.human_confirmed_by_name ?? (actor || null) } : x;
       setFetched((f) => f && f.map(patch));
     } catch {
       showToast({ text: "Could not save the override. Try again.", tone: "warn" });
@@ -218,10 +224,10 @@ export function Waitlist({
                   source={source}
                   detail={pct != null ? `${pct}%` : undefined}
                   state={conf ? "confirmed" : isOver ? "overridden" : "needs_review"}
-                  stateLabel={conf ? `Confirmed by ${actor}` : undefined}
+                  stateLabel={conf ? (actor ? `Confirmed by ${actor}` : "Confirmed") : undefined}
                 />
                 {isOver && (
-                  <span className={styles.overBy}><span className={styles.overDot} /><span>Human override by {a.human_confirmed_by_name ?? actor} · AI said {a.urgency_ai}</span></span>
+                  <span className={styles.overBy}><span className={styles.overDot} /><span>{(a.human_confirmed_by_name ?? actor) ? <>Human override by {a.human_confirmed_by_name ?? actor} · AI said {a.urgency_ai}</> : <>Human override · AI said {a.urgency_ai}</>}</span></span>
                 )}
                 {why === a.id && (
                   <div role="dialog" className={styles.popover}>
@@ -242,7 +248,7 @@ export function Waitlist({
               </div>
               <div className={cls(styles.col, styles.actions)}>
                 {conf ? (
-                  <div className={styles.confirmedBox}><b>✓ Confirmed by {actor}</b><span>{conf.slot}</span><span>Reminder 24 h before · Telegram + email</span></div>
+                  <div className={styles.confirmedBox}><b>{actor ? <>✓ Confirmed by {actor}</> : "✓ Confirmed"}</b><span>{conf.slot}</span><span>Reminder 24 h before · Telegram + email</span></div>
                 ) : (
                   <div className={styles.btnCol}>
                     <button className={styles.override} onClick={() => { setMenu(menu === a.id ? null : a.id); setWhy(null); }}>Override urgency ▾</button>
