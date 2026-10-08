@@ -1,6 +1,6 @@
 # REST + WebSocket contract — v1.0
 
-> **Version:** 1.5 (2026-10-06) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations)
+> **Version:** 1.6 (2026-10-08) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Conventions
@@ -201,7 +201,42 @@ New types:
 
 **Patient role:** an appointment returned to the patient role (`GET /appointments?patient_id=`, `/appointments/{id}/reply`, `/offers/{id}/accept`) must omit `urgency_ai`, `triage` and `no_show_prob`. The patient never sees an AI urgency score.
 
+## Confirmed in 1.6 (Wali: core, IoT, alerts)
+
+Wali confirms and has built these 1.5 proposals (`wali/backend-core`). The others in the 1.5 list stay proposed.
+
+| Method & path | Roles | Notes |
+|---|---|---|
+| `GET /patients/{id}/doses?date=YYYY-MM-DD` | doctor (own), nurse (ward), patient (self) | → `[Dose]` oldest first. `date` is a local (Africa/Tunis) day; without it, the last 24 h and the rest of today. Audited like every patient read |
+| `POST /doses/{id}/given` | nurse (ward) | → `Dose` with `status:"taken"` plus `given_by`, `given_by_name`, `taken_at` **in this response only**: the confirming nurse is kept in `audit_log`, not on `med_doses` (no column in data-model 1.3). Also pushes a `dose_event` WS frame |
+| `GET /staff` | admin | → `[StaffMember]`; `scope` is the ward, or `"All wards"` for staff without one; `last_login_at` from the latest `login` audit row (null if never) |
+
+`Dose` = the `med_doses` row: `{id, prescription_id, patient_id, scheduled_at, time_of_day, meds[], slot, status, taken_method, updated_at}`.
+
+Fields confirmed (additive; every 1.4 field is unchanged):
+
+| Type | Fields now returned |
+|---|---|
+| `PatientSummary` | `sex`, `last_vital_at`, `device_online`, `admission_id` |
+| `Patient` | `admitted_at`, `attending_doctor_name` |
+| `Note` | `author_name` |
+| `Alert` | `bed`, `patient_first_name`, `acked_by_name`, `source` (from `ai_suggested.source`; `"rules"` for `news2`/`trend`, null otherwise) |
+| `Device` (`GET /devices`) | `patient_name`, `admission_id`, `schedule_version`, `schedule_acked_version` |
+
+Not built yet (still proposed): `Vital.rr/bp_sys/bp_dia` (the simulator sends none), `Patient.allergy_notes/nurse_name`, `Prescription.allergy_override`, `POST /staff`, the patient call-nurse route, the stats endpoint, and Faouzi's offers / home-care / summary items.
+
+Clarifications of 1.4 behaviour, as built:
+- `GET /alerts?status=` accepts `open` or `all` (default all); anything else is a 422. An admin gets 403.
+- `POST /alerts/{id}/ack` is idempotent: a second ack keeps the first `acked_by`. The acked alert is pushed again as an `alert` WS frame so other dashboards drop it.
+- 422 validation errors use the same envelope: `{"detail": "<field>: <message>", "code": "invalid"}`.
+- `WS /ws`: an invalid token is closed with code 4401, a patient token with 4403.
+- `POST /devices/{id}/assign` → `{"admission_id","patient_id","device_id","bed","schedule_version","published_to_device"}`; 409 `device_busy` if the device has another active patient. Moving a patient to another device sends the old device an unassigned schedule.
+- `POST /admissions/{id}/discharge` → `{"admission_id","patient_id","device_id","discharged_at"}`; 409 `already_discharged`.
+- `POST /devices/{id}/command` → `{"published": bool}`.
+
 ## Changelog
+
+- **1.6** (2026-10-08): Wali confirms and builds, from the 1.5 proposals, `GET /patients/{id}/doses`, `POST /doses/{id}/given` (`given_by` in that response only) and `GET /staff`, plus the additive fields listed in "Confirmed in 1.6"; documents the alerts `status` values, the 422 envelope, the WS close codes and the assign/discharge/command responses as built. Nothing in 1.4/1.5 is removed. Needs a 👍 from Faouzi.
 
 - **1.5** (2026-10-06): UI needs, proposed by Faouzi; Wali to confirm. Adds the section "Proposed in 1.5 (web UI needs)" (endpoints, fields and new types the web app uses) and the rule that patient-role appointment responses omit `urgency_ai`, `triage` and `no_show_prob`. Nothing in 1.4 changes.
 

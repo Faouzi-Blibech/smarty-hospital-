@@ -13,6 +13,9 @@ class Settings(BaseSettings):
 
     jwt_secret: str = "change-me-to-a-long-random-string"
     jwt_expire_hours: int = 12
+    bcrypt_rounds: int = 12
+    # demo password of the synthetic seed accounts (api.md); set SEED_PASSWORD for any other deployment
+    seed_password: str = "ward1234"  # NOSONAR: documented demo default for synthetic data, overridable
 
     minio_endpoint: str = "localhost:9000"
     minio_root_user: str = "ward"
