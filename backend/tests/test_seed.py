@@ -52,3 +52,13 @@ def test_seed_after_device_auto_registered(db):
     seed(db)
     assert db.get(Device, "bsu-001").fw_version == "0.2.0"
     assert db.query(Admission).filter_by(device_id="bsu-001").count() == 1
+
+
+def test_seed_password_comes_from_settings(db, monkeypatch):
+    from app.auth.security import verify_password
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "seed_password", "not-the-default")
+    seed(db)
+    doctor = db.query(User).filter_by(email="doctor@ward.tn").one()
+    assert verify_password("not-the-default", doctor.password_hash)

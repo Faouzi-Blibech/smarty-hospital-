@@ -11,13 +11,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth.security import hash_password
+from app.config import get_settings
 from app.db import SessionLocal
 from app.ids import reserve_upto
 from app.models import Admission, Appointment, Device, Patient, Prescription, Staff, User, Vital
 from app.services.appointments import new_appointment_fields
 from app.services.schedule import local_to_utc, rebuild_doses, today_local
-
-PASSWORD = "ward1234"
 
 # (id, email, name, role, ward, rfid)
 STAFF = [
@@ -68,7 +67,7 @@ def seed(db: Session) -> bool:
         return False
     rng = random.Random(42)
     now = datetime.now(UTC).replace(second=0, microsecond=0)
-    pw = hash_password(PASSWORD)
+    pw = hash_password(get_settings().seed_password)
 
     for uid, email, name, role, _, _ in STAFF:
         db.add(User(id=uid, email=email, name=name, role=role, password_hash=pw))
@@ -98,8 +97,8 @@ def seed(db: Session) -> bool:
     start = start.replace(minute=start.minute - start.minute % 15)
     for k in range(48 * 4):
         db.add(Vital(ts=start + timedelta(minutes=15 * k), device_id="bsu-001", patient_id="p-0001",
-                     hr=rng.randint(65, 90), spo2=rng.randint(96, 99),
-                     temp=round(rng.uniform(36.5, 37.4), 1), news2=0, source="manual"))
+                     hr=rng.randint(65, 90), spo2=rng.randint(96, 99),  # NOSONAR: synthetic demo data, not security
+                     temp=round(rng.uniform(36.5, 37.4), 1), news2=0, source="manual"))  # NOSONAR: synthetic data
 
     # written at local midnight so all of today's doses exist for the demo
     db.add(Prescription(id="rx-0001", patient_id="p-0001", doctor_id="u-0001", active=True,
