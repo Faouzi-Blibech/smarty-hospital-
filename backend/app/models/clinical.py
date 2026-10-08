@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy import REAL, Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -56,12 +56,13 @@ class Vital(Base):
     """TimescaleDB hypertable on `ts`: the time column is part of the PK, as Timescale requires."""
 
     __tablename__ = "vitals"
+    __table_args__ = (Index("ix_vitals_patient_ts", "patient_id", text("ts DESC")),)
     ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
     device_id: Mapped[str] = mapped_column(String, primary_key=True)
     patient_id: Mapped[str | None] = mapped_column(String)
     hr: Mapped[int | None] = mapped_column(Integer)
     spo2: Mapped[int | None] = mapped_column(Integer)
-    temp: Mapped[float | None] = mapped_column(Float(precision=24))  # real
+    temp: Mapped[float | None] = mapped_column(REAL)
     nurse_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
     news2: Mapped[int | None] = mapped_column(Integer)
     source: Mapped[str] = mapped_column(String, default="device")  # device | simulator | manual

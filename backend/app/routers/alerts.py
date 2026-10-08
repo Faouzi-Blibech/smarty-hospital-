@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
@@ -16,10 +17,13 @@ MAX_ALERTS = 200
 
 
 @router.get("")
-def list_alerts(status: str | None = None, user: User = Depends(require_roles("doctor", "nurse")),
+def list_alerts(status: Literal["open", "all"] | None = None, user: User = Depends(require_roles("doctor", "nurse")),
                 db: Session = Depends(get_db)) -> list[dict]:
     if user.role == "nurse":
-        mine = select(Patient.id).where(Patient.ward == staff_ward(db, user))
+        ward = staff_ward(db, user)
+        if ward is None:  # `ward == None` would match every patient without a ward
+            return []
+        mine = select(Patient.id).where(Patient.ward == ward)
     else:
         mine = select(Patient.id).where(Patient.attending_doctor_id == user.id)
     stmt = select(Alert).where(Alert.patient_id.in_(mine))

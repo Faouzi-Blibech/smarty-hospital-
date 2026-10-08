@@ -81,7 +81,8 @@ def discharge(admission_id: str, request: Request, user: User = Depends(require_
         raise ApiError(409, "already_discharged", "this admission is already closed")
     adm.discharged_at = datetime.now(UTC)
     db.flush()
-    audit(db, user, "update", "admission", adm.id, patient_id=adm.patient_id, ip=_ip(request))
+    if user.role == "admin":  # a doctor's update was already audited by check_patient_access
+        audit(db, user, "update", "admission", adm.id, patient_id=adm.patient_id, ip=_ip(request))
     if adm.device_id:
         schedule.push_unassigned(db, adm.device_id)  # the bedside unit clears its schedule
     p = db.get(Patient, adm.patient_id)

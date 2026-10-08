@@ -4,6 +4,7 @@ Dose times are wall-clock HH:MM in Africa/Tunis, which is UTC+1 with no DST, so 
 (and needs no tzdata on Windows laptops).
 """
 
+import logging
 from datetime import UTC, date, datetime, time, timedelta, timezone
 
 from sqlalchemy import delete, select
@@ -13,6 +14,7 @@ from app.ids import new_id
 from app.iot import publisher
 from app.models import Admission, Device, MedDose, Patient, Prescription
 
+log = logging.getLogger("ward.schedule")
 TUNIS = timezone(timedelta(hours=1), "Africa/Tunis")
 MAX_DOSES = 8
 
@@ -96,7 +98,11 @@ def build_schedule_payload(db: Session, patient_id: str | None) -> dict:
                                 "_at": d.scheduled_at})
         if d.scheduled_at == e["_at"]:
             e["meds"] += [m for m in d.meds if m not in e["meds"]]
-    doses = sorted(entries.values(), key=lambda e: (e["time"], e["slot"] or 0))[:MAX_DOSES]
+    ordered = sorted(entries.values(), key=lambda e: (e["time"], e["slot"] or 0))
+    if len(ordered) > MAX_DOSES:
+        log.warning("schedule for %s has %d entries; dropped %s (device limit %d)", p.id, len(ordered),
+                    ", ".join(e["time"] for e in ordered[MAX_DOSES:]), MAX_DOSES)
+    doses = ordered[:MAX_DOSES]
     for e in doses:
         del e["_at"]
     return {"patient_id": p.id, "patient_first_name": p.first_name, "doses": doses}

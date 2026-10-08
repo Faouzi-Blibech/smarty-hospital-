@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, String, Text, func
+from sqlalchemy import Date, DateTime, ForeignKey, Index, String, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -27,6 +27,11 @@ class Patient(Base):
 
 class Admission(Base):
     __tablename__ = "admissions"
+    __table_args__ = (  # one active admission per patient and per device
+        Index("uq_adm_active_patient", "patient_id", unique=True, postgresql_where=text("discharged_at IS NULL")),
+        Index("uq_adm_active_device", "device_id", unique=True,
+              postgresql_where=text("discharged_at IS NULL AND device_id IS NOT NULL")),
+    )
     id: Mapped[str] = mapped_column(String, primary_key=True)
     patient_id: Mapped[str] = mapped_column(ForeignKey("patients.id"))
     device_id: Mapped[str | None] = mapped_column(ForeignKey("devices.id"))

@@ -35,7 +35,7 @@ def list_patients(request: Request, ward: str | None = None, q: str | None = Non
             own = staff_ward(db, user)
             if ward and ward != own:
                 raise forbidden("another ward")
-            found = P.search(db, ward=own or "\x00", q=q)
+            found = P.search(db, ward=own, q=q) if own else []  # a nurse without a ward sees nobody
         else:
             found = P.search(db, doctor_id=user.id, ward=ward, q=q)
         rows = [PatientSummary(**P.summary(db, p)) for p in found]

@@ -39,7 +39,13 @@ def _publish(topic: str, payload: dict, qos: int, retain: bool) -> bool:
         info = _get().publish(topic, json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
                               qos=qos, retain=retain)
         rc = getattr(info, "rc", 0)
-        if rc not in (0, None) and rc != mqtt.MQTT_ERR_NO_CONN:
+        if rc == mqtt.MQTT_ERR_NO_CONN:
+            if qos == 0:  # paho drops QoS 0 while disconnected
+                log.warning("publish %s dropped: broker not connected", topic)
+                return False
+            log.info("publish %s queued until the broker reconnects (not connected)", topic)
+            return True
+        if rc not in (0, None):
             log.warning("publish %s failed rc=%s", topic, rc)
             return False
         return True
