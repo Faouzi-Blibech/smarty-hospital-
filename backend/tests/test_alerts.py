@@ -21,6 +21,7 @@ def test_critical_vital_opens_alert_and_emits(db, seeded, emitted):
     assert "SpO2 88%" in a.message and "HR 131" in a.message
     af = next(f for f in frames if f["type"] == "alert")
     assert af["data"]["id"] == a.id and af["data"]["bed"] == "C-12" and af["scope"]["ward"] == "Cardiology"
+    db.commit()  # events leave after the commit, as in the worker
     event, data = emitted[-1]
     assert event == "alert.critical"
     assert data == {"alert_id": a.id, "patient_first_name": "Amira", "bed": "C-12", "kind": "news2", "news2": 8,

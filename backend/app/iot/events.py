@@ -82,7 +82,7 @@ def _missed(db: Session, device_id: str, dose: MedDose, group: list[MedDose]) ->
                             f"Missed dose at {when}: {', '.join(meds)}", None)
     nurses, doctor_chat = alerts.chat_ids(db, p)
     doctor = db.get(User, p.attending_doctor_id) if p.attending_doctor_id else None
-    n8n.emit("dose.missed", {"dose_id": dose.id, "patient_id": p.id, "patient_first_name": p.first_name,
+    n8n.emit_after_commit(db, "dose.missed", {"dose_id": dose.id, "patient_id": p.id, "patient_first_name": p.first_name,
                              "bed": _bed(db, p.id), "meds": meds, "scheduled_at": iso(dose.scheduled_at),
                              "nurse_chat_ids": nurses, "doctor_chat_id": doctor_chat,
                              "doctor_email": doctor.email if doctor else None})

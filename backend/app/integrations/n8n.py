@@ -9,6 +9,8 @@ import threading
 from datetime import UTC, datetime
 
 import httpx
+from sqlalchemy import event as sa_event
+from sqlalchemy.orm import Session
 
 from app.config import get_settings
 
@@ -26,3 +28,23 @@ def _post(event: str, data: dict) -> None:
 
 def emit(event: str, data: dict) -> None:
     threading.Thread(target=_post, args=(event, data), daemon=True).start()
+
+
+_PENDING = "n8n_pending"
+
+
+def emit_after_commit(db, event: str, data: dict) -> None:
+    """Queue an event on the session; it is emitted only if that session's transaction commits, so n8n
+    never hears about an alert or dose that was rolled back."""
+    db.info.setdefault(_PENDING, []).append((event, data))
+
+
+@sa_event.listens_for(Session, "after_commit")
+def _flush_pending(session) -> None:
+    for event, data in session.info.pop(_PENDING, []):
+        emit(event, data)
+
+
+@sa_event.listens_for(Session, "after_soft_rollback")
+def _drop_pending(session, previous_transaction) -> None:
+    session.info.pop(_PENDING, None)

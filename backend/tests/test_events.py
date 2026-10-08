@@ -44,6 +44,7 @@ def test_dose_missed_alert_and_emit(db, seeded, emitted):
     a = db.scalars(select(Alert).where(Alert.kind == "dose_missed")).one()
     assert a.severity == "medium" and a.patient_id == "p-0001"
     assert {f["type"] for f in frames} == {"dose_event", "alert"}
+    db.commit()  # events leave after the commit, as in the worker
     event, data = emitted[-1]
     assert event == "dose.missed"
     assert data["dose_id"] == d.id and data["patient_first_name"] == "Amira" and data["bed"] == "C-12"
@@ -78,6 +79,7 @@ def test_call_nurse(db, seeded, emitted):
     cn = next(f for f in frames if f["type"] == "call_nurse")
     assert cn["data"]["bed"] == "C-12" and cn["data"]["patient_id"] == "p-0001"
     assert any(f["type"] == "alert" for f in frames)
+    db.commit()
     assert emitted[-1][0] == "alert.critical"
 
 

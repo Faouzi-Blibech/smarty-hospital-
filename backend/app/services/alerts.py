@@ -77,7 +77,7 @@ def create_alert(db: Session, patient_id: str | None, device_id: str | None, kin
     if severity in EMITTING:
         p = db.get(Patient, patient_id) if patient_id else None
         nurses, doctor = chat_ids(db, p)
-        n8n.emit("alert.critical", {"alert_id": a.id, "patient_first_name": p.first_name if p else None,
+        n8n.emit_after_commit(db, "alert.critical", {"alert_id": a.id, "patient_first_name": p.first_name if p else None,
                                     "bed": _bed(db, patient_id), "kind": kind, "news2": news2,
                                     "message": message, "nurse_chat_ids": nurses, "doctor_chat_id": doctor})
     return a
