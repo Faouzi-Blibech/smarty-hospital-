@@ -84,7 +84,7 @@ def create_alert(db: Session, patient_id: str | None, device_id: str | None, kin
 
 
 def _message(news: News2Result, values: dict) -> str:
-    shown = [k for k in ("spo2", "hr", "temp") if news.parts.get(k)] or [k for k in news.parts]
+    shown = [k for k in ("spo2", "hr", "temp") if news.parts.get(k)] or list(news.parts)
     bits = [f"{LABELS[k][0]} {LABELS[k][1].format(values[k])}" for k in shown if values.get(k) is not None]
     return f"NEWS2 {news.score} ({news.severity}): " + ", ".join(bits)
 

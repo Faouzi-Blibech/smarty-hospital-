@@ -13,7 +13,7 @@ from app.services.audit import audit
 router = APIRouter(tags=["auth"])
 
 
-@router.post("/auth/login", response_model=LoginOut)
+@router.post("/auth/login")
 def login(body: LoginIn, request: Request, db: Session = Depends(get_db)) -> LoginOut:
     user = db.scalar(select(User).where(User.email == body.email.strip().lower()))
     if user is None or not verify_password(body.password, user.password_hash):

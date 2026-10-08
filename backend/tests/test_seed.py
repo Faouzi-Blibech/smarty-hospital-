@@ -62,3 +62,12 @@ def test_seed_password_comes_from_settings(db, monkeypatch):
     seed(db)
     doctor = db.query(User).filter_by(email="doctor@ward.tn").one()
     assert verify_password("not-the-default", doctor.password_hash)
+
+
+def test_seed_vitals_normal_and_varied(db):
+    from statistics import pstdev
+
+    seed(db)
+    rows = db.query(Vital).filter_by(patient_id="p-0001").all()
+    assert all(65 <= v.hr <= 90 and 96 <= v.spo2 <= 99 and 36.5 <= v.temp <= 37.4 for v in rows)
+    assert pstdev([v.hr for v in rows]) > 3  # a real baseline for the trend z-score

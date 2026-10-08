@@ -39,7 +39,7 @@ def parse_topic(topic: str) -> tuple[str, str] | None:
 def process(device_id: str, kind: str, raw: bytes) -> list[dict]:
     try:
         payload = json.loads(raw)
-    except (ValueError, UnicodeDecodeError):
+    except ValueError:  # includes UnicodeDecodeError
         log.warning("non-JSON %s from %s dropped", kind, device_id)
         return []
     with SessionLocal() as db:

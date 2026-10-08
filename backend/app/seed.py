@@ -4,7 +4,7 @@ Run inside the stack: `docker compose -f infra/docker-compose.yml exec api pytho
 Every name, phone and history below is invented. Never put real patients here.
 """
 
-import random
+import math
 from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import select
@@ -65,7 +65,6 @@ def seed(db: Session) -> bool:
     """Create the dataset in `db` (caller commits). Returns False if it was already seeded."""
     if db.scalar(select(User).where(User.email == "doctor@ward.tn")):
         return False
-    rng = random.Random(42)
     now = datetime.now(UTC).replace(second=0, microsecond=0)
     pw = hash_password(get_settings().seed_password)
 
@@ -92,13 +91,14 @@ def seed(db: Session) -> bool:
     db.add(Admission(id="adm-0001", patient_id="p-0001", device_id="bsu-001", bed="C-12",
                      admitted_at=now - timedelta(days=2)))
 
-    # 48 h of normal manual readings every 15 min for the admitted patient
+    # 48 h of normal manual readings every 15 min for the admitted patient: a deterministic wave inside
+    # the normal ranges (reproducible, and no pseudo-random generator in the codebase)
     start = now - timedelta(hours=48)
     start = start.replace(minute=start.minute - start.minute % 15)
     for k in range(48 * 4):
         db.add(Vital(ts=start + timedelta(minutes=15 * k), device_id="bsu-001", patient_id="p-0001",
-                     hr=rng.randint(65, 90), spo2=rng.randint(96, 99),  # NOSONAR: synthetic demo data, not security
-                     temp=round(rng.uniform(36.5, 37.4), 1), news2=0, source="manual"))  # NOSONAR: synthetic data
+                     hr=77 + round(9 * math.sin(k / 5)) + (k % 5 - 2), spo2=97 + (k % 3),
+                     temp=round(36.9 + 0.3 * math.sin(k / 8), 1), news2=0, source="manual"))
 
     # written at local midnight so all of today's doses exist for the demo
     db.add(Prescription(id="rx-0001", patient_id="p-0001", doctor_id="u-0001", active=True,
