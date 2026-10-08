@@ -14,7 +14,15 @@ export function RequestsView() {
         <span className={styles.sub}>Ranked by the AI as a suggestion. You confirm each one.</span>
       </div>
       <div className={styles.waitlist}>
-        <Waitlist specialty="Cardiology" actor="Dr Trabelsi" actorId="u-0001" doctorId="u-0001" aiFallback={flags.aiFallback} />
+        {/* actor/actorId/doctorId are the mock-mode demo doctor; real mode books with the signed-in doctor. */}
+        <Waitlist
+          caller="doctor"
+          specialty="Cardiology"
+          actor="Dr Trabelsi"
+          actorId="u-0001"
+          doctorId="u-0001"
+          aiFallback={flags.aiFallback}
+        />
       </div>
     </div>
   );

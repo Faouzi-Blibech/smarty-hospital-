@@ -1,20 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { confirmAppointment, getWaitlist, overrideUrgency } from "@/lib/api";
-import { doctorForSpecialty, LANG_LABELS, noShowWord, redFlagLabel, URGENCY } from "@/lib/labels";
-import { daysSince, tunisDay } from "@/lib/time";
-import type { Appointment, Urgency } from "@/lib/types";
+import { confirmAppointment, getStaff, getWaitlist, overrideUrgency } from "@/lib/api";
+import { doctorForSpecialty, LANG_LABELS, noShowWord, redFlagLabel, URGENCY, type ClinicDoctor } from "@/lib/labels";
+import { daysSince, tunisDay, USE_MOCKS } from "@/lib/time";
+import type { Appointment, StaffMember, Urgency } from "@/lib/types";
+import { useMe } from "@/lib/useMe";
 import { AiBadge } from "./AiBadge";
 import { Toast, useToast } from "./Toast";
 import styles from "./Waitlist.module.css";
 
 export interface WaitlistProps {
+  /** Who is booking. Real mode: a doctor books with themself (GET /me); admin picks the specialty's doctor from GET /staff. */
+  caller?: "doctor" | "admin";
   /** Show only this specialty (the chip bar then offers "All specialties"). */
   specialty?: string;
-  /** Display name of the person confirming or overriding (shown in "Confirmed by …"). */
+  /** Mock mode: display name of the person confirming or overriding (real mode: the signed-in user). */
   actor?: string;
-  /** User id of that person, sent to the API in mock mode (real API reads the JWT). Default: admin. */
+  /** Mock mode: user id of that person, sent to the mock API (the real API reads the JWT). Default: admin. */
   actorId?: string;
   /** AI unavailable: rules fallback banner, no confidence scores. */
   aiFallback?: boolean;
@@ -22,7 +25,7 @@ export interface WaitlistProps {
   confirmId?: string;
   /** Appointment id whose "Why?" popover starts open. */
   whyId?: string;
-  /** Doctor booked when a row's specialty has no mapped doctor. The row's specialty decides first. */
+  /** Mock mode: doctor booked when a row's specialty has no mapped doctor. The row's specialty decides first. */
   doctorId?: string;
 }
 
@@ -41,8 +44,9 @@ const fin = (a: Appointment): Urgency => a.urgency_final ?? a.urgency_ai;
 const cls = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(" ");
 
 export function Waitlist({
+  caller = "admin",
   specialty,
-  actor = "Mme Gharbi",
+  actor: mockActor = "Mme Gharbi",
   actorId,
   aiFallback = false,
   confirmId,
@@ -60,6 +64,35 @@ export function Waitlist({
   const [time, setTime] = useState("10:00");
   const [busy, setBusy] = useState(false);
   const [toast, showToast] = useToast<{ text: string; tone: "ok" | "warn" }>(4500);
+  const me = useMe(caller);
+  // Real-mode admin: the doctors on file, to book a row with its specialty's doctor (null while loading).
+  const [staff, setStaff] = useState<StaffMember[] | null>(null);
+  useEffect(() => {
+    if (USE_MOCKS || caller !== "admin") return;
+    let alive = true;
+    getStaff().then(
+      (list) => alive && setStaff(list),
+      () => alive && setStaff([]),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [caller]);
+  const actor = USE_MOCKS ? mockActor : (me?.name ?? "you");
+
+  /** The doctor a row books. Real mode never falls back to a hard-coded id: null when no doctor matches. */
+  const doctorFor = (a: Appointment): ClinicDoctor | null => {
+    if (USE_MOCKS) return doctorForSpecialty(a.specialty, doctorId);
+    if (caller === "doctor") return me ? { id: me.id, name: me.name, specialty: a.specialty ?? "" } : null;
+    const doc = staff?.find((s) => s.role === "doctor" && s.ward === a.specialty);
+    return doc ? { id: doc.id, name: doc.name, specialty: doc.ward ?? "" } : null;
+  };
+  /** "No doctor on file for Pediatrics" once the lookup has finished and found no one. */
+  const noDoctorNote = (a: Appointment): string | null => {
+    if (USE_MOCKS || doctorFor(a)) return null;
+    const settled = caller === "doctor" ? me != null : staff != null;
+    return settled ? `No doctor on file for ${a.specialty ?? "this specialty"}` : null;
+  };
 
   const load = useCallback(() => {
     setFailed(false);
@@ -81,7 +114,7 @@ export function Waitlist({
       .sort((x, y) => fin(y.a) - fin(x.a) || y.days - x.days);
   }, [fetched, confirmed, specialty]);
 
-  const by = actorId ? { by: actorId } : undefined;
+  const by = USE_MOCKS && actorId ? { by: actorId } : undefined;
 
   async function pickLevel(a: Appointment, n: Urgency) {
     setMenu(null);
@@ -97,7 +130,8 @@ export function Waitlist({
 
   async function confirm(a: Appointment) {
     const d = DAYS.find((x) => x.label === day)!;
-    const doc = doctorForSpecialty(a.specialty, doctorId);
+    const doc = doctorFor(a);
+    if (!doc) return;
     setBusy(true);
     try {
       const upd = await confirmAppointment(a.id, { slot_at: new Date(`${d.date}T${time}:00+01:00`).toISOString(), doctor_id: doc.id }, by);
@@ -114,7 +148,8 @@ export function Waitlist({
   }
 
   const dlgRow = rows.find((r) => r.a.id === dlg) ?? null;
-  const dlgDoctor = dlgRow ? doctorForSpecialty(dlgRow.a.specialty, doctorId) : null;
+  const dlgDoctor = dlgRow ? doctorFor(dlgRow.a) : null;
+  const dlgNote = dlgRow ? noDoctorNote(dlgRow.a) : null;
   const filters = specialty
     ? [{ label: specialty, on: true }, { label: "All specialties", on: false }]
     : [{ label: "All specialties", on: true }, { label: "Cardiology", on: false }, { label: "Pediatrics", on: false }];
@@ -211,7 +246,8 @@ export function Waitlist({
                 ) : (
                   <div className={styles.btnCol}>
                     <button className={styles.override} onClick={() => { setMenu(menu === a.id ? null : a.id); setWhy(null); }}>Override urgency ▾</button>
-                    <button className={styles.confirmBtn} onClick={() => { setDlg(a.id); setWhy(null); setMenu(null); }}>Confirm + pick slot</button>
+                    <button className={styles.confirmBtn} disabled={!doctorFor(a)} onClick={() => { setDlg(a.id); setWhy(null); setMenu(null); }}>Confirm + pick slot</button>
+                    {noDoctorNote(a) ? <span className={styles.small}>{noDoctorNote(a)}</span> : null}
                   </div>
                 )}
                 {menu === a.id && (
@@ -260,7 +296,7 @@ export function Waitlist({
               </div>
               <label className={styles.field}>
                 <span className={styles.label}>Doctor</span>
-                <span className={styles.select}>{dlgDoctor?.name} · {dlgDoctor?.specialty}<span>▾</span></span>
+                <span className={styles.select}>{dlgDoctor ? <>{dlgDoctor.name} · {dlgDoctor.specialty}</> : (dlgNote ?? "…")}<span>▾</span></span>
               </label>
               <div className={styles.info}>
                 <span className={styles.infoDot} />
@@ -269,7 +305,7 @@ export function Waitlist({
             </div>
             <div className={styles.dlgFoot}>
               <button className={styles.cancel} onClick={() => setDlg(null)}>Cancel</button>
-              <button className={styles.go} disabled={busy} onClick={() => confirm(dlgRow.a)}>Confirm {day} at {time}</button>
+              <button className={styles.go} disabled={busy || !dlgDoctor} onClick={() => confirm(dlgRow.a)}>Confirm {day} at {time}</button>
             </div>
           </div>
         </div>
