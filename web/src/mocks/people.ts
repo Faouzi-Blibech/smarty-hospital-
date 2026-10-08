@@ -14,8 +14,8 @@ export const STAFF: StaffMember[] = [
   { id: "u-0001", name: "Dr Trabelsi", email: "m.trabelsi@hr-ward.tn", role: "doctor", ward: "Cardiology", scope: "Cardiology · Ward C", last_login_at: at(TODAY, "09:10") },
   { id: "u-0002", name: "Nurse Ines", email: "i.mejri@hr-ward.tn", role: "nurse", ward: "Cardiology", scope: "Ward C · day", last_login_at: at(TODAY, "07:02") },
   { id: "u-0004", name: "Nurse Sami", email: "s.dridi@hr-ward.tn", role: "nurse", ward: "Cardiology", scope: "Ward C · night", last_login_at: at(TODAY, "06:58") },
-  { id: "u-0005", name: "Dr Ben Romdhane", email: "a.benromdhane@hr-ward.tn", role: "doctor", ward: "Pediatrics", scope: "Pediatrics", last_login_at: at(SUN, "18:40") },
-  { id: "u-0006", name: "Dr Karoui", email: "h.karoui@hr-ward.tn", role: "doctor", ward: "Pulmonology", scope: "Pulmonology", last_login_at: at("2026-10-02", "14:21") },
+  { id: "u-0010", name: "Dr Ben Romdhane", email: "a.benromdhane@hr-ward.tn", role: "doctor", ward: "Pediatrics", scope: "Pediatrics", last_login_at: at(SUN, "18:40") },
+  { id: "u-0011", name: "Dr Karoui", email: "h.karoui@hr-ward.tn", role: "doctor", ward: "Pulmonology", scope: "Pulmonology", last_login_at: at("2026-10-02", "14:21") },
   { id: "u-0003", name: "Mme Gharbi", email: "n.gharbi@hr-ward.tn", role: "admin", ward: null, scope: "Administration", last_login_at: at(TODAY, "08:45") },
 ];
 

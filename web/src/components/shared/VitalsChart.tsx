@@ -38,8 +38,10 @@ export function rangeOf(values: number[], format: (v: number) => string = String
 export interface VitalChartRowProps {
   name: string;
   unit: string;
-  /** Oldest first; the last value is the current reading. */
-  values: number[];
+  /** Evenly spaced points, oldest first (hourly means). null = no data: the line breaks there. */
+  values: (number | null)[];
+  /** The number shown above the chart (the latest raw reading). Default: the last non-null point. */
+  latest?: number | null;
   /** Y axis domain. */
   min: number;
   max: number;
@@ -65,6 +67,7 @@ export function VitalChartRow({
   normalLo,
   normalHi,
   bandLabel,
+  latest,
   format = String,
   trend,
   range,
@@ -73,9 +76,28 @@ export function VitalChartRow({
   const yOf = (v: number) => (1 - (v - min) / (max - min)) * H;
   const span = paused ? W * PAUSED_SPAN : W;
   const n = values.length;
-  const pts = values.map((v, i) => `${(n > 1 ? (i / (n - 1)) * span : span).toFixed(1)},${yOf(v).toFixed(1)}`).join(" ");
-  const last = n ? values[n - 1] : null;
-  const lastY = last == null ? 0 : yOf(last);
+  const xOf = (i: number) => (n > 1 ? (i / (n - 1)) * span : span);
+  // Runs of consecutive points; a null ends a run (never interpolated across).
+  const runs: string[] = [];
+  let run: string[] = [];
+  values.forEach((v, i) => {
+    if (v == null) {
+      if (run.length) runs.push(run.join(" "));
+      run = [];
+      return;
+    }
+    run.push(`${xOf(i).toFixed(1)},${yOf(v).toFixed(1)}`);
+  });
+  if (run.length) runs.push(run.join(" "));
+  const present = values.filter((v): v is number => v != null);
+  let lastIdx = -1;
+  values.forEach((v, i) => {
+    if (v != null) lastIdx = i;
+  });
+  const lastPoint = lastIdx >= 0 ? (values[lastIdx] as number) : null;
+  const last = latest !== undefined ? latest : lastPoint;
+  const lastY = lastPoint == null ? 0 : yOf(lastPoint);
+  const atEnd = lastIdx === n - 1;
   const bandY = yOf(normalHi);
   const bandH = yOf(normalLo) - bandY;
 
@@ -93,7 +115,7 @@ export function VitalChartRow({
           ) : null}
         </span>
         <span className={styles.range}>
-          {range ?? rangeOf(values, format)}
+          {range ?? rangeOf(present, format)}
           {trend ? ` · ${trend.word}` : ""}
         </span>
       </div>
@@ -101,17 +123,22 @@ export function VitalChartRow({
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className={styles.svg} aria-hidden="true">
           <rect x="0" y={bandY.toFixed(1)} width={W} height={bandH.toFixed(1)} fill="var(--news-normal-bg)" />
           <line x1="0" y1={H} x2={W} y2={H} stroke="var(--line)" vectorEffect="non-scaling-stroke" />
-          <polyline
-            points={pts}
-            fill="none"
-            stroke="var(--ink)"
-            strokeWidth="2"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-          />
-          {paused && last != null ? (
+          {runs.map((pts, k) => (
+            <polyline
+              key={k}
+              // A lone point (a run of one) is drawn as a round-capped dot.
+              points={pts.includes(" ") ? pts : `${pts} ${pts}`}
+              fill="none"
+              stroke="var(--ink)"
+              strokeWidth="2"
+              strokeLinejoin="round"
+              strokeLinecap={pts.includes(" ") ? undefined : "round"}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+          {paused && lastPoint != null ? (
             <line
-              x1={span}
+              x1={xOf(lastIdx)}
               y1={lastY.toFixed(1)}
               x2={W}
               y2={lastY.toFixed(1)}
@@ -122,12 +149,12 @@ export function VitalChartRow({
             />
           ) : null}
         </svg>
-        {last != null ? (
+        {lastPoint != null ? (
           <span
             className={styles.dot}
             style={
-              paused
-                ? { left: `${PAUSED_SPAN * 100}%`, marginLeft: -5, top: `${((lastY / H) * 100).toFixed(1)}%` }
+              paused || !atEnd
+                ? { left: `${((xOf(lastIdx) / W) * 100).toFixed(2)}%`, marginLeft: -5, top: `${((lastY / H) * 100).toFixed(1)}%` }
                 : { right: -5, top: `${((lastY / H) * 100).toFixed(1)}%` }
             }
           />

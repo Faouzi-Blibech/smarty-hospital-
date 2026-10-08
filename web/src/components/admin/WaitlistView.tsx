@@ -1,7 +1,7 @@
 "use client";
 
 // Admin / Waitlist (/admin/waitlist) and Admin / Waitlist confirm (/admin/waitlist?confirm=[id]).
-// The shared Waitlist component, all specialties, acting as Mme Gharbi.
+// The shared Waitlist component, all specialties, acting as the signed-in admin (mock: Mme Gharbi).
 // `?why=[id]` opens a row's "Why?" popover; `?state=empty|error` shows the States cards.
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -99,6 +99,7 @@ export function WaitlistView() {
         <div className={styles.waitlist}>
           <Waitlist
             key={retryKey}
+            caller="admin"
             actor="Mme Gharbi"
             actorId="u-0003"
             aiFallback={flags.aiFallback}

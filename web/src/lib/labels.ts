@@ -65,13 +65,14 @@ export interface ClinicDoctor {
 }
 
 /**
- * Which doctor a waitlist row books, by the request's specialty (ids from the staff list).
- * A UI map until the API can return the doctors of a specialty.
+ * Mock mode only: which doctor a waitlist row books, by the request's specialty (ids from the
+ * mock STAFF fixture; u-0005 is the patient login in the backend seed, so these use u-0010+).
+ * Real mode resolves the doctor from GET /me or GET /staff (components/Waitlist.tsx).
  */
 export const SPECIALTY_DOCTORS: Record<string, ClinicDoctor> = {
   Cardiology: { id: "u-0001", name: "Dr Trabelsi", specialty: "Cardiology" },
-  Pediatrics: { id: "u-0005", name: "Dr Ben Romdhane", specialty: "Pediatrics" },
-  Pulmonology: { id: "u-0006", name: "Dr Karoui", specialty: "Pulmonology" },
+  Pediatrics: { id: "u-0010", name: "Dr Ben Romdhane", specialty: "Pediatrics" },
+  Pulmonology: { id: "u-0011", name: "Dr Karoui", specialty: "Pulmonology" },
 };
 
 /** The doctor for a specialty; falls back to the doctor with `fallbackId`, then Cardiology. */

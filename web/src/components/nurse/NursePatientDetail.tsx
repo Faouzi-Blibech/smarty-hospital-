@@ -13,8 +13,9 @@ import { Toast, useToast } from "@/components/Toast";
 import { addNote, getDoses, getNotes, getPatient, getPrescriptions, getVitals } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
 import { level, PULSE } from "@/lib/news2";
-import { dayLabel, now, pausedAt, tunisDate, tunisTime, tunisTimeSeconds } from "@/lib/time";
+import { dayLabel, now, pausedAt, tunisDate, tunisTime, tunisTimeSeconds, USE_MOCKS } from "@/lib/time";
 import type { Alert, Dose, Note, Patient, Prescription, Vital } from "@/lib/types";
+import { useMe } from "@/lib/useMe";
 import { DosePill } from "./DosePill";
 import {
   doseView,
@@ -99,6 +100,8 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export function NursePatientDetail({ id }: { id: string }) {
   const flags = useDemoFlags();
   const router = useRouter();
+  const me = useMe("nurse");
+  const viewer = USE_MOCKS ? NURSE_NAME : (me?.name ?? "…");
   const { alerts, ack, busy, notice } = useWardAlerts();
   const [data, setData] = useState<Data | null>(null);
   const [failed, setFailed] = useState(false);
@@ -152,7 +155,7 @@ export function NursePatientDetail({ id }: { id: string }) {
         <span className={styles.spacer} />
         <span className={styles.audit}>
           <span className={styles.lock} />
-          Access logged · {NURSE_NAME} · {openedAt}
+          Access logged · {viewer} · {openedAt}
         </span>
       </div>
       {!flags.live ? (

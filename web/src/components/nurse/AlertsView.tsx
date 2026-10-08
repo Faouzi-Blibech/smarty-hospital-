@@ -7,7 +7,7 @@ import { ErrorCard } from "@/components/shared/ErrorCard";
 import { Toast } from "@/components/Toast";
 import { useDemoFlags } from "@/lib/demo";
 import { AlertList, AlertSkeleton } from "./AlertList";
-import { WARD_LABEL } from "./nurse";
+import { wardLabel } from "./nurse";
 import { useWardAlerts } from "./useWardAlerts";
 import styles from "./NursePage.module.css";
 
@@ -16,6 +16,7 @@ export function AlertsView() {
   const { alerts, failed, reload, ack, busy, notes, notice } = useWardAlerts();
   const forceEmpty = flags.state === "empty";
   const state = flags.state === "error" || failed ? "error" : flags.state === "loading" || !alerts ? "loading" : null;
+  const ward = wardLabel();
   const openCount = forceEmpty ? 0 : (alerts ?? []).filter((a) => !a.acked_by).length;
 
   return (
@@ -25,7 +26,10 @@ export function AlertsView() {
       ) : null}
       <div className={styles.head}>
         <h2 className={styles.title}>Alerts</h2>
-        <span className={styles.sub}>{state ? WARD_LABEL : `${WARD_LABEL} · ${openCount} open · newest first`}</span>
+        <span className={styles.sub}>
+          {/* Alerts carry no ward: real mode leaves the ward out rather than guess it. */}
+          {[ward, state ? null : `${openCount} open · newest first`].filter(Boolean).join(" · ")}
+        </span>
       </div>
       <div className={styles.list}>
         {state === "error" ? (

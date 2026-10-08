@@ -10,7 +10,7 @@ import { useDemoFlags } from "@/lib/demo";
 import { now, tunisDay, tunisTime } from "@/lib/time";
 import type { Alert, Dose, MedRoundGroup, Prescription } from "@/lib/types";
 import { DosePill } from "./DosePill";
-import { allergyLabel, doseView, NURSE_ID, nurseStatus, WARD_LABEL, type DoseContext } from "./nurse";
+import { allergyLabel, doseView, NURSE_ID, nurseStatus, wardLabel, type DoseContext } from "./nurse";
 import styles from "./MedRound.module.css";
 
 type Filter = "all" | "due" | "missed";
@@ -95,6 +95,7 @@ export function MedRound() {
     .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))[0];
 
   const state = flags.state === "error" || failed ? "error" : flags.state === "loading" || (!data && flags.state !== "empty") ? "loading" : null;
+  const ward = wardLabel((data?.groups ?? []).map((g) => g.patient.ward));
 
   return (
     <div className={styles.page}>
@@ -102,7 +103,8 @@ export function MedRound() {
         <div className={styles.titleBlock}>
           <h2 className={styles.title}>Med round</h2>
           <span className={styles.sub}>
-            Today, {tunisDay(refIso)} · now {tunisTime(refIso)} · {WARD_LABEL}
+            Today, {tunisDay(refIso)} · now {tunisTime(refIso)}
+            {ward ? <> · {ward}</> : null}
           </span>
         </div>
         <div className={styles.segment} role="group" aria-label="Filter doses">

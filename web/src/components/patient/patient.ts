@@ -102,13 +102,14 @@ export function daysBetween(a: string, b: string): number {
 }
 
 /** "Good morning" / "Good afternoon" / "Good evening" by the Tunis hour. */
-export function greeting(ref: Date = now()): string {
-  const h = Number(tunisTime(ref.toISOString()).slice(0, 2));
-  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
-}
+export { greeting } from "@/lib/time";
 
-/** "Bed C-12 · Ward C" — the ward letter is the bed prefix. */
-export function bedLine(bed: string | null): string | null {
+/**
+ * "Bed C-12 · Ward C". Mock mode: the design's ward letter (the bed prefix).
+ * Real mode: the patient's `ward` from the record ("Bed C-12 · Cardiology"), never a derived letter.
+ */
+export function bedLine(bed: string | null, ward?: string | null): string | null {
+  if (!USE_MOCKS) return [bed ? `Bed ${bed}` : null, ward ?? null].filter(Boolean).join(" · ") || null;
   if (!bed) return null;
   const letter = bed.split("-")[0];
   return `Bed ${bed} · Ward ${letter}`;

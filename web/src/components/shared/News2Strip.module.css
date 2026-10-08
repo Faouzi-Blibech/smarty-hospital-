@@ -23,3 +23,12 @@
   top: 2px;
   margin-left: -13px;
 }
+
+/* A 2-hour window with no NEWS2 score: an empty ring the size of a dot. */
+.empty {
+  width: 26px;
+  height: 26px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1.5px dashed var(--line);
+}

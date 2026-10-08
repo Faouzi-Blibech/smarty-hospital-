@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { getDoses, getMyAppointments, getPatient } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
+import type { Appointment } from "@/lib/types";
 import { now, tunisDate, tunisTime } from "@/lib/time";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import {
@@ -26,7 +27,13 @@ import styles from "./Patient.module.css";
 
 async function loadHome() {
   const id = await myPatientId();
-  const [patient, doses, appts] = await Promise.all([getPatient(id), getDoses(id), getMyAppointments(id)]);
+  // Appointments are optional here: if they fail (route not built yet), Home shows no "Next appointment"
+  // card instead of failing the medicines.
+  const [patient, doses, appts] = await Promise.all([
+    getPatient(id),
+    getDoses(id),
+    getMyAppointments(id).catch((): Appointment[] => []),
+  ]);
   return { patient, doses, appts };
 }
 
@@ -52,7 +59,7 @@ export function Home() {
   const next = (data?.appts ?? []).find(
     (a) => a.status === "confirmed" && a.slot_at && Date.parse(a.slot_at) >= ref.getTime(),
   );
-  const place = data ? bedLine(data.patient.bed) : null;
+  const place = data ? bedLine(data.patient.bed, data.patient.ward) : null;
 
   return (
     <PatientScreen nav="home" apptHref={next ? `/patient/appointments/${next.id}` : undefined}>

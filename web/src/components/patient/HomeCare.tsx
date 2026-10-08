@@ -6,13 +6,15 @@ import { getHomeCare, getPatient } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { tunisDay } from "@/lib/time";
+import type { HomeCarePlan } from "@/lib/types";
 import { myPatientId, useLoad } from "./patient";
-import { PatientScreen, SkeletonCard } from "./PatientScreen";
+import { EmptyCard, PatientScreen, SkeletonCard } from "./PatientScreen";
 import styles from "./Patient.module.css";
 
 async function load() {
   const id = await myPatientId();
-  const [patient, plan] = await Promise.all([getPatient(id), getHomeCare(id)]);
+  // The care plan is optional: a failure (route not built yet) shows the "unavailable" card, not the error page.
+  const [patient, plan] = await Promise.all([getPatient(id), getHomeCare(id).catch((): HomeCarePlan | null => null)]);
   return { patient, plan };
 }
 
@@ -33,8 +35,10 @@ export function HomeCare() {
             message="We couldn’t load your care plan."
             onRetry={flags.state === "error" ? undefined : res.retry}
           />
-        ) : !data || !plan ? (
+        ) : !data ? (
           <SkeletonCard />
+        ) : !plan ? (
+          <EmptyCard title="No care plan yet">Your care plan after discharge isn’t available. Ask your nurse.</EmptyCard>
         ) : (
           <>
             <div className={styles.titleBlock}>

@@ -12,11 +12,11 @@ import { Toast } from "@/components/Toast";
 import { getWard } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
 import { level } from "@/lib/news2";
-import { pausedAt, tunisTime, tunisTimeSeconds } from "@/lib/time";
+import { pausedAt, tunisTime, tunisTimeSeconds, USE_MOCKS } from "@/lib/time";
 import type { Alert, WardBed } from "@/lib/types";
 import { AlertList, AlertSkeleton } from "./AlertList";
 import { BedCard, BedCardSkeleton } from "./BedCard";
-import { boardOrder, WARD_LABEL } from "./nurse";
+import { boardOrder, wardLabel } from "./nurse";
 import { useWardAlerts } from "./useWardAlerts";
 import styles from "./WardBoard.module.css";
 
@@ -34,7 +34,7 @@ const newestOpen = (alerts: Alert[], pick: (a: Alert) => boolean) =>
 
 export function WardBoard() {
   const flags = useDemoFlags();
-  const { tick } = useLiveTick(flags.live);
+  const { tick } = useLiveTick(flags.live && USE_MOCKS);
   const wardAlerts = useWardAlerts();
   const { alerts, ack, busy, notes, notice } = wardAlerts;
   const [beds, setBeds] = useState<WardBed[] | null>(null);
@@ -94,7 +94,7 @@ export function WardBoard() {
         ) : null}
         <div className={styles.head}>
           <div className={styles.titleBlock}>
-            <h2 className={styles.title}>{WARD_LABEL}</h2>
+            <h2 className={styles.title}>{wardLabel((beds ?? []).map((b) => b.patient?.ward)) ?? "Ward board"}</h2>
             <span className={`${styles.sub} ${styles.desk}`}>
               {occupied} patients · {emptyBeds} empty bed{emptyBeds === 1 ? "" : "s"} · highest NEWS2 first
             </span>

@@ -1,13 +1,22 @@
 // Nurse view helpers: NEWS2 sub-scores, alert labels, dose statuses and sparklines.
 // UI-derived values only (computed from the contract records, never stored in fixtures).
-import { tunisTime } from "@/lib/time";
+import { tunisTime, USE_MOCKS } from "@/lib/time";
 import type { Alert, AlertKind, Dose, Prescription, WardBed } from "@/lib/types";
 
-/** The signed-in nurse in the demo (Nurse Ines). The real API takes the actor from the JWT. */
+/** The signed-in nurse in the mock demo (Nurse Ines). Real mode names the user from GET /me; the real API takes the actor from the JWT. */
 export const NURSE_ID = "u-0002";
 export const NURSE_NAME = "Nurse Ines";
 /** The ward the nurse is on (design: "Ward C"). */
 export const WARD_LABEL = "Ward C";
+
+/**
+ * The ward named on nurse screens: the design's "Ward C" in mock mode; in real mode the
+ * ward from the data (the patients' `ward`, e.g. "Cardiology"), or null when the data has none.
+ */
+export function wardLabel(wards: (string | null | undefined)[] = []): string | null {
+  if (USE_MOCKS) return WARD_LABEL;
+  return wards.find((w): w is string => !!w) ?? null;
+}
 
 // ── NEWS2 component scores (RCP NEWS2, SpO2 scale 1) ─────────────────────────
 
