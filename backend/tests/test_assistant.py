@@ -37,7 +37,7 @@ def test_red_flag_question_goes_to_staff_without_model(monkeypatch):
         raise AssertionError("classifier must not be called for a red-flag question")
     monkeypatch.setattr(A, "classify_intent", must_not_call)
     out = A.answer("J'ai une douleur thoracique depuis 10 minutes", ctx())
-    assert "call-nurse button" in out["answer"] and out["sources"] == ["safety_rules"]
+    assert out["answer"] == A.URGENT and out["sources"] == ["safety_rules"]
     assert out["intent"] == "urgent" and out["source"] == "rules"
 
 

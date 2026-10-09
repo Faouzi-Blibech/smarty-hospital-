@@ -16,9 +16,8 @@ VISIT_WORDS = ("appointment", "rendez-vous", "rendez vous", "rdv", "visit", "con
 VITAL_WORDS = ("temperature", "température", "oxygen", "oxygène", "pulse", "pouls", "heart", "tension",
                "سخانة", "حرارة", "نبض", "skhana")
 MIN_CONFIDENCE = 0.4
-URGENT = ("This could be urgent. Press the call-nurse button on your bedside unit now, "
-          "or tell any member of staff straight away.")
-ASK_STAFF = "I can't answer that. Please ask your nurse or doctor; you can press the call-nurse button anytime."
+URGENT = "This could be urgent. Tell your nurse or any member of staff straight away."
+ASK_STAFF = "I can't answer that. Please ask your nurse or doctor."
 
 
 def _local(dt: datetime) -> datetime:
