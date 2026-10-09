@@ -117,7 +117,7 @@ Under "Seed data", add the bullet `- 2 department nurses: \`u-0006\` Imaging (\`
 
 - [ ] **Step 2: api.md.** Version line → `1.8 (2026-10-09)`. Insert before `## Changelog`:
 
-```markdown
+````markdown
 ## Proposed in 1.8 (Faouzi: single-visit exams, case notebook)
 
 | Method & path | Roles | Notes |
@@ -149,7 +149,7 @@ Under "Seed data", add the bullet `- 2 department nurses: \`u-0006\` Imaging (\`
   "citations": [{ "n": 1, "source_id": "note:n-0003", "kind": "note", "title": "Nurse note · 08 Oct 21:40", "snippet": "..." }],
   "human_confirmed_by": null, "created_at": "..." }
 ```
-```
+````
 
 Changelog line: `- **1.8** (2026-10-09): proposes the exam and notebook routes above and the new \`Appointment\`/\`triage\` fields (spec 2026-10-09). Nothing earlier changes. Needs a 👍 from Wali.`
 
