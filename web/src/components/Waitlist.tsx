@@ -225,6 +225,11 @@ export function Waitlist({
                       {a.triage.scale.level} · {a.triage.scale.name}{a.triage.scale.confirmed ? "" : " (to confirm)"}
                     </span>
                   ) : null}
+                  {a.exams_total ? (
+                    <span className={styles.meta}>Exams {a.exams_done ?? 0}/{a.exams_total}{a.exams_done === a.exams_total ? " · results in" : ""}</span>
+                  ) : a.exams_suggested ? (
+                    <span className={styles.meta}>{a.exams_suggested} exams suggested · doctor to review</span>
+                  ) : null}
                 </div>
                 <AiBadge
                   variant="split"

@@ -3,9 +3,9 @@
 // Patient / Home (/patient): greeting, today's medicines, yesterday's missed dose,
 // the next appointment and "Ask a question". Plain words only: no NEWS2.
 import Link from "next/link";
-import { getDoses, getMyAppointments, getPatient } from "@/lib/api";
+import { getDoses, getMyAppointments, getPatient, getPatientExams } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
-import type { Appointment } from "@/lib/types";
+import type { Appointment, ExamOrder } from "@/lib/types";
 import { now, tunisDate, tunisTime } from "@/lib/time";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import {
@@ -29,12 +29,15 @@ async function loadHome() {
   const id = await myPatientId();
   // Appointments are optional here: if they fail (route not built yet), Home shows no "Next appointment"
   // card instead of failing the medicines.
-  const [patient, doses, appts] = await Promise.all([
+  // Exams are optional too; the patient only ever sees ordered or done ones, never suggestions.
+  const [patient, doses, appts, allExams] = await Promise.all([
     getPatient(id),
     getDoses(id),
     getMyAppointments(id).catch((): Appointment[] => []),
+    getPatientExams(id).catch((): ExamOrder[] => []),
   ]);
-  return { patient, doses, appts };
+  const exams = allExams.filter((e) => e.status === "ordered" || e.status === "done");
+  return { patient, doses, appts, exams };
 }
 
 export function Home() {
@@ -104,6 +107,24 @@ export function Home() {
             })}
           </section>
         )}
+
+        {!failed && !loading && (data?.exams ?? []).length > 0 ? (
+          <section className={`${styles.card} ${styles.medsCard}`} aria-label="Before your visit">
+            <h2 className={styles.cardTitle}>Before your visit</h2>
+            {(data?.exams ?? []).map((e) => (
+              <div key={e.id} className={styles.medRow}>
+                <span className={styles.medText}>
+                  <span className={styles.medName}>{e.label}</span>
+                  <span className={styles.medSub}>{e.department}</span>
+                </span>
+                <span className={`${styles.medPill} ${e.status === "done" ? styles.med_taken : styles.med_upcoming}`}>
+                  {e.status === "done" ? "Done" : "To do"}
+                </span>
+              </div>
+            ))}
+            <p className={styles.examNote}>Do these before your appointment so the doctor can decide in one visit.</p>
+          </section>
+        ) : null}
 
         {!failed && !loading && missedYesterday.length > 0 ? (
           <div className={styles.missed}>
