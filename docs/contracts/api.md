@@ -1,6 +1,6 @@
 # REST + WebSocket contract — v1.0
 
-> **Version:** 1.7 (2026-10-09) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations)
+> **Version:** 1.8 (2026-10-09) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations, exams, notebook)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Conventions
@@ -249,7 +249,41 @@ The appointments and n8n callback routes above are built as specified. Additions
 
 Still proposed: `GET /offers/{id}`, `POST /offers/{id}/accept` and `GET /patients/{id}/home-care` (offers need somewhere to store an offer; see the 1.5 list).
 
+## Proposed in 1.8 (Faouzi: single-visit exams, case notebook)
+
+| Method & path | Roles | Notes |
+|---|---|---|
+| `GET /exams/catalogue` | doctor | → `[{"code","label","department"}]` |
+| `GET /appointments/{id}/exams` | doctor, admin (no results), patient (self; ordered/done only) | → `[ExamOrder]` |
+| `GET /patients/{id}/exams` | doctor (own), nurse (ward), patient (self; ordered/done only) | → `[ExamOrder]`, audited |
+| `GET /exams?status=ordered` | nurse (own department), admin | Worklist → `[ExamOrder]` with `patient_name` |
+| `POST /appointments/{id}/exams/order` | doctor | `{"exam_ids":[...]}`: listed `suggested` rows → `ordered`, the other suggestions → `cancelled`. 422 if an id is not a suggestion of this appointment. Emits `exam.ordered` |
+| `POST /exams` | doctor | `{"patient_id","appointment_id"?,"code"}` → `ExamOrder` with `status:"ordered"`. Emits `exam.ordered` |
+| `POST /exams/{id}/cancel` | doctor | → `ExamOrder`; 409 `bad_status` |
+| `POST /exams/{id}/results` | nurse (own department) | multipart `file` (PDF/JPEG/PNG, ≤ 15 MB) + `report_text` → `ExamOrder` with `status:"done"`; 422 `bad_file`, 409 `bad_status`. Emits `exam.results_ready` when the appointment has no `ordered` exam left |
+| `GET /exam-results/{id}/file` | doctor, nurse (as for reading the exam) | → the file bytes, audited |
+| `POST /ai/notebook/{patient_id}` | doctor (own) | `{"question"}` → `NotebookEntry` |
+| `GET /ai/notebook/{patient_id}` | doctor (own) | → `[NotebookEntry]` newest first |
+| `GET /ai/notebook/{patient_id}/sources` | doctor (own) | → `[{"id","kind","title","ts"}]` |
+| `POST /ai/notebook/entries/{id}/review` | doctor | → `NotebookEntry` with `human_confirmed_by` |
+
+`Appointment` gains `exams_total` (ordered + done), `exams_done` and `exams_suggested`. `triage` gains `scale: {"name","level","confirmed"}`.
+
+```jsonc
+// ExamOrder
+{ "id": "ex-0001", "patient_id": "p-0003", "appointment_id": "a-0001", "code": "ecg", "label": "ECG (12-lead)",
+  "department": "Cardiology", "status": "suggested|ordered|done|cancelled", "ai_suggested": {"source": "rules", "bundles": ["chest_pain"], "reason": "..."},
+  "human_confirmed_by": "u-0001", "ordered_at": "...", "done_at": null, "created_at": "...", "patient_name": "...",
+  "results": [{ "id": "er-0001", "file_name": "ecg.pdf", "content_type": "application/pdf", "size_bytes": 81234, "report_text": "Sinus rhythm", "uploaded_by_name": "Nurse Rania", "created_at": "..." }] }
+// NotebookEntry
+{ "id": "nb-0001", "patient_id": "p-0001", "question": "...", "answer": "...", "source": "rules|llm",
+  "citations": [{ "n": 1, "source_id": "note:n-0003", "kind": "note", "title": "Nurse note · 08 Oct 21:40", "snippet": "..." }],
+  "human_confirmed_by": null, "created_at": "..." }
+```
+
 ## Changelog
+
+- **1.8** (2026-10-09): proposes the exam and notebook routes above and the new `Appointment`/`triage` fields (spec 2026-10-09). Nothing earlier changes. Needs a 👍 from Wali.
 
 - **1.7** (2026-10-09): Faouzi builds the appointments and n8n callback routes; documents the additive `Appointment` fields, the patient-role omissions and the 401/404/409/422 cases listed in "Built in 1.7". Nothing earlier is removed. Needs a 👍 from Wali.
 - **1.6** (2026-10-08): Wali confirms and builds, from the 1.5 proposals, `GET /patients/{id}/doses`, `POST /doses/{id}/given` (`given_by` in that response only) and `GET /staff`, plus the additive fields listed in "Confirmed in 1.6"; documents the alerts `status` values, the 422 envelope, the WS close codes and the assign/discharge/command responses as built. Nothing in 1.4/1.5 is removed. Needs a 👍 from Faouzi.
