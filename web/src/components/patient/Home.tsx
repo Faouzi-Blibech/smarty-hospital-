@@ -36,7 +36,11 @@ async function loadHome() {
     getMyAppointments(id).catch((): Appointment[] => []),
     getPatientExams(id).catch((): ExamOrder[] => []),
   ]);
-  const exams = allExams.filter((e) => e.status === "ordered" || e.status === "done");
+  // "Before your visit": exams of a still-upcoming request (requested or confirmed), plus unattached ordered ones.
+  const open = new Set(appts.filter((a) => a.status === "requested" || a.status === "confirmed").map((a) => a.id));
+  const exams = allExams.filter((e) =>
+    e.appointment_id ? open.has(e.appointment_id) && (e.status === "ordered" || e.status === "done") : e.status === "ordered",
+  );
   return { patient, doses, appts, exams };
 }
 

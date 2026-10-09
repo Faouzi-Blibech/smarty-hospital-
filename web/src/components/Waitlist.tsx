@@ -212,7 +212,16 @@ export function Waitlist({
                     <span key={fl} className={styles.flag}><span className={styles.flagDot} />{redFlagLabel(fl)}</span>
                   ))}
                 </div>
-                {caller === "doctor" ? <ExamSuggestions appointmentId={a.id} patientId={a.patient_id} actorId={actorId ?? "u-0001"} /> : null}
+                {caller === "doctor" ? <ExamSuggestions
+                    appointmentId={a.id}
+                    patientId={a.patient_id}
+                    actorId={actorId ?? "u-0001"}
+                    onChanged={(exams) => {
+                      const n = (st: string) => exams.filter((e) => e.status === st).length;
+                      const counts = { exams_total: n("ordered") + n("done"), exams_done: n("done"), exams_suggested: n("suggested") };
+                      setFetched((f) => f && f.map((x) => (x.id === a.id ? { ...x, ...counts } : x)));
+                    }}
+                  /> : null}
               </div>
               <div className={cls(styles.col, styles.urgency)}>
                 <div className={styles.urgencyLine}>
