@@ -1,6 +1,6 @@
 # REST + WebSocket contract — v1.0
 
-> **Version:** 1.6 (2026-10-08) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations)
+> **Version:** 1.7 (2026-10-09) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Conventions
@@ -234,8 +234,24 @@ Clarifications of 1.4 behaviour, as built:
 - `POST /admissions/{id}/discharge` → `{"admission_id","patient_id","device_id","discharged_at"}`; 409 `already_discharged`.
 - `POST /devices/{id}/command` → `{"published": bool}`.
 
+## Built in 1.7 (Faouzi: appointments, integrations)
+
+The appointments and n8n callback routes above are built as specified. Additions and clarifications, as built:
+- `Appointment` also returns the 1.5 display fields `ai_suggested`, `human_confirmed_by`, `human_confirmed_by_name`, `patient_name`, `patient_age` (string), `specialty` (the patient's ward), `referral_text`, `doctor_name` and `confirmed_by_name`. `lang` and `room` are not returned yet.
+- For the patient role, `urgency_ai`, `triage`, `no_show_prob` and `ai_suggested` are left out.
+- `GET /appointments` for a patient always returns their own appointments; another `patient_id` is a 403. Rows come soonest slot first, then unbooked requests newest first.
+- `POST /appointments/{id}/confirm`: 422 if `doctor_id` is not a doctor, 409 `slot_taken` if that doctor already has a confirmed appointment at `slot_at`, 409 `not_waiting` if the appointment is not `requested`.
+- `POST /appointments/{id}/cancel`: 409 `not_cancellable` if it is already cancelled, done or no-show.
+- `POST /integrations/n8n/appointment-reply` → `{"status":"confirmed|cancelled"}`; a cancel fires `appointment.cancelled` like the web cancel.
+- `POST /integrations/n8n/backfill-accept`: the doctor comes from the cancelled appointment that had `slot_at`; 404 if no cancelled appointment had that slot. A backfill does not fire `appointment.confirmed` (W2 sends its own confirmation).
+- `GET /integrations/n8n/daily-digest`: `summary` is the latest stored AI summary, or a fresh one built from the last 24 h (not stored).
+- Callbacks without a valid `X-N8N-Secret` get 401 `unauthorized`.
+
+Still proposed: `GET /offers/{id}`, `POST /offers/{id}/accept` and `GET /patients/{id}/home-care` (offers need somewhere to store an offer; see the 1.5 list).
+
 ## Changelog
 
+- **1.7** (2026-10-09): Faouzi builds the appointments and n8n callback routes; documents the additive `Appointment` fields, the patient-role omissions and the 401/404/409/422 cases listed in "Built in 1.7". Nothing earlier is removed. Needs a 👍 from Wali.
 - **1.6** (2026-10-08): Wali confirms and builds, from the 1.5 proposals, `GET /patients/{id}/doses`, `POST /doses/{id}/given` (`given_by` in that response only) and `GET /staff`, plus the additive fields listed in "Confirmed in 1.6"; documents the alerts `status` values, the 422 envelope, the WS close codes and the assign/discharge/command responses as built. Nothing in 1.4/1.5 is removed. Needs a 👍 from Faouzi.
 
 - **1.5** (2026-10-06): UI needs, proposed by Faouzi; Wali to confirm. Adds the section "Proposed in 1.5 (web UI needs)" (endpoints, fields and new types the web app uses) and the rule that patient-role appointment responses omit `urgency_ai`, `triage` and `no_show_prob`. Nothing in 1.4 changes.
