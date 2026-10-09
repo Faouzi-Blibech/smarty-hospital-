@@ -76,7 +76,7 @@ The backend base URL from inside Docker is `http://api:8000`.
 
 ## Changelog
 
-- **1.3** (2026-10-09): adds `exam.ordered` and `exam.results_ready` with W7/W8. Emitter: Faouzi (exams router).
+- **1.3** (2026-10-09): adds `exam.ordered` and `exam.results_ready` with W7/W8. Emitter: the exams router (Faouzi's lane); the emit helper stays Wali's.
 
 - **1.2** (2026-10-05): W2/W5/W6 made buildable. `appointment.cancelled` adds `doctor_name` + `candidate`; `backfill-accept` defines its responses; `daily-digest` returns a list with doctor email; W6 books through the new `follow-up` callback instead of a service JWT; `N8N_PUBLIC_URL`. Backend side of all of these: Faouzi (appointments + integrations routers).
 
