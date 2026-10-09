@@ -71,3 +71,10 @@ def test_seed_vitals_normal_and_varied(db):
     rows = db.query(Vital).filter_by(patient_id="p-0001").all()
     assert all(65 <= v.hr <= 90 and 96 <= v.spo2 <= 99 and 36.5 <= v.temp <= 37.4 for v in rows)
     assert pstdev([v.hr for v in rows]) > 3  # a real baseline for the trend z-score
+
+
+def test_seed_department_nurses(seeded):
+    from app.models import Staff, User
+
+    assert seeded.get(User, "u-0006").email == "imaging@ward.tn" and seeded.get(Staff, "u-0006").ward == "Imaging"
+    assert seeded.get(User, "u-0007").email == "lab@ward.tn" and seeded.get(Staff, "u-0007").ward == "Laboratory"

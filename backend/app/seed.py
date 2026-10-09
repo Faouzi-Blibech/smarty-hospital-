@@ -24,6 +24,8 @@ STAFF = [
     ("u-0002", "nurse@ward.tn", "Nurse Ines", "nurse", "Cardiology", "04A1B2C3"),
     ("u-0003", "nurse2@ward.tn", "Nurse Sami", "nurse", "Internal Medicine", None),
     ("u-0004", "admin@ward.tn", "Hela Mejri", "admin", None, None),
+    ("u-0006", "imaging@ward.tn", "Nurse Rania", "nurse", "Imaging", None),
+    ("u-0007", "lab@ward.tn", "Nurse Karim", "nurse", "Laboratory", None),
 ]
 
 # (first, last, dob, sex, allergies, history)
@@ -117,7 +119,7 @@ def seed(db: Session) -> bool:
         db.add(Appointment(id=f"a-{n:04d}", created_at=created, **fields))
     db.flush()
 
-    for prefix, n in [("u", 5), ("p", len(PATIENTS)), ("adm", 1), ("rx", 1), ("a", len(REQUESTS))]:
+    for prefix, n in [("u", 7), ("p", len(PATIENTS)), ("adm", 1), ("rx", 1), ("a", len(REQUESTS))]:
         reserve_upto(db, prefix, n)
     return True
 
