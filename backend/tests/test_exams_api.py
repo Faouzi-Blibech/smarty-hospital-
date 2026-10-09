@@ -113,6 +113,7 @@ def test_file_download_is_audited_and_guarded(client, db, stored):
                       files={"file": PDF}).json()["results"][0]
     r = client.get(f"/exam-results/{res['id']}/file", headers=doc)
     assert r.status_code == 200 and r.content == PDF[1] and r.headers["content-type"] == "application/pdf"
+    assert r.headers["x-content-type-options"] == "nosniff"
     assert db.query(AuditLog).filter_by(action="read", resource="exam_result", resource_id=res["id"]).count() == 1
     assert client.get(f"/exam-results/{res['id']}/file", headers=login(client, "nurse2@ward.tn")).status_code == 403
     assert client.get(f"/exam-results/{res['id']}/file", headers=login(client, "patient@ward.tn")).status_code == 403
@@ -140,3 +141,10 @@ def test_worklist_is_per_department(client):
     assert [e["code"] for e in img] == ["chest_xray"] and [e["code"] for e in lab] == ["troponin"]
     assert img[0]["patient_name"] == "Amira Ben Salah"
     assert client.get("/exams", headers=doc).status_code == 403
+
+
+def test_admin_sees_exam_status_only(client):
+    a, doc, exams = _request(client)
+    client.post(f"/appointments/{a['id']}/exams/order", headers=doc, json={"exam_ids": [exams[0]["id"]]})
+    rows = client.get("/exams?status=ordered", headers=login(client, "admin@ward.tn")).json()
+    assert rows and all(set(r) == {"id", "appointment_id", "department", "status"} for r in rows)

@@ -217,4 +217,5 @@ def result_file(result_id: str, request: Request, user: User = Depends(require_r
     audit(db, user, "read", "exam_result", r.id, patient_id=r.patient_id, ip=_ip(request))
     db.commit()
     return Response(storage.get(r.file_key), media_type=r.content_type,
-                    headers={"Content-Disposition": f'inline; filename="{r.file_name}"'})
+                    headers={"Content-Disposition": f'inline; filename="{r.file_name}"',
+                             "X-Content-Type-Options": "nosniff"})

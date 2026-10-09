@@ -75,6 +75,8 @@ def _name(db: Session, user_id: str | None) -> str | None:
 
 
 def to_out(db: Session, o, viewer: User) -> dict:
+    if viewer.role == "admin":  # spec §4: admin reads status only, no patient identity, files or AI fields
+        return {"id": o.id, "appointment_id": o.appointment_id, "department": o.department, "status": o.status}
     p = db.get(Patient, o.patient_id)
     out = {"id": o.id, "patient_id": o.patient_id, "appointment_id": o.appointment_id, "code": o.code,
            "label": o.label, "department": o.department, "status": o.status, "ai_suggested": o.ai_suggested,

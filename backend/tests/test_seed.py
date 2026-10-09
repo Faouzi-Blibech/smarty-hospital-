@@ -78,3 +78,24 @@ def test_seed_department_nurses(seeded):
 
     assert seeded.get(User, "u-0006").email == "imaging@ward.tn" and seeded.get(Staff, "u-0006").ward == "Imaging"
     assert seeded.get(User, "u-0007").email == "lab@ward.tn" and seeded.get(Staff, "u-0007").ward == "Laboratory"
+
+
+def test_seed_adds_missing_staff_on_an_already_seeded_db(db):
+    seed(db)
+    for uid in ("u-0006", "u-0007"):
+        db.delete(db.get(Staff, uid))
+    db.flush()
+    for uid in ("u-0006", "u-0007"):
+        db.delete(db.get(User, uid))
+    db.flush()
+    assert seed(db) is False
+    assert db.get(User, "u-0006").email == "imaging@ward.tn" and db.get(Staff, "u-0006").ward == "Imaging"
+    assert db.get(User, "u-0007").email == "lab@ward.tn" and db.get(Staff, "u-0007").ward == "Laboratory"
+
+
+def test_seed_suggests_exams_for_seeded_requests(db):
+    from app.models import ExamOrder
+
+    seed(db)
+    codes = {o.code for o in db.query(ExamOrder).filter_by(appointment_id="a-0001", status="suggested")}
+    assert {"ecg", "troponin", "chest_xray"} <= codes
