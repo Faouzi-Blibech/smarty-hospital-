@@ -437,7 +437,7 @@ Removed from scope: code, routes (`api.md` v1.3) and the `documents` table (`dat
 ### Task 10: Golden path (Doctor + Admin owner) + integrations router
 
 - [ ] Flip every view to the real API (`NEXT_PUBLIC_USE_MOCKS=0`) and run the full golden path from `TEAM_PLAN.md` §5 twice by 13:00 (**CP3**). Keep the shared bug list and assign each bug to its owner.
-- [ ] `routers/integrations.py`:
+- [x] `routers/integrations.py`:
   - `X-N8N-Secret` check
   - `appointment-reply`
   - `backfill-accept` (409 `slot_taken` / `not_waiting`, per n8n-webhooks v1.2)
@@ -453,8 +453,8 @@ Removed from scope: code, routes (`api.md` v1.3) and the `documents` table (`dat
 
 Built ahead against the contracts (all DB-free and tested): `app/services/appointments.py`, `app/services/integrations.py`, `app/ai/{llm,triage,copilot,assistant}.py`, n8n W0-W6. When Wali's `app.models`, `app.auth.deps` (`get_current_user`, `require_roles`, `check_patient_access`), `app.services.audit.audit`, `app.ids.new_id` and `app.integrations.n8n.emit` are on `main`:
 
-- [ ] `routers/appointments.py`: `POST /appointments` (`new_appointment_fields` → row via `new_id(db, "a")`), `GET /appointments/waitlist` (`waitlist`), `GET /appointments`, `PATCH /appointments/{id}` (`apply_override`), `POST .../confirm` (`apply_confirm` → `emit("appointment.confirmed", confirmed_event(...))`), `POST .../cancel` (`apply_cancel` → `emit("appointment.cancelled", cancelled_event(..., waiting=requested appointments + patients))`), `POST .../reply` (`apply_reply`). `Conflict` → 409 `{"detail","code"}`; `ValueError` → 422.
-- [ ] `routers/integrations.py`: dependency that 401s unless `callback_secret_ok(request.headers.get("X-N8N-Secret"))`; `appointment-reply` (`apply_reply`), `backfill-accept` (`slot_taken` = another confirmed appointment with the same `doctor_id` + `slot_at`, `doctor_id` from the cancelled appointment; `apply_backfill_accept`), `daily-digest` (`digest_entries` over active admissions, latest `news2`, `copilot` summary), `follow-up` (`follow_up_fields`).
+- [x] `routers/appointments.py`: `POST /appointments` (`new_appointment_fields` → row via `new_id(db, "a")`), `GET /appointments/waitlist` (`waitlist`), `GET /appointments`, `PATCH /appointments/{id}` (`apply_override`), `POST .../confirm` (`apply_confirm` → `emit("appointment.confirmed", confirmed_event(...))`), `POST .../cancel` (`apply_cancel` → `emit("appointment.cancelled", cancelled_event(..., waiting=requested appointments + patients))`), `POST .../reply` (`apply_reply`). `Conflict` → 409 `{"detail","code"}`; `ValueError` → 422.
+- [x] `routers/integrations.py`: dependency that 401s unless `callback_secret_ok(request.headers.get("X-N8N-Secret"))`; `appointment-reply` (`apply_reply`), `backfill-accept` (`slot_taken` = another confirmed appointment with the same `doctor_id` + `slot_at`, `doctor_id` from the cancelled appointment; `apply_backfill_accept`), `daily-digest` (`digest_entries` over active admissions, latest `news2`, `copilot` summary), `follow-up` (`follow_up_fields`).
 - [ ] `routers/ai.py`:
   - `POST /ai/triage` (`triage`, preview only)
   - `GET /ai/summary/{patient_id}`: `summary_inputs` over the last 24 h, `is_fresh` cache, else `summarize` + new `ai_summaries` row, `summary_payload`
