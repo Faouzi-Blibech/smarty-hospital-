@@ -188,6 +188,8 @@ export interface Triage {
   /** From POST /ai/triage; null when no trained model is loaded. 0–1. */
   confidence?: number | null;
   model_urgency?: Urgency | null;
+  /** The hospital's triage scale for this urgency (display mapping; `confirmed` false until doctors confirm it). */
+  scale?: { name: string; level: string; confirmed: boolean } | null;
 }
 
 export interface Appointment {

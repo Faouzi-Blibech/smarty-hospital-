@@ -48,3 +48,11 @@ def test_model_can_raise_but_never_lower(monkeypatch):
     monkeypatch.setattr(T.textclf, "predict_proba", lambda m, text: {1: 0.9, 5: 0.1})
     r = T.triage("Douleur thoracique depuis 2 jours", [], 40)
     assert r.urgency == 5 and r.model_urgency == 1
+
+
+def test_scale_label_maps_our_urgency_to_the_hospital_scale():
+    from app.ai.triage import scale_label, triage
+
+    assert scale_label(5) == {"name": "FRENCH", "level": "Tri 1", "confirmed": False}
+    assert scale_label(1)["level"] == "Tri 5"
+    assert triage("douleur thoracique", [], 50).scale == scale_label(5)

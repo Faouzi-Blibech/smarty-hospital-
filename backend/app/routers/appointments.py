@@ -27,7 +27,7 @@ router = APIRouter(prefix="/appointments", tags=["appointments"])
 
 # The patient never sees an AI urgency score (api.md 1.5 → Patient role)
 _HIDDEN_FROM_PATIENT = ("urgency_ai", "triage", "no_show_prob", "ai_suggested")
-_TRIAGE_KEYS = ("urgency", "reasons", "red_flags", "source", "model_urgency", "confidence")
+_TRIAGE_KEYS = ("urgency", "reasons", "red_flags", "source", "model_urgency", "confidence", "scale")
 
 
 class AppointmentIn(BaseModel):

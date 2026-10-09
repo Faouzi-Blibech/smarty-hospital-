@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from app.ai import textclf
 
 RULES = Path(__file__).parent / "rules" / "red_flags.v1.json"
+SCALE = Path(__file__).parent / "rules" / "triage_scale.v1.json"
 ELDERLY_AGE = 75
 
 
@@ -25,6 +26,7 @@ class TriageResult(BaseModel):
     source: str  # "model" (rules + trained classifier) | "rules" (no model file shipped)
     model_urgency: int | None = None
     confidence: float | None = None
+    scale: dict | None = None
 
 
 _ARABIC_VARIANTS = str.maketrans({"ى": "ي", "ة": "ه", "ـ": None})
@@ -56,6 +58,16 @@ def rule_floor(text: str) -> int:
     return max((f["min_urgency"] for f in match_red_flags(text)), default=1)
 
 
+@lru_cache
+def _scale() -> dict:
+    return json.loads(SCALE.read_text(encoding="utf-8"))
+
+
+def scale_label(urgency: int) -> dict:
+    s = _scale()
+    return {"name": s["name"], "level": s["levels"][str(urgency)], "confirmed": bool(s["confirmed"])}
+
+
 def triage(referral_text: str, symptoms: list[str], age: int | None) -> TriageResult:
     full_text = " ".join([referral_text, *symptoms])
     matched = match_red_flags(full_text)
@@ -77,4 +89,5 @@ def triage(referral_text: str, symptoms: list[str], age: int | None) -> TriageRe
     if not reasons:
         reasons = ["No red flag found; routine priority"]
     return TriageResult(urgency=urgency, reasons=reasons, red_flags=flag_ids,
-                        source="model" if model is not None else "rules", model_urgency=model_u, confidence=conf)
+                        source="model" if model is not None else "rules", model_urgency=model_u, confidence=conf,
+                        scale=scale_label(urgency))

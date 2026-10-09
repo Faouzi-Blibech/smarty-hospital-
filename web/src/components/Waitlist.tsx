@@ -218,6 +218,11 @@ export function Waitlist({
                     <span className={styles.urgNum}>{f}</span>{U.word}
                   </span>
                   <button className={styles.why} aria-expanded={why === a.id} onClick={() => { setWhy(why === a.id ? null : a.id); setMenu(null); }}>Why?</button>
+                  {a.triage?.scale ? (
+                    <span className={styles.meta}>
+                      {a.triage.scale.level} · {a.triage.scale.name}{a.triage.scale.confirmed ? "" : " (to confirm)"}
+                    </span>
+                  ) : null}
                 </div>
                 <AiBadge
                   variant="split"
