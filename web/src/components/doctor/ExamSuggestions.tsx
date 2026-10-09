@@ -2,7 +2,7 @@
 
 // Suggested exams for one request: the doctor ticks what to keep and orders them before the visit.
 // The suggestions come from rules; nothing is ordered until a doctor clicks "Order selected".
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { addExam, getAppointmentExams, getExamCatalogue, orderExams } from "@/lib/api";
 import type { CatalogueItem, ExamOrder } from "@/lib/types";
 import styles from "./ExamSuggestions.module.css";
@@ -22,12 +22,14 @@ export function ExamSuggestions({ appointmentId, patientId, actorId, onChanged }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     let alive = true;
+    setError(null);
     getAppointmentExams(appointmentId)
       .then((r) => {
         if (!alive) return;
         setRows(r);
+        setError(null);
         setPicked(new Set(r.filter((e) => e.status === "suggested").map((e) => e.id)));
       })
       .catch(() => alive && setError("Couldn’t load the suggested exams."));
@@ -37,7 +39,15 @@ export function ExamSuggestions({ appointmentId, patientId, actorId, onChanged }
     };
   }, [appointmentId]);
 
-  if (error && !rows) return <p className={styles.error}>{error}</p>;
+  useEffect(() => load(), [load]);
+
+  if (error && !rows) {
+    return (
+      <p className={styles.error}>
+        {error} <button onClick={() => void load()}>Retry</button>
+      </p>
+    );
+  }
   if (!rows) return <span className="ward-skeleton" style={{ height: 18, width: 220 }} />;
   const suggested = rows.filter((e) => e.status === "suggested");
   const active = rows.filter((e) => e.status === "ordered" || e.status === "done");
@@ -59,9 +69,10 @@ export function ExamSuggestions({ appointmentId, patientId, actorId, onChanged }
   async function addOne() {
     if (!extra) return;
     setBusy(true);
+    setError(null);
     try {
       const row = await addExam({ patient_id: patientId, appointment_id: appointmentId, code: extra }, { by: actorId });
-      const next = [...rows!, row];
+      const next = [...(rows ?? []), row];
       setRows(next);
       setExtra("");
       onChanged?.(next);
@@ -87,8 +98,9 @@ export function ExamSuggestions({ appointmentId, patientId, actorId, onChanged }
               {e.label} <span className={styles.dept}>{e.department}</span>
             </label>
           ))}
+          <span className={styles.status}>Unticked suggestions are dropped when you order.</span>
           <button className={styles.order} disabled={busy} onClick={() => void submit()}>
-            {picked.size ? `Order selected (${picked.size})` : "Order none"}
+            {picked.size ? `Order selected (${picked.size})` : "Drop all suggestions"}
           </button>
         </>
       ) : null}
