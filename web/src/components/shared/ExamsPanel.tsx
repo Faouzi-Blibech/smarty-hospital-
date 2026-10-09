@@ -11,7 +11,8 @@ import styles from "./ExamsPanel.module.css";
 export function ExamsPanel({ patientId }: { patientId: string }) {
   const [rows, setRows] = useState<ExamOrder[] | null>(null);
   const [failed, setFailed] = useState(false);
-  const [openFailed, setOpenFailed] = useState(false);
+  const [openMsg, setOpenMsg] = useState<string | null>(null);
+  const [opening, setOpening] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -22,15 +23,23 @@ export function ExamsPanel({ patientId }: { patientId: string }) {
   }, [patientId]);
 
   async function open(resultId: string) {
-    setOpenFailed(false);
+    if (opening) return;
+    setOpenMsg(null);
     const w = window.open("", "_blank");
+    if (!w) {
+      setOpenMsg("Your browser blocked the new tab — allow pop-ups for this site and try again.");
+      return;
+    }
+    setOpening(resultId);
     try {
       const url = await examFileUrl(resultId);
-      if (w) w.location.href = url;
+      w.location.href = url;
       if (url.startsWith("blob:")) setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch {
-      w?.close();
-      setOpenFailed(true);
+      w.close();
+      setOpenMsg("Couldn’t open that file.");
+    } finally {
+      setOpening(null);
     }
   }
 
@@ -39,7 +48,7 @@ export function ExamsPanel({ patientId }: { patientId: string }) {
     <section className={styles.card} aria-label="Exams">
       <h3 className={styles.h3}>Exams</h3>
       {failed ? <p className={styles.note}>Couldn’t load the exams.</p> : null}
-      {openFailed ? <p className={styles.note} role="alert">Couldn’t open that file.</p> : null}
+      {openMsg ? <p className={styles.note} role="alert">{openMsg}</p> : null}
       {!rows && !failed ? <span className="ward-skeleton" style={{ height: 60, width: "100%" }} /> : null}
       {rows && !shown.length ? <p className={styles.note}>No exams ordered.</p> : null}
       {shown.map((e) => (
@@ -48,7 +57,7 @@ export function ExamsPanel({ patientId }: { patientId: string }) {
             <b>{e.label}</b>
             <span className={styles.dept}>{e.department}</span>
             <span className={e.status === "done" ? styles.done : styles.waiting}>
-              {e.status === "done" ? `Result in · ${tunisDay(e.done_at!)} ${tunisTime(e.done_at!)}` : "Waiting for the result"}
+              {e.status === "done" ? `Result in${e.done_at ? ` · ${tunisDay(e.done_at)} ${tunisTime(e.done_at)}` : ""}` : "Waiting for the result"}
             </span>
           </div>
           {(e.results ?? []).map((r) => (
