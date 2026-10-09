@@ -7,6 +7,7 @@ import { daysSince, tunisDay, USE_MOCKS } from "@/lib/time";
 import type { Appointment, StaffMember, Urgency } from "@/lib/types";
 import { useMeState } from "@/lib/useMe";
 import { AiBadge } from "./AiBadge";
+import { ExamSuggestions } from "./doctor/ExamSuggestions";
 import { Toast, useToast } from "./Toast";
 import styles from "./Waitlist.module.css";
 
@@ -211,6 +212,7 @@ export function Waitlist({
                     <span key={fl} className={styles.flag}><span className={styles.flagDot} />{redFlagLabel(fl)}</span>
                   ))}
                 </div>
+                {caller === "doctor" ? <ExamSuggestions appointmentId={a.id} patientId={a.patient_id} actorId={actorId ?? "u-0001"} /> : null}
               </div>
               <div className={cls(styles.col, styles.urgency)}>
                 <div className={styles.urgencyLine}>
