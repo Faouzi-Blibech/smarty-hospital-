@@ -12,9 +12,21 @@ from sqlalchemy.orm import Session
 
 from app.auth.security import hash_password
 from app.config import get_settings
+from app.ai.exams import suggest_exams
 from app.db import SessionLocal
-from app.ids import reserve_upto
-from app.models import Admission, Appointment, Device, Patient, Prescription, Staff, User, Vital
+from app.ids import new_id, reserve_upto
+from app.models import (
+    Admission,
+    Appointment,
+    Device,
+    ExamOrder,
+    Patient,
+    Prescription,
+    Staff,
+    User,
+    Vital,
+)
+from app.services import exams as E
 from app.services.appointments import new_appointment_fields
 from app.services.schedule import local_to_utc, rebuild_doses, today_local
 
@@ -24,6 +36,8 @@ STAFF = [
     ("u-0002", "nurse@ward.tn", "Nurse Ines", "nurse", "Cardiology", "04A1B2C3"),
     ("u-0003", "nurse2@ward.tn", "Nurse Sami", "nurse", "Internal Medicine", None),
     ("u-0004", "admin@ward.tn", "Hela Mejri", "admin", None, None),
+    ("u-0006", "imaging@ward.tn", "Nurse Rania", "nurse", "Imaging", None),
+    ("u-0007", "lab@ward.tn", "Nurse Karim", "nurse", "Laboratory", None),
 ]
 
 # (first, last, dob, sex, allergies, history)
@@ -61,12 +75,25 @@ def _patient_id(i: int) -> str:
     return f"p-{i + 1:04d}"
 
 
+def _upsert_missing_staff(db: Session, pw: str) -> None:
+    """Staff added to STAFF after a database was first seeded (e.g. the department nurses)."""
+    for uid, email, name, role, ward, rfid in STAFF:
+        if db.get(User, uid) is None and db.scalar(select(User).where(User.email == email)) is None:
+            db.add(User(id=uid, email=email, name=name, role=role, password_hash=pw))
+            db.flush()
+        if role != "admin" and db.get(Staff, uid) is None and db.get(User, uid) is not None:
+            db.add(Staff(user_id=uid, ward=ward, rfid_uid=rfid))
+    db.flush()
+    reserve_upto(db, "u", 7)
+
+
 def seed(db: Session) -> bool:
     """Create the dataset in `db` (caller commits). Returns False if it was already seeded."""
+    pw = hash_password(get_settings().seed_password)
     if db.scalar(select(User).where(User.email == "doctor@ward.tn")):
+        _upsert_missing_staff(db, pw)
         return False
     now = datetime.now(UTC).replace(second=0, microsecond=0)
-    pw = hash_password(get_settings().seed_password)
 
     for uid, email, name, role, _, _ in STAFF:
         db.add(User(id=uid, email=email, name=name, role=role, password_hash=pw))
@@ -114,10 +141,15 @@ def seed(db: Session) -> bool:
     for n, (pi, text_, symptoms, days_ago) in enumerate(REQUESTS, start=1):
         created = now - timedelta(days=days_ago, hours=n)
         fields = new_appointment_fields(patients[_patient_id(pi)], text_, symptoms, today=created.date())
-        db.add(Appointment(id=f"a-{n:04d}", created_at=created, **fields))
+        a = Appointment(id=f"a-{n:04d}", created_at=created, **fields)
+        db.add(a)
+        db.flush()
+        suggestion = suggest_exams(" ".join([text_, *symptoms]), a.ai_suggested.get("red_flags", []))
+        for ex in E.suggested_fields(a.patient_id, a.id, suggestion):
+            db.add(ExamOrder(id=new_id(db, "ex"), **ex))
     db.flush()
 
-    for prefix, n in [("u", 5), ("p", len(PATIENTS)), ("adm", 1), ("rx", 1), ("a", len(REQUESTS))]:
+    for prefix, n in [("u", 7), ("p", len(PATIENTS)), ("adm", 1), ("rx", 1), ("a", len(REQUESTS))]:
         reserve_upto(db, prefix, n)
     return True
 

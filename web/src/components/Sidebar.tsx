@@ -12,7 +12,7 @@ export interface NavItem {
   key: string;
   label: string;
   href: string;
-  count: string;
+  count?: string;
   /** "hot" count: teal pill (nurse alerts). */
   hot?: boolean;
 }
@@ -36,6 +36,7 @@ export const NAV: Record<StaffRole, NavItem[]> = {
     { key: "board", label: "Ward board", href: "/nurse", count: NAV_COUNTS.nurse.board },
     { key: "alerts", label: "Alerts", href: "/nurse/alerts", count: NAV_COUNTS.nurse.alerts, hot: true },
     { key: "meds", label: "Med round", href: "/nurse/meds", count: NAV_COUNTS.nurse.meds },
+    { key: "exams", label: "Exams", href: "/nurse/exams" },
     { key: "patients", label: "Patients", href: "/nurse/patients", count: NAV_COUNTS.nurse.patients },
   ],
   admin: [
@@ -88,7 +89,7 @@ export function Sidebar({ role, active, live = true, counts }: SidebarProps) {
         {items.map((n) => {
           const on = n.key === current;
           // Real mode: no stats endpoint yet (proposed in api.md), so no count pills.
-          const count = USE_MOCKS ? String(counts?.[n.key] ?? n.count) : String(counts?.[n.key] ?? "");
+          const count = USE_MOCKS ? String(counts?.[n.key] ?? n.count ?? "") : String(counts?.[n.key] ?? "");
           return (
             <Link
               key={n.key}

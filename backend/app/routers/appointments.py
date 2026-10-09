@@ -10,14 +10,16 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.ai.exams import suggest_exams
 from app.auth.deps import require_roles
 from app.db import get_db
 from app.errors import ApiError, forbidden, not_found
 from app.ids import new_id
 from app.integrations import n8n
-from app.models import Appointment, Patient, User
+from app.models import Appointment, ExamOrder, Patient, User
 from app.schemas import iso
 from app.services import appointments as A
+from app.services import exams as E
 from app.services.audit import audit
 from app.services.patients import age
 
@@ -25,7 +27,7 @@ router = APIRouter(prefix="/appointments", tags=["appointments"])
 
 # The patient never sees an AI urgency score (api.md 1.5 → Patient role)
 _HIDDEN_FROM_PATIENT = ("urgency_ai", "triage", "no_show_prob", "ai_suggested")
-_TRIAGE_KEYS = ("urgency", "reasons", "red_flags", "source", "model_urgency", "confidence")
+_TRIAGE_KEYS = ("urgency", "reasons", "red_flags", "source", "model_urgency", "confidence", "scale")
 
 
 class AppointmentIn(BaseModel):
@@ -77,6 +79,8 @@ def to_out(db: Session, a: Appointment, viewer: User) -> dict:
            "referral_text": a.referral_text, "doctor_name": _name(db, a.doctor_id),
            "confirmed_by_name": _name(db, a.confirmed_by),
            "human_confirmed_by_name": _name(db, a.human_confirmed_by)}
+    orders = db.scalars(select(ExamOrder).where(ExamOrder.appointment_id == a.id)).all()
+    out.update(E.counts(orders))
     if viewer.role == "patient":
         for k in _HIDDEN_FROM_PATIENT:
             out.pop(k)
@@ -128,6 +132,9 @@ def create(body: AppointmentIn, request: Request, user: User = Depends(require_r
     a = Appointment(id=new_id(db, "a"), **fields)
     db.add(a)
     db.flush()
+    suggestion = suggest_exams(" ".join([body.referral_text, *body.symptoms]), a.ai_suggested.get("red_flags", []))
+    for fields in E.suggested_fields(p.id, a.id, suggestion):
+        db.add(ExamOrder(id=new_id(db, "ex"), **fields))
     audit(db, user, "create", "appointment", a.id, patient_id=p.id, ip=_ip(request))
     db.refresh(a)
     out = to_out(db, a, user)

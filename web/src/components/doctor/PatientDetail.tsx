@@ -8,6 +8,7 @@ import { LiveBanner } from "@/components/LiveBanner";
 import { DosesTimeline } from "@/components/shared/DosesTimeline";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { NotesPanel } from "@/components/shared/NotesPanel";
+import { ExamsPanel } from "@/components/shared/ExamsPanel";
 import { LIVE_JITTER, useLiveTick } from "@/components/shared/useLiveTick";
 import { Toast, useToast } from "@/components/Toast";
 import { addNote, getDoses, getNotes, getPatient, getPrescriptions, getVitals } from "@/lib/api";
@@ -128,6 +129,7 @@ export function PatientDetail({ id }: { id: string }) {
               />
             </div>
             <div className={styles.col}>
+              <ExamsPanel patientId={id} />
               <DailySummary patientId={id} aiFallback={flags.aiFallback} actorId={DOCTOR_ID} />
               <DosesTimeline doses={data.doses} now={now()} />
               <NotesPanel notes={data.notes} onAdd={onAddNote} now={now()} />

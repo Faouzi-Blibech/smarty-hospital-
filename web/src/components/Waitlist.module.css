@@ -31,6 +31,7 @@
 
 .urgency { gap: 7px; align-items: flex-start; position: relative; }
 .urgencyLine { display: flex; gap: 8px; align-items: center; }
+.urgMeta { font-size: 13px; color: var(--muted); line-height: 1.35; }
 .urgPill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; font-size: 14px; font-weight: 700; }
 .urgNum { font: 600 18px/1 var(--serif); font-variant-numeric: tabular-nums; }
 .why { font: 600 14px/1 var(--sans); color: var(--teal); background: none; border: 1px solid var(--teal-line); border-radius: 6px; padding: 6px 9px; cursor: pointer; }

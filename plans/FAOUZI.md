@@ -470,6 +470,18 @@ Built ahead against the contracts (all DB-free and tested): `app/services/appoin
 
 - [ ] `POST /ai/assistant`: built (rework 2026-10-06). It classifies the question into an intent (`next_dose`, `next_visit`, `my_vitals`, `ask_staff`, `urgent`) with Laya plus a trained classifier, then fills a template from the caller's own record. A red-flag question gets the URGENT message with no model call. No LLM, no diagnosis; otherwise "Please ask your nurse".
 
+### Single-visit exams (doctor feedback 2026-10-09)
+
+Spec: `docs/superpowers/specs/2026-10-09-single-visit-and-case-notebook-design.md` · plan: `docs/superpowers/plans/2026-10-09-single-visit-exams.md`.
+
+- [x] Contracts: data-model 1.4, api 1.8, n8n-webhooks 1.3 (needs Wali's 👍)
+- [x] Tables `exam_orders`, `exam_results`, `notebook_entries` (migration 0003); Imaging and Laboratory nurses in the seed (also added to already-seeded databases)
+- [x] Rules-based exam suggestions on every new request (`rules/exam_bundles.v1.json`, illustrative, for the doctors to review)
+- [x] Doctor orders or drops suggestions; department nurse uploads results to MinIO; doctor opens them on the patient page (audited, doctor/nurse only)
+- [x] Patient "Before your visit" checklist; waitlist exam progress; hospital triage-scale label (FRENCH, to confirm)
+- [ ] n8n W7 (exams ordered → patient) and W8 (results ready → doctor)
+- [ ] Ask the doctors which triage scale they use; set `confirmed: true` in `rules/triage_scale.v1.json`
+
 ## Day 4 — Fri 10-09 (polish + pitch)
 
 - [ ] Verify the whole demo with `LLM_PROVIDER=none` and the Wi-Fi off (local stack only).

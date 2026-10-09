@@ -12,7 +12,7 @@ from app.ai import laya_intent
 from app.config import get_settings
 from app.db import engine
 from app.iot import publisher
-from app.routers import ai, alerts, appointments, auth, devices, doses, integrations, patients, prescriptions, staff
+from app.routers import ai, alerts, appointments, auth, devices, doses, exams, integrations, patients, prescriptions, staff
 from app.ws import relay
 from app.ws import router as ws_router
 from app.ws.hub import hub
@@ -51,6 +51,7 @@ app.include_router(staff.router)
 app.include_router(appointments.router)
 app.include_router(integrations.router)
 app.include_router(ai.router)
+app.include_router(exams.router)
 app.include_router(ws_router.router)
 
 

@@ -1,17 +1,19 @@
 // Mock fixtures entry point. All data is synthetic, copied from the Claude Design mockups.
 // `api.ts` is the only consumer: components never import mocks directly
 // (except `NAV_COUNTS`, the static sidebar counts).
-import type { Alert, AiSummary, Appointment, Device, Dose, HomeCarePlan, Note, Patient, Prescription, SlotOffer, StaffMember, Vital } from "@/lib/types";
+import type { Alert, AiSummary, Appointment, Device, Dose, ExamOrder, HomeCarePlan, Note, Patient, Prescription, SlotOffer, StaffMember, Vital } from "@/lib/types";
 import { ALERTS } from "./alerts";
 import { PATIENT_APPOINTMENTS, WAITLIST } from "./appointments";
 import { DOSES, NOTES, PRESCRIPTIONS, SUMMARIES } from "./clinical";
 import { BOARD_BED_ORDER, DEVICES, PATIENTS, STAFF } from "./people";
 import { HOME_CARE, OFFERS } from "./patient";
 import { VITALS } from "./vitals";
+import { examFixtures } from "./exams";
 
 export { mockAssistant, type AssistantContext } from "./assistant";
 export { BOARD_BED_ORDER, USERS, userName } from "./people";
 export { nowIso } from "./time";
+export { EXAM_CATALOGUE } from "./exams";
 
 /** Sidebar counts, verbatim from Sidebar.dc.html's sample data. */
 export const NAV_COUNTS = {
@@ -33,6 +35,7 @@ export interface MockStore {
   staff: StaffMember[];
   boardBedOrder: string[];
   offers: SlotOffer[];
+  exams: ExamOrder[];
   homeCare: Record<string, HomeCarePlan>;
   seq: { rx: number; dose: number; note: number };
 }
@@ -52,6 +55,7 @@ export function createStore(): MockStore {
     staff: STAFF,
     boardBedOrder: BOARD_BED_ORDER,
     offers: OFFERS,
+    exams: examFixtures(WAITLIST[0].id, WAITLIST[0].patient_id, WAITLIST[0].patient_name ?? ""),
     homeCare: HOME_CARE,
     seq: { rx: PRESCRIPTIONS.length, dose: DOSES.length, note: Object.values(NOTES).flat().length },
   });

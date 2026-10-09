@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "note": "Illustrative exam sets for the prototype, on synthetic data. To be reviewed by the hospital's doctors before any real use.",
+  "catalogue": {
+    "ecg": {"label": "ECG (12-lead)", "department": "Cardiology"},
+    "echo": {"label": "Echocardiography", "department": "Cardiology"},
+    "troponin": {"label": "Troponin", "department": "Laboratory"},
+    "cbc": {"label": "Complete blood count", "department": "Laboratory"},
+    "crp": {"label": "CRP", "department": "Laboratory"},
+    "d_dimer": {"label": "D-dimer", "department": "Laboratory"},
+    "inr": {"label": "INR", "department": "Laboratory"},
+    "hba1c": {"label": "HbA1c", "department": "Laboratory"},
+    "creatinine": {"label": "Creatinine", "department": "Laboratory"},
+    "chest_xray": {"label": "Chest X-ray", "department": "Imaging"},
+    "brain_ct": {"label": "Brain CT scan", "department": "Imaging"},
+    "leg_doppler": {"label": "Leg venous Doppler", "department": "Imaging"}
+  },
+  "bundles": [
+    {"id": "chest_pain", "red_flags": ["chest_pain"], "keywords": ["chest pain", "douleur thoracique", "ألم في الصدر"], "exams": ["ecg", "troponin", "chest_xray"]},
+    {"id": "stroke", "red_flags": ["stroke_signs"], "exams": ["brain_ct", "cbc"]},
+    {"id": "breathing", "red_flags": ["breathing"], "keywords": ["essoufflement", "dyspnea", "short of breath", "ضيق في التنفس"], "exams": ["chest_xray", "cbc", "crp"]},
+    {"id": "palpitations", "keywords": ["palpitation", "خفقان"], "exams": ["ecg", "echo"]},
+    {"id": "fever_cough", "keywords": ["fever", "fievre", "cough", "toux", "حمى", "سعال"], "exams": ["cbc", "crp", "chest_xray"]},
+    {"id": "leg_swelling", "keywords": ["swelling", "gonflement", "oedeme", "edema", "leg pain", "painful leg"], "exams": ["leg_doppler", "d_dimer"]},
+    {"id": "anticoagulant_bleeding", "keywords": ["warfarin", "sintrom", "bleeding", "saignement", "نزيف"], "exams": ["inr", "cbc"]},
+    {"id": "diabetes", "keywords": ["diabetes", "diabete", "hba1c", "سكري"], "exams": ["hba1c", "creatinine"]}
+  ]
+}

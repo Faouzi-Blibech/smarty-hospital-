@@ -424,6 +424,14 @@
   border: 1px solid;
 }
 
+.examNote {
+  margin: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--line-soft);
+  font-size: 15px;
+  color: var(--muted);
+}
+
 .med_taken {
   background: var(--news-normal-bg);
   color: var(--news-normal-fg);

@@ -1,0 +1,6 @@
+{
+  "name": "FRENCH",
+  "confirmed": false,
+  "note": "Display mapping from our urgency (5 = most urgent) to the hospital's triage scale. Set confirmed to true only after the hospital's doctors confirm the scale and the mapping.",
+  "levels": {"5": "Tri 1", "4": "Tri 2", "3": "Tri 3", "2": "Tri 4", "1": "Tri 5"}
+}

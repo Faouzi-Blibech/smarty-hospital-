@@ -1,6 +1,6 @@
 # n8n contract — v1.0
 
-> **Version:** 1.2 (2026-10-05) · **Owners:** Faouzi (workflows + callbacks), Wali (event emitter in the backend)
+> **Version:** 1.3 (2026-10-09) · **Owners:** Faouzi (workflows + callbacks), Wali (event emitter in the backend)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Rules (locked)
@@ -43,6 +43,8 @@ def emit(event: str, data: dict) -> None:
 | `dose.missed` | `events/dose_missed` ingested | `{dose_id, patient_id, patient_first_name, bed, meds[], scheduled_at, nurse_chat_ids[], doctor_chat_id, doctor_email}` | W3 |
 | `alert.critical` | alert with severity `high` or `critical` | `{alert_id, patient_first_name, bed, kind, news2, message, nurse_chat_ids[], doctor_chat_id}` | W4 |
 | `patient.discharged` | `POST /admissions/{id}/discharge` | `{patient_id, patient_first_name, patient_email, patient_telegram_chat_id, doctor_id, discharged_at}` | W6 |
+| `exam.ordered` | `POST /appointments/{id}/exams/order` or `POST /exams` | `{appointment_id, patient_first_name, patient_telegram_chat_id, patient_email, exams:[{label, department}]}` | W7 tells the patient where to go |
+| `exam.results_ready` | the last ordered exam of an appointment gets its result | `{appointment_id, patient_first_name, doctor_id, doctor_name, doctor_email, doctor_chat_id}` | W8 tells the ordering doctor |
 
 W5 (daily digest) is cron-driven inside n8n and pulls from `GET /integrations/n8n/daily-digest`.
 
@@ -69,8 +71,12 @@ The backend base URL from inside Docker is `http://api:8000`.
 | W2 | Slot backfill | stretch | event `appointment.cancelled` with a `candidate` → Telegram + email offer with an **accept link** (n8n Wait-node resume URL, valid 2 h) → on click, callback `backfill-accept` → confirmation message to the patient (or "slot already taken"). No click within 2 h: nothing happens; staff can still offer the slot by hand |
 | W5 | Doctor daily digest | stretch | Cron 07:30 Africa/Tunis → GET daily-digest → one email per doctor listing each admitted patient (bed, latest NEWS2, AI summary marked as needing review) |
 | W6 | Discharge follow-up | stretch | event `patient.discharged` → callback `follow-up` (14 days) → Telegram + email to the patient: "your follow-up visit has been requested; the hospital will confirm the date" |
+| W7 | Exams ordered | core for the single-visit demo | event `exam.ordered` → Telegram + email to the patient: "Before your visit, please do: {label} ({department}) …" |
+| W8 | Results ready | core for the single-visit demo | event `exam.results_ready` → Telegram + email to the doctor: "{patient_first_name}'s results are in; the visit can be booked" |
 
 ## Changelog
+
+- **1.3** (2026-10-09): adds `exam.ordered` and `exam.results_ready` with W7/W8. Emitter: the exams router (Faouzi's lane); the emit helper stays Wali's.
 
 - **1.2** (2026-10-05): W2/W5/W6 made buildable. `appointment.cancelled` adds `doctor_name` + `candidate`; `backfill-accept` defines its responses; `daily-digest` returns a list with doctor email; W6 books through the new `follow-up` callback instead of a service JWT; `N8N_PUBLIC_URL`. Backend side of all of these: Faouzi (appointments + integrations routers).
 
