@@ -1,0 +1,133 @@
+"""n8n callbacks (owner: Faouzi). Contract: api.md → Integrations and n8n-webhooks.md v1.2 → Callbacks.
+
+Authenticated by the `X-N8N-Secret` header only (no JWT); n8n is not the source of truth, so every callback
+goes through the same appointment rules as the web app.
+"""
+
+from datetime import UTC, datetime, timedelta
+from typing import Literal
+
+from fastapi import APIRouter, Depends, Request
+from pydantic import BaseModel, Field
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.ai import copilot
+from app.db import get_db
+from app.errors import ApiError, not_found
+from app.ids import new_id
+from app.integrations import n8n
+from app.models import Admission, AiSummary, Appointment, Note, Patient, Prescription, User, Vital
+from app.routers.appointments import cancel
+from app.services import appointments as A
+from app.services.integrations import callback_secret_ok, digest_entries
+from app.services.patients import latest_vital
+
+
+def require_n8n(request: Request) -> None:
+    if not callback_secret_ok(request.headers.get("X-N8N-Secret")):
+        raise ApiError(401, "unauthorized", "missing or invalid X-N8N-Secret")
+
+
+router = APIRouter(prefix="/integrations/n8n", tags=["integrations"], dependencies=[Depends(require_n8n)])
+
+
+class ReplyIn(BaseModel):
+    appointment_id: str
+    reply: Literal["confirm", "cancel"]
+
+
+class BackfillIn(BaseModel):
+    appointment_id: str
+    slot_at: datetime
+
+
+class FollowUpIn(BaseModel):
+    patient_id: str
+    days: int = Field(default=14, ge=1, le=365)
+
+
+def _appointment(db: Session, appointment_id: str) -> Appointment:
+    a = db.get(Appointment, appointment_id)
+    if a is None:
+        raise not_found("appointment")
+    return a
+
+
+@router.post("/appointment-reply")
+def appointment_reply(body: ReplyIn, db: Session = Depends(get_db)) -> dict:
+    a = _appointment(db, body.appointment_id)
+    if body.reply == "cancel":
+        event = cancel(db, a)
+        db.commit()
+        n8n.emit("appointment.cancelled", event)
+        return {"status": "cancelled"}
+    A.apply_reply(a, "confirm", now=datetime.now(UTC))
+    db.commit()
+    return {"status": "confirmed"}
+
+
+@router.post("/backfill-accept")
+def backfill_accept(body: BackfillIn, db: Session = Depends(get_db)) -> dict:
+    a = _appointment(db, body.appointment_id)
+    freed = db.scalar(select(Appointment).where(Appointment.status == "cancelled",
+                                                Appointment.slot_at == body.slot_at,
+                                                Appointment.doctor_id.is_not(None))
+                      .order_by(Appointment.created_at.desc()).limit(1))
+    if freed is None:
+        raise not_found("freed slot")
+    taken = db.scalar(select(Appointment.id).where(Appointment.status == "confirmed",
+                                                   Appointment.doctor_id == freed.doctor_id,
+                                                   Appointment.slot_at == body.slot_at).limit(1))
+    try:
+        status = A.apply_backfill_accept(a, slot_at=body.slot_at, doctor_id=freed.doctor_id,
+                                         slot_taken=taken is not None)
+    except A.Conflict as e:
+        raise ApiError(409, e.code, str(e)) from e
+    db.commit()
+    return {"status": status}
+
+
+def _summary_text(db: Session, p: Patient, now: datetime) -> str:
+    """Latest stored AI summary, else a fresh one over the last 24 h (not stored; it still needs review)."""
+    stored = db.scalar(select(AiSummary).where(AiSummary.patient_id == p.id)
+                       .order_by(AiSummary.created_at.desc()).limit(1))
+    if stored is not None:
+        return stored.ai_suggested["summary"]
+    since = now - timedelta(hours=24)
+    vitals = db.scalars(select(Vital).where(Vital.patient_id == p.id, Vital.ts >= since).order_by(Vital.ts)).all()
+    notes = db.scalars(select(Note).where(Note.patient_id == p.id, Note.created_at >= since)
+                       .order_by(Note.created_at)).all()
+    rxs = db.scalars(select(Prescription).where(Prescription.patient_id == p.id)).all()
+    return copilot.summarize(**copilot.summary_inputs(p, vitals, notes, rxs))["summary"]
+
+
+@router.get("/daily-digest")
+def daily_digest(doctor_id: str | None = None, db: Session = Depends(get_db)) -> list[dict]:
+    doctors = select(User).where(User.role == "doctor").order_by(User.id)
+    if doctor_id:
+        doctors = doctors.where(User.id == doctor_id)
+    doctors = db.scalars(doctors).all()
+    wanted = {d.id: d for d in doctors}
+    now = datetime.now(UTC)
+    rows = []
+    admitted = db.execute(select(Admission, Patient).join(Patient, Patient.id == Admission.patient_id)
+                          .where(Admission.discharged_at.is_(None)).order_by(Admission.bed)).all()
+    for adm, p in admitted:
+        doctor = wanted.get(p.attending_doctor_id)
+        if doctor is None:
+            continue
+        v = latest_vital(db, p.id)
+        rows.append((doctor, p, adm.bed, v.news2 if v else None, _summary_text(db, p, now)))
+    return digest_entries(rows, doctors=doctors)
+
+
+@router.post("/follow-up")
+def follow_up(body: FollowUpIn, db: Session = Depends(get_db)) -> dict:
+    p = db.get(Patient, body.patient_id)
+    if p is None:
+        raise not_found("patient")
+    a = Appointment(id=new_id(db, "a"), **A.follow_up_fields(p, body.days, today=datetime.now(UTC).date()))
+    db.add(a)
+    db.commit()
+    return {"appointment_id": a.id, "status": a.status}
