@@ -229,16 +229,6 @@ export function Waitlist({
                     <span className={styles.urgNum}>{f}</span>{U.word}
                   </span>
                   <button className={styles.why} aria-expanded={why === a.id} onClick={() => { setWhy(why === a.id ? null : a.id); setMenu(null); }}>Why?</button>
-                  {a.triage?.scale ? (
-                    <span className={styles.meta}>
-                      {a.triage.scale.level} · {a.triage.scale.name}{a.triage.scale.confirmed ? "" : " (to confirm)"}
-                    </span>
-                  ) : null}
-                  {a.exams_total ? (
-                    <span className={styles.meta}>Exams {a.exams_done ?? 0}/{a.exams_total}{a.exams_done === a.exams_total ? " · results in" : ""}</span>
-                  ) : a.exams_suggested ? (
-                    <span className={styles.meta}>{a.exams_suggested} exams suggested · doctor to review</span>
-                  ) : null}
                 </div>
                 <AiBadge
                   variant="split"
@@ -250,6 +240,16 @@ export function Waitlist({
                 {isOver && (
                   <span className={styles.overBy}><span className={styles.overDot} /><span>{(a.human_confirmed_by_name ?? actor) ? <>Human override by {a.human_confirmed_by_name ?? actor} · AI said {a.urgency_ai}</> : <>Human override · AI said {a.urgency_ai}</>}</span></span>
                 )}
+                {a.triage?.scale ? (
+                  <span className={styles.urgMeta}>
+                    {a.triage.scale.level} · {a.triage.scale.name}{a.triage.scale.confirmed ? "" : " (to confirm)"}
+                  </span>
+                ) : null}
+                {a.exams_total ? (
+                  <span className={styles.urgMeta}>Exams {a.exams_done ?? 0}/{a.exams_total}{a.exams_done === a.exams_total ? " · results in" : ""}</span>
+                ) : a.exams_suggested ? (
+                  <span className={styles.urgMeta}>{a.exams_suggested} exams suggested · doctor to review</span>
+                ) : null}
                 {why === a.id && (
                   <div role="dialog" className={styles.popover}>
                     <span className={styles.popTitle}>Why urgency {a.urgency_ai}?</span>
