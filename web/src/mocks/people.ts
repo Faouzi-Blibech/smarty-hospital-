@@ -19,9 +19,12 @@ export const STAFF: StaffMember[] = [
   { id: "u-0003", name: "Mme Gharbi", email: "n.gharbi@hr-ward.tn", role: "admin", ward: null, scope: "Administration", last_login_at: at(TODAY, "08:45") },
 ];
 
+/** Staff who appear only as names (not in the admin Staff screen), e.g. the Imaging nurse on exam results. */
+const EXTRA_NAMES: Record<string, string> = { "u-0006": "Nurse Rania" };
+
 export function userName(id: string | null | undefined): string | null {
   if (!id) return null;
-  return STAFF.find((s) => s.id === id)?.name ?? Object.values(USERS).find((u) => u.id === id)?.name ?? null;
+  return STAFF.find((s) => s.id === id)?.name ?? Object.values(USERS).find((u) => u.id === id)?.name ?? EXTRA_NAMES[id] ?? null;
 }
 
 const base = {

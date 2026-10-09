@@ -5,17 +5,19 @@
 // store, so a later read reflects them (until a full page reload).
 // Real mode: calls NEXT_PUBLIC_API_URL with the paths of docs/contracts/api.md.
 // Paths marked NOT IN CONTRACT have no api.md 1.4 endpoint yet (see the Task 1 report).
-import { createStore, mockAssistant, USERS, userName, type AssistantContext, type MockStore } from "@/mocks";
+import { createStore, EXAM_CATALOGUE, mockAssistant, USERS, userName, type AssistantContext, type MockStore } from "@/mocks";
 import { now, tunisDate, USE_MOCKS } from "./time";
 import type {
   Alert,
   AiSummary,
   Appointment,
   AssistantResponse,
+  CatalogueItem,
   ConfirmAppointmentRequest,
   CreatePrescriptionRequest,
   Device,
   Dose,
+  ExamOrder,
   HomeCarePlan,
   LoginResponse,
   Me,
@@ -90,6 +92,16 @@ async function http<T>(method: string, path: string, body?: unknown): Promise<T>
   // Some endpoints (assign, discharge) have no response body in api.md.
   const text = await res.text();
   return (text ? JSON.parse(text) : undefined) as T;
+}
+
+async function upload<T>(path: string, form: FormData): Promise<T> {
+  const token = getToken();
+  const res = await fetch(`${BASE}${path}`, { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { detail?: string; code?: string };
+    throw new ApiError(res.status, err.code ?? "http_error", err.detail ?? res.statusText);
+  }
+  return (await res.json()) as T;
 }
 
 let store: MockStore | null = null;
@@ -376,7 +388,7 @@ const finalUrgency = (a: Appointment) => a.urgency_final ?? a.urgency_ai;
  */
 export async function getWaitlist(opts: { specialty?: string; fallback?: boolean } = {}): Promise<Appointment[]> {
   let list = USE_MOCKS
-    ? await mock((s) => s.appointments.filter((a) => a.status === "requested"))
+    ? await mock((s) => s.appointments.filter((a) => a.status === "requested").map((a) => counted(s, a)))
     : await http<Appointment[]>("GET", "/appointments/waitlist");
   if (opts.specialty) list = list.filter((a) => a.specialty === opts.specialty);
   if (USE_MOCKS && opts.fallback) {
@@ -429,7 +441,7 @@ export function confirmAppointment(id: string, req: ConfirmAppointmentRequest, o
 /** GET /appointments?patient_id= (the patient's own), soonest slot first. */
 export async function getMyAppointments(patientId: string): Promise<Appointment[]> {
   const list = USE_MOCKS
-    ? await mock((s) => s.appointments.filter((a) => a.patient_id === patientId))
+    ? await mock((s) => s.appointments.filter((a) => a.patient_id === patientId).map((a) => counted(s, a)))
     : await http<Appointment[]>("GET", `/appointments?patient_id=${encodeURIComponent(patientId)}`);
   return list.sort((a, b) => (a.slot_at ?? "9").localeCompare(b.slot_at ?? "9"));
 }
@@ -444,6 +456,90 @@ export function replyAppointment(id: string, reply: "confirm" | "cancel"): Promi
       return a;
     });
   return http<Appointment>("POST", `/appointments/${encodeURIComponent(id)}/reply`, { reply });
+}
+
+// ── Exams (api.md 1.8 proposal) ─────────────────────────────────────────────
+
+const counted = (s: MockStore, a: Appointment): Appointment => {
+  const rows = s.exams.filter((e) => e.appointment_id === a.id);
+  const n = (st: string) => rows.filter((e) => e.status === st).length;
+  return { ...a, exams_total: n("ordered") + n("done"), exams_done: n("done"), exams_suggested: n("suggested") };
+};
+
+export async function getAppointmentExams(appointmentId: string): Promise<ExamOrder[]> {
+  if (USE_MOCKS) return mock((s) => s.exams.filter((e) => e.appointment_id === appointmentId));
+  return http<ExamOrder[]>("GET", `/appointments/${encodeURIComponent(appointmentId)}/exams`);
+}
+
+export async function getPatientExams(patientId: string): Promise<ExamOrder[]> {
+  if (USE_MOCKS) return mock((s) => s.exams.filter((e) => e.patient_id === patientId && e.status !== "cancelled"));
+  return http<ExamOrder[]>("GET", `/patients/${encodeURIComponent(patientId)}/exams`);
+}
+
+export async function getExamWorklist(): Promise<ExamOrder[]> {
+  if (USE_MOCKS) return mock((s) => s.exams.filter((e) => e.status === "ordered"));
+  return http<ExamOrder[]>("GET", "/exams?status=ordered");
+}
+
+export async function getExamCatalogue(): Promise<CatalogueItem[]> {
+  if (USE_MOCKS) return mock(() => EXAM_CATALOGUE);
+  return http<CatalogueItem[]>("GET", "/exams/catalogue");
+}
+
+export async function orderExams(appointmentId: string, examIds: string[], opts: ActorOpts = {}): Promise<ExamOrder[]> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      const rows = s.exams.filter((e) => e.appointment_id === appointmentId);
+      const at = iso(now());
+      for (const e of rows) {
+        if (examIds.includes(e.id) && e.status === "suggested") Object.assign(e, { status: "ordered", human_confirmed_by: opts.by ?? "u-0001", ordered_at: at });
+        else if (e.status === "suggested") e.status = "cancelled";
+      }
+      return rows;
+    });
+  return http<ExamOrder[]>("POST", `/appointments/${encodeURIComponent(appointmentId)}/exams/order`, { exam_ids: examIds });
+}
+
+export async function addExam(req: { patient_id: string; appointment_id?: string; code: string }, opts: ActorOpts = {}): Promise<ExamOrder> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      const item = EXAM_CATALOGUE.find((c) => c.code === req.code) ?? notFound(`Exam ${req.code}`);
+      const row: ExamOrder = { id: `ex-${String(s.exams.length + 1).padStart(4, "0")}`, patient_id: req.patient_id,
+        appointment_id: req.appointment_id ?? null, ...item, status: "ordered", ai_suggested: null,
+        human_confirmed_by: opts.by ?? "u-0001", ordered_at: iso(now()), done_at: null, created_at: iso(now()),
+        patient_name: null, results: [] };
+      s.exams.push(row);
+      return row;
+    });
+  return http<ExamOrder>("POST", "/exams", req);
+}
+
+export async function uploadExamResult(examId: string, file: File, reportText: string, opts: ActorOpts = {}): Promise<ExamOrder> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      const e = s.exams.find((x) => x.id === examId) ?? notFound(`Exam ${examId}`);
+      if (e.status !== "ordered") throw new ApiError(409, "bad_status", `exam is ${e.status}`);
+      e.status = "done";
+      e.done_at = iso(now());
+      e.results = [...(e.results ?? []), { id: `er-${examId.slice(3)}`, file_name: file.name, content_type: file.type,
+        size_bytes: file.size, report_text: reportText, uploaded_by_name: userName(opts.by ?? "u-0006"), created_at: iso(now()) }];
+      return e;
+    });
+  const form = new FormData();
+  form.append("file", file);
+  form.append("report_text", reportText);
+  return upload<ExamOrder>(`/exams/${encodeURIComponent(examId)}/results`, form);
+}
+
+/** Authenticated download → an object URL for a new tab. Revoke it when done. */
+export async function examFileUrl(resultId: string): Promise<string> {
+  if (USE_MOCKS) return "/mock-exam.pdf";
+  const token = getToken();
+  const res = await fetch(`${BASE}/exam-results/${encodeURIComponent(resultId)}/file`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new ApiError(res.status, "http_error", res.statusText);
+  return URL.createObjectURL(await res.blob());
 }
 
 // ── Patient app extras (NOT IN CONTRACT) ────────────────────────────────────

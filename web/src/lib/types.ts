@@ -192,6 +192,11 @@ export interface Triage {
   scale?: { name: string; level: string; confirmed: boolean } | null;
 }
 
+export type ExamStatus = "suggested" | "ordered" | "done" | "cancelled";
+export interface ExamResultFile { id: string; file_name: string; content_type: string; size_bytes: number; report_text: string; uploaded_by_name: string | null; created_at: string; }
+export interface ExamOrder { id: string; patient_id: string; appointment_id: string | null; code: string; label: string; department: string; status: ExamStatus; ai_suggested?: { source: AiSource; bundles: string[]; reason: string } | null; human_confirmed_by?: string | null; ordered_at: string | null; done_at: string | null; created_at: string; patient_name: string | null; results?: ExamResultFile[]; }
+export interface CatalogueItem { code: string; label: string; department: string; }
+
 export interface Appointment {
   id: string; // a-0001
   patient_id: string;
@@ -219,6 +224,9 @@ export interface Appointment {
   room?: string | null; // "Cardiology, Room 4"
   confirmed_by_name?: string | null;
   human_confirmed_by_name?: string | null;
+  exams_total?: number;
+  exams_done?: number;
+  exams_suggested?: number;
 }
 
 export interface ConfirmAppointmentRequest {
