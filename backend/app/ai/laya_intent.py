@@ -2,6 +2,7 @@
 
 import json
 import logging
+import threading
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -38,13 +39,24 @@ def _load_agent() -> Any:
         return None
 
 
+_preloading = threading.Event()
+
+
 def preload() -> None:
+    """Warm Laya at startup (main.py runs this on a background thread)."""
     if get_settings().laya_enabled:
+        _preloading.set()
         _load_agent()
+
+
+def _still_loading() -> bool:
+    return _preloading.is_set() and _load_agent.cache_info().currsize == 0
 
 
 def classify(question: str) -> dict[str, float] | None:
     if not get_settings().laya_enabled:
+        return None
+    if _still_loading():  # never make a patient wait ~50 s for the first load; the other models answer
         return None
     agent = _load_agent()
     if agent is None:

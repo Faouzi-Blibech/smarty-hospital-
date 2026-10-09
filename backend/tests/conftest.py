@@ -88,3 +88,14 @@ def published(monkeypatch):
     fake = _FakeMqtt()
     monkeypatch.setattr(publisher, "_client", fake)
     return fake.sent
+
+
+@pytest.fixture(autouse=True)
+def no_llm(monkeypatch):
+    """Tests never call a real LLM, whatever .env says (LLM_PROVIDER=groq on a dev laptop)."""
+    from app.config import get_settings
+
+    monkeypatch.setenv("LLM_PROVIDER", "none")
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
