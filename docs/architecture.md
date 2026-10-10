@@ -87,6 +87,13 @@ flowchart TB
 
 **Containers** (`infra/docker-compose.yml`): `db` (timescale/timescaledb, pg16), `mqtt` (eclipse-mosquitto 2), `minio`, `n8n`, `api` (FastAPI), `worker` (same image, runs `python -m app.iot.worker`), `web` (Next.js).
 
+**Languages.** The web app speaks Arabic, French and English. Each user picks one from the sign-in page, the staff sidebar or the patient app header. How it works:
+- The choice is saved in a `ward_lang` cookie. The server reads the cookie, so `<html lang dir>` is correct on the first paint, and Arabic switches the whole layout to right-to-left.
+- Messages live in typed files under `web/src/i18n/messages/` (one per area). The build fails if French or Arabic is missing a key.
+- Dates follow the language; clock times stay 24 h with Latin digits.
+- Data typed by people or produced by the backend (names, notes, alert texts, AI reasons) is shown as written.
+- Charts keep time running left to right.
+
 ## 3. Users and use cases
 
 ```mermaid

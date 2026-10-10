@@ -1,7 +1,11 @@
+"use client";
+
 // One bed on the nurse ward board. Desktop and tablet (≤ 1024 px) variants come from
 // the same markup: the few tablet-only differences are switched by the CSS module.
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
+import { useT } from "@/i18n/I18nProvider";
+import { news2Word } from "@/lib/labels";
 import { level, PULSE } from "@/lib/news2";
 import { pausedAt, tunisTime, USE_MOCKS } from "@/lib/time";
 import type { Alert, WardBed } from "@/lib/types";
@@ -46,6 +50,7 @@ function cells(bed: WardBed, offline: boolean, jitter: number): VitalCell[] {
 }
 
 export function BedCard({ bed, index, live, tick, call }: BedCardProps) {
+  const { t } = useT();
   const p = bed.patient;
   const empty = !p;
   const offline = !empty && (bed.device ? !bed.device.online : p.device_online === false);
@@ -63,12 +68,12 @@ export function BedCard({ bed, index, live, tick, call }: BedCardProps) {
   } as CSSProperties;
 
   let agoText: string;
-  if (empty) agoText = "idle";
-  else if (offline) agoText = `Device offline · last seen ${bed.device ? tunisTime(bed.device.last_seen) : "—"}`;
-  else if (!live) agoText = `paused ${pausedAt()}`;
-  else if (USE_MOCKS) agoText = `updated ${((tick + index * 3) % 9) + 1} s ago`;
+  if (empty) agoText = t("nurse.idle");
+  else if (offline) agoText = t("nurse.deviceOffline", { time: bed.device ? tunisTime(bed.device.last_seen) : "—" });
+  else if (!live) agoText = t("nurse.paused", { time: pausedAt() });
+  else if (USE_MOCKS) agoText = t("nurse.updatedAgo", { n: ((tick + index * 3) % 9) + 1 });
   // Real mode shows a snapshot (no live feed yet): when the last reading was taken, never a counter.
-  else agoText = bed.latest ? `Last reading ${tunisTime(bed.latest.ts)}` : "No readings yet";
+  else agoText = bed.latest ? t("nurse.lastReading", { time: tunisTime(bed.latest.ts) }) : t("nurse.noReadings");
 
   const body: ReactNode = (
     <>
@@ -80,23 +85,23 @@ export function BedCard({ bed, index, live, tick, call }: BedCardProps) {
             <span className={styles.bubble} style={{ background: lv.edge }}>
               {news}
             </span>
-            {lv.word}
+            {news2Word(lv.word, t)}
           </span>
         ) : null}
       </div>
       <div className={styles.who}>
         <span dir="auto" className={styles.name}>
-          {p ? p.first_name : "Empty bed"}
+          {p ? p.first_name : t("nurse.emptyBed")}
         </span>
         {p ? <span className={`${styles.age} ${styles.desk}`}>{p.age}</span> : null}
       </div>
       {call ? (
         <span className={styles.calling}>
           <span className={`${styles.callDot} ${styles.desk}`} />
-          Call request · {tunisTime(call.created_at)}
+          {t("nurse.callRequest", { time: tunisTime(call.created_at) })}
         </span>
       ) : null}
-      {empty ? <span className={`${styles.idle} ${styles.desk}`}>Ready for admission · unit idle</span> : null}
+      {empty ? <span className={`${styles.idle} ${styles.desk}`}>{t("nurse.readyAdmission")}</span> : null}
       {!empty ? (
         <div className={styles.vitals} style={{ opacity: offline || !live ? 0.5 : 1 }}>
           {cells(bed, offline, jitter).map((c) => (
@@ -124,7 +129,7 @@ export function BedCard({ bed, index, live, tick, call }: BedCardProps) {
             borderColor: offline || empty ? "var(--faint)" : "var(--teal)",
           }}
         />
-        <span className={`${styles.dev} ${styles.desk}`}>{bed.device?.id ?? "No unit"}</span>
+        <span className={`${styles.dev} ${styles.desk}`}>{bed.device?.id ?? t("nurse.noUnit")}</span>
         <span
           className={styles.ago}
           style={{ color: offline ? "var(--news-high-fg)" : "var(--muted)", fontWeight: offline ? 700 : 400 }}

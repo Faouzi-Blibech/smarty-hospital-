@@ -142,6 +142,7 @@ Hackathon build in progress.
 - **Core:** login, patient records, vitals ingestion, alerts, prescriptions to the bedside schedule.
 - **Appointments:** the AI-ranked waitlist, AI triage, the doctor's daily summary and the patient assistant.
 - **Single-visit exam pathway:** suggested exams → doctor orders → department nurse uploads results → doctor reads them at the visit.
+- **Interface languages:** Arabic, French and English, picked from the sign-in page, the staff sidebar or the patient app header.
 
 **Next:**
 - n8n workflows: reminders, missed dose, alerts, slot backfill, exams ordered, results ready.

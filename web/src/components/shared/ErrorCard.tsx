@@ -3,6 +3,7 @@
 // The design's error state: a card with a red alert box, then "Try again" and a secondary button.
 // First used in Doctor / States ("Couldn’t load your patients."), shared by every role.
 import type { ReactNode } from "react";
+import { useT } from "@/i18n/I18nProvider";
 import styles from "./ErrorCard.module.css";
 
 export interface ErrorCardProps {
@@ -29,14 +30,18 @@ export interface ErrorCardProps {
 
 export function ErrorCard({
   title,
-  message = "The server didn’t answer. Your data is safe — nothing was changed.",
+  message: messageProp,
   onRetry,
-  retryLabel = "Try again",
-  secondaryLabel = "Report a problem",
+  retryLabel: retryLabelProp,
+  secondaryLabel: secondaryProp,
   onSecondary,
   variant = "card",
   className,
 }: ErrorCardProps) {
+  const { t } = useT();
+  const message = messageProp === undefined ? t("shared.errorDefaultMessage") : messageProp;
+  const retryLabel = retryLabelProp ?? t("common.tryAgain");
+  const secondaryLabel = secondaryProp === undefined ? t("common.reportProblem") : secondaryProp;
   if (variant === "patient") {
     return (
       <div role="alert" className={`${styles.patient} ${className ?? ""}`}>

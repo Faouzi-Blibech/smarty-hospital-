@@ -5,6 +5,9 @@
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { getMyAppointments } from "@/lib/api";
+import { useT } from "@/i18n/I18nProvider";
+import type { Key } from "@/i18n/messages";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { now, tunisTime } from "@/lib/time";
 import { myPatientId } from "./patient";
 import styles from "./Patient.module.css";
@@ -45,6 +48,7 @@ export function PatientScreen({ time, icons = true, brand = true, nav, apptHref,
 }
 
 export function Brand() {
+  const { t } = useT();
   return (
     <div className={styles.brand}>
       <span className={styles.brandMark} />
@@ -52,16 +56,17 @@ export function Brand() {
         Ward
       </Link>
       <span className={styles.flex} />
-      <span className={styles.protoTag}>Prototype · simulated data</span>
+      <span className={styles.protoTag}>{t("patient.protoTag")}</span>
+      <LanguageSwitcher compact tone="light" />
     </div>
   );
 }
 
-const TABS: { key: PatientTab; label: string; shape: string }[] = [
-  { key: "home", label: "Home", shape: "tabHome" },
-  { key: "vitals", label: "My vitals", shape: "tabVitals" },
-  { key: "assistant", label: "Assistant", shape: "tabAssistant" },
-  { key: "appts", label: "Appointments", shape: "tabAppts" },
+const TABS: { key: PatientTab; label: Key; shape: string }[] = [
+  { key: "home", label: "patient.tabHome", shape: "tabHome" },
+  { key: "vitals", label: "patient.tabVitals", shape: "tabVitals" },
+  { key: "assistant", label: "patient.tabAssistant", shape: "tabAssistant" },
+  { key: "appts", label: "patient.tabAppts", shape: "tabAppts" },
 ];
 
 /** The next appointment's page, or Home when there is none. */
@@ -86,19 +91,20 @@ function useApptHref(given?: string): string {
 }
 
 export function TabBar({ active, apptHref }: { active: PatientTab; apptHref?: string }) {
+  const { t } = useT();
   const appts = useApptHref(apptHref);
   const hrefs: Record<PatientTab, string> = { home: "/patient", vitals: "/patient/vitals", assistant: "/patient/assistant", appts };
   return (
-    <nav className={styles.tabBar} aria-label="Patient">
-      {TABS.map((t) => (
+    <nav className={styles.tabBar} aria-label={t("patient.navLabel")}>
+      {TABS.map((tab) => (
         <Link
-          key={t.key}
-          href={hrefs[t.key]}
-          className={`${styles.tab} ${t.key === active ? styles.tabActive : ""}`}
-          aria-current={t.key === active ? "page" : undefined}
+          key={tab.key}
+          href={hrefs[tab.key]}
+          className={`${styles.tab} ${tab.key === active ? styles.tabActive : ""}`}
+          aria-current={tab.key === active ? "page" : undefined}
         >
-          <span className={`${styles.tabIcon} ${styles[t.shape]}`} aria-hidden="true" />
-          {t.label}
+          <span className={`${styles.tabIcon} ${styles[tab.shape]}`} aria-hidden="true" />
+          {t(tab.label)}
         </Link>
       ))}
     </nav>
@@ -107,8 +113,9 @@ export function TabBar({ active, apptHref }: { active: PatientTab; apptHref?: st
 
 /** Patient / States · loading: a shimmer title and three placeholder rows. */
 export function SkeletonCard() {
+  const { t } = useT();
   return (
-    <div aria-busy="true" aria-label="Loading" className={styles.skelCard}>
+    <div aria-busy="true" aria-label={t("patient.loading")} className={styles.skelCard}>
       <span className={`${styles.skelTitle} ward-skeleton`} />
       {[1, 2, 3].map((k) => (
         <div key={k} className={styles.skelRow}>
@@ -123,11 +130,12 @@ export function SkeletonCard() {
 
 /** Patient / States · offline. */
 export function OfflineBanner({ since }: { since: string }) {
+  const { t } = useT();
   return (
     <div role="status" className={styles.offline}>
       <span className={styles.offlineRing} />
       <span>
-        <b>You’re offline.</b> Showing your schedule from {since}. Your bedside unit still reminds you.
+        <b>{t("patient.offlineTitle")}</b> {t("patient.offlineBody", { since })}
       </span>
     </div>
   );

@@ -4,6 +4,8 @@
 // The patient sees plain words only: no NEWS2, no AI urgency, no jargon.
 import { useCallback, useEffect, useState } from "react";
 import { getMe } from "@/lib/api";
+import { DEFAULT_LANG, localeOf, type Lang } from "@/i18n/config";
+import type { Key, TFn } from "@/i18n/messages";
 import { useDemoFlags } from "@/lib/demo";
 import { now, tunisTime, USE_MOCKS } from "@/lib/time";
 import type { Dose } from "@/lib/types";
@@ -82,18 +84,25 @@ export function offlineSince(loadedAt: Date | null): string {
 // ── Dates in plain words (Africa/Tunis) ─────────────────────────────────────
 
 const TZ = "Africa/Tunis";
-const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("en-GB", { timeZone: TZ, ...o });
-const weekdayF = fmt({ weekday: "long" });
-const dayF = fmt({ day: "numeric" });
-const monShortF = fmt({ month: "short" });
-const monLongF = fmt({ month: "long" });
+const fmtBy = new Map<string, Intl.DateTimeFormat>();
+function fmt(lang: Lang, o: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const k = `${lang}|${JSON.stringify(o)}`;
+  let f = fmtBy.get(k);
+  if (!f) {
+    f = new Intl.DateTimeFormat(localeOf(lang), { timeZone: TZ, ...o });
+    fmtBy.set(k, f);
+  }
+  return f;
+}
 
 /** "Monday" */
-export const weekday = (iso: string) => weekdayF.format(new Date(iso));
+export const weekday = (iso: string, lang: Lang = DEFAULT_LANG) => fmt(lang, { weekday: "long" }).format(new Date(iso));
 /** "Monday 5 Oct" */
-export const longDay = (iso: string) => `${weekday(iso)} ${dayF.format(new Date(iso))} ${monShortF.format(new Date(iso))}`;
+export const longDay = (iso: string, lang: Lang = DEFAULT_LANG) =>
+  `${weekday(iso, lang)} ${fmt(lang, { day: "numeric" }).format(new Date(iso))} ${fmt(lang, { month: "short" }).format(new Date(iso))}`;
 /** "12 October" */
-export const dayMonthLong = (iso: string) => `${dayF.format(new Date(iso))} ${monLongF.format(new Date(iso))}`;
+export const dayMonthLong = (iso: string, lang: Lang = DEFAULT_LANG) =>
+  `${fmt(lang, { day: "numeric" }).format(new Date(iso))} ${fmt(lang, { month: "long" }).format(new Date(iso))}`;
 
 /** Whole days between two instants' Tunis dates (b − a). */
 export function daysBetween(a: string, b: string): number {
@@ -108,11 +117,11 @@ export { greeting } from "@/lib/time";
  * "Bed C-12 · Ward C". Mock mode: the design's ward letter (the bed prefix).
  * Real mode: the patient's `ward` from the record ("Bed C-12 · Cardiology"), never a derived letter.
  */
-export function bedLine(bed: string | null, ward?: string | null): string | null {
-  if (!USE_MOCKS) return [bed ? `Bed ${bed}` : null, ward ?? null].filter(Boolean).join(" · ") || null;
+export function bedLine(bed: string | null, ward: string | null | undefined, t: TFn): string | null {
+  if (!USE_MOCKS) return [bed ? t("patient.bed", { bed }) : null, ward ?? null].filter(Boolean).join(" · ") || null;
   if (!bed) return null;
   const letter = bed.split("-")[0];
-  return `Bed ${bed} · Ward ${letter}`;
+  return t("patient.bedWard", { bed, ward: letter });
 }
 
 /** "Amoxicillin 1g" → "Amoxicillin" (the design's missed-dose line drops the strength). */
@@ -126,11 +135,11 @@ export function medState(d: Dose): MedState {
   return d.status === "taken" ? "taken" : d.status === "missed" ? "missed" : "upcoming";
 }
 
-export const MED_LABEL: Record<MedState, string> = { taken: "✓ Taken", upcoming: "Upcoming", missed: "Missed" };
+export const MED_LABEL: Record<MedState, Key> = { taken: "patient.medTaken", upcoming: "patient.medUpcoming", missed: "patient.medMissed" };
 
 /** "Given by your nurse" for by-hand doses (no slot or a nurse gave it), else the bedside box. */
-export function medSource(d: Dose): string {
-  return d.given_by || d.slot == null ? "Given by your nurse" : "From your bedside box";
+export function medSource(d: Dose, t: TFn): string {
+  return t(d.given_by || d.slot == null ? "patient.medByNurse" : "patient.medFromBox");
 }
 
 /** Usual ranges (the NEWS2 zero-score bands), shown only as "Normal" / "Needs attention". */
@@ -143,4 +152,4 @@ export function vitalWord(kind: "hr" | "spo2" | "temp", v: number): "Normal" | "
  * "Call nurse" fallback. Nothing in the prototype pages staff (no web endpoint; the bedside unit
  * has no button, buzzer or sensors), so the hint must not claim anyone was told.
  */
-export const CALL_NURSE_HINT = "Ask any member of staff, or tell your nurse at the next round.";
+export const CALL_NURSE_HINT: Key = "patient.callNurseHint";

@@ -1,4 +1,7 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { useT } from "@/i18n/I18nProvider";
 import styles from "./LiveBanner.module.css";
 
 export interface LiveBannerProps {
@@ -12,12 +15,13 @@ export interface LiveBannerProps {
 }
 
 /** The amber "reconnecting" banner (role="status") with the blinking ring. */
-export function LiveBanner({ title = "Live data paused — reconnecting…", children, compact, className }: LiveBannerProps) {
+export function LiveBanner({ title, children, compact, className }: LiveBannerProps) {
+  const { t } = useT();
   return (
     <div role="status" className={`${styles.root} ${compact ? styles.compact : ""} ${className ?? ""}`}>
       <span className={styles.ring} />
       <span>
-        <b>{title}</b>
+        <b>{title ?? t("common.livePaused")}</b>
         {children ? <> {children}</> : null}
       </span>
     </div>

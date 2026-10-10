@@ -253,7 +253,7 @@
   padding: 10px 12px;
   border-radius: 10px;
   cursor: pointer;
-  text-align: left;
+  text-align: start;
   border: 1.5px solid var(--line);
   background: var(--paper);
   color: var(--ink);

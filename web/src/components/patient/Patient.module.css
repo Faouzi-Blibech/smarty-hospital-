@@ -77,7 +77,8 @@
   flex: none;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px 8px;
+  flex-wrap: wrap;
   padding: 6px 22px 10px;
 }
 
@@ -1056,8 +1057,8 @@
 
 /* Toast inside the phone frame */
 .phone .phoneToast {
-  left: 16px;
-  right: 16px;
+  inset-inline-start: 16px;
+  inset-inline-end: 16px;
   bottom: 96px;
   max-width: none;
 }

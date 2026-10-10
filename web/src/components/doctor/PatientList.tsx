@@ -3,6 +3,7 @@
 // Doctor / My patients (/doctor): the doctor's patients, highest NEWS2 first.
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useT } from "@/i18n/I18nProvider";
 import { LiveBanner } from "@/components/LiveBanner";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { News2Badge } from "@/components/News2Badge";
@@ -17,6 +18,7 @@ const SKELETON_WIDTHS = ["62%", "48%", "70%", "55%", "40%"];
 const needsAttention = (p: PatientSummary) => (p.latest_news2 ?? 0) >= 5;
 
 export function PatientList() {
+  const { t, lang } = useT();
   const flags = useDemoFlags();
   const [patients, setPatients] = useState<PatientSummary[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -54,40 +56,39 @@ export function PatientList() {
     <div className={styles.page}>
       {!flags.live ? (
         <LiveBanner>
-          Showing values from {pausedAt()}. NEWS2 and alerts will refresh when the connection returns.
+          {t("doctor.listPausedBanner", { time: pausedAt() })}
         </LiveBanner>
       ) : null}
       <div className={styles.head}>
         <div className={styles.titles}>
-          <h2 className={styles.h2}>My patients</h2>
+          <h2 className={styles.h2}>{t("doctor.myPatients")}</h2>
           <span className={styles.sub}>
-            {USE_MOCKS ? (
-              <>
-                {ward} · Ward {wardLetter} · {state === "loading" ? "" : `${list.length} patients · `}highest NEWS2 first
-              </>
-            ) : (
-              [realWard, state === "loading" ? null : `${list.length} patients`, "highest NEWS2 first"].filter(Boolean).join(" · ")
-            )}
+            {(USE_MOCKS
+              ? [ward, t("doctor.wardLabel", { letter: wardLetter }), state === "loading" ? null : t("doctor.patientsCount", { n: list.length }), t("doctor.highestFirst")]
+              : [realWard, state === "loading" ? null : t("doctor.patientsCount", { n: list.length }), t("doctor.highestFirst")]
+            )
+              .filter(Boolean)
+              .join(" · ")}
           </span>
         </div>
         <label className={styles.search}>
           <span className={styles.searchIcon} aria-hidden="true" />
           <input
-            aria-label="Search patients by name or bed"
-            placeholder="Search name or bed"
+            aria-label={t("doctor.searchLabel")}
+            placeholder={t("doctor.searchPlaceholder")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className={styles.searchInput}
           />
         </label>
-        <div className={styles.segment} role="group" aria-label="Filter patients">
+        <div className={styles.segment} role="group" aria-label={t("doctor.filterLabel")}>
           <button
             type="button"
             aria-pressed={filter === "all"}
             onClick={() => setFilter("all")}
             className={`${styles.segBtn} ${filter === "all" ? styles.segOn : ""}`}
           >
-            All · {list.length}
+            {t("doctor.filterAll", { n: list.length })}
           </button>
           <button
             type="button"
@@ -95,7 +96,7 @@ export function PatientList() {
             onClick={() => setFilter("attention")}
             className={`${styles.segBtn} ${filter === "attention" ? styles.segOn : ""}`}
           >
-            Needs attention · {attention}
+            {t("doctor.filterAttention", { n: attention })}
           </button>
         </div>
       </div>
@@ -119,25 +120,25 @@ export function PatientList() {
           <span className={styles.emptyIcon}>
             <span />
           </span>
-          <span className={styles.emptyTitle}>No patients assigned yet</span>
+          <span className={styles.emptyTitle}>{t("doctor.emptyTitle")}</span>
           <span className={styles.emptyText}>
-            When a patient is admitted under your name, they appear here with their latest vitals.
+            {t("doctor.emptyText")}
           </span>
           <Link href="/doctor/requests" className={`${styles.primary} ${styles.emptyBtn}`}>
-            Review appointment requests
+            {t("doctor.emptyBtn")}
           </Link>
         </div>
       ) : state === "error" ? (
-        <ErrorCard title="Couldn’t load your patients." onRetry={load} />
+        <ErrorCard title={t("doctor.loadPatientsError")} onRetry={load} />
       ) : (
         <div className={styles.table}>
           <div className={`${styles.grid} ${styles.th}`}>
-            <span>Patient</span>
-            <span>Bed</span>
+            <span>{t("doctor.colPatient")}</span>
+            <span>{t("doctor.colBed")}</span>
             <span className={styles.sorted}>NEWS2 ↓</span>
-            <span>Open alerts</span>
-            <span>Last vitals</span>
-            <span>Bedside unit</span>
+            <span>{t("doctor.colOpenAlerts")}</span>
+            <span>{t("doctor.colLastVitals")}</span>
+            <span>{t("doctor.colUnit")}</span>
             <span />
           </div>
           {shown.map((p) => {
@@ -157,10 +158,10 @@ export function PatientList() {
                 <span className={styles.bed}>{p.bed ?? "—"}</span>
                 <News2Badge score={p.latest_news2 ?? 0} />
                 <span className={styles.alerts} style={{ color: p.open_alerts ? "var(--danger)" : "var(--muted)" }}>
-                  {p.open_alerts ? `${p.open_alerts} open` : "None"}
+                  {p.open_alerts ? t("doctor.alertsOpen", { n: p.open_alerts }) : t("doctor.alertsNone")}
                 </span>
                 <span className={styles.last}>
-                  {!flags.live ? "paused" : p.last_vital_at ? ago(p.last_vital_at) : "—"}
+                  {!flags.live ? t("doctor.paused") : p.last_vital_at ? ago(p.last_vital_at, undefined, lang) : "—"}
                 </span>
                 <span className={styles.unit}>
                   {p.device_id ? (
@@ -172,20 +173,20 @@ export function PatientList() {
                           borderColor: online ? "var(--teal)" : "var(--faint)",
                         }}
                       />
-                      <span className={styles.mono}>{p.device_id}</span>· {online ? "online" : "offline"}
+                      <span className={styles.mono}>{p.device_id}</span>· {online ? t("doctor.online") : t("doctor.offline")}
                     </>
                   ) : (
-                    "No unit"
+                    t("doctor.noUnit")
                   )}
                 </span>
-                <span className={styles.chev}>›</span>
+                <span className={`${styles.chev} flip`}>›</span>
               </Link>
             );
           })}
-          {shown.length === 0 ? <div className={styles.noMatch}>No patient matches this search.</div> : null}
+          {shown.length === 0 ? <div className={styles.noMatch}>{t("doctor.noMatch")}</div> : null}
         </div>
       )}
-      <span className={styles.foot}>NEWS2 colours always come with the score and a word. Values are simulated for this prototype.</span>
+      <span className={styles.foot}>{t("doctor.listFoot")}</span>
     </div>
   );
 }

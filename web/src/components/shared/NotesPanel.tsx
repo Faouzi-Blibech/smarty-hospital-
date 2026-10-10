@@ -3,6 +3,8 @@
 // Notes card: a draft box with "Add note" and the notes list (newest first).
 // Shared by the doctor patient detail and the nurse views.
 import { useState } from "react";
+import { useT } from "@/i18n/I18nProvider";
+import type { Key } from "@/i18n/messages";
 import { dayLabel, tunisTime } from "@/lib/time";
 import type { Note, Role } from "@/lib/types";
 import styles from "./NotesPanel.module.css";
@@ -14,7 +16,12 @@ const ROLE_CHIP: Partial<Record<Role, [string, string]>> = {
   admin: ["var(--chip)", "var(--text)"],
 };
 
-const ROLE_WORD: Record<Role, string> = { nurse: "Nurse", doctor: "Doctor", admin: "Admin", patient: "Patient" };
+const ROLE_WORD: Record<Role, Key> = {
+  nurse: "shared.roleNurse",
+  doctor: "shared.roleDoctor",
+  admin: "shared.roleAdmin",
+  patient: "shared.rolePatient",
+};
 
 export interface NotesPanelProps {
   /** Newest first. */
@@ -39,15 +46,16 @@ export interface NotesPanelProps {
 export function NotesPanel({
   notes,
   onAdd,
-  title = "Notes",
-  placeholder = "Add a note for the care team…",
-  hint = "Visible to doctors and nurses",
+  title,
+  placeholder,
+  hint,
   now,
   rows = 2,
   variant = "doctor",
   timeLabel,
   className,
 }: NotesPanelProps) {
+  const { t, lang } = useT();
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -67,26 +75,26 @@ export function NotesPanel({
 
   return (
     <section className={`${styles.card} ${className ?? ""}`}>
-      <h3 className={styles.title}>{title}</h3>
+      <h3 className={styles.title}>{title ?? t("shared.notesTitle")}</h3>
       <div className={`${styles.compose} ${variant === "nurse" ? styles.composeNurse : ""}`}>
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           rows={rows}
-          placeholder={placeholder}
+          placeholder={placeholder ?? t("shared.notesPlaceholder")}
           dir="auto"
-          aria-label="New note"
+          aria-label={t("shared.notesNewAria")}
           className={styles.textarea}
         />
         <div className={styles.composeBar}>
-          {hint !== null ? <span className={styles.hint}>{hint}</span> : null}
+          {hint !== null ? <span className={styles.hint}>{hint ?? t("shared.notesHint")}</span> : null}
           <button
             type="button"
             onClick={add}
             disabled={busy}
             className={`${styles.add} ${variant === "nurse" ? styles.addNurse : ""}`}
           >
-            Add note
+            {t("shared.notesAdd")}
           </button>
         </div>
       </div>
@@ -97,10 +105,10 @@ export function NotesPanel({
             <div className={styles.meta}>
               <span className={styles.who}>{n.author_name ?? n.author_id}</span>
               <span className={styles.role} style={{ background: bg, color: fg }}>
-                {ROLE_WORD[n.author_role]}
+                {t(ROLE_WORD[n.author_role])}
               </span>
               <span className={styles.when}>
-                {timeLabel ? timeLabel(n.created_at) : `${dayLabel(n.created_at, now)} ${tunisTime(n.created_at)}`}
+                {timeLabel ? timeLabel(n.created_at) : `${dayLabel(n.created_at, now, lang)} ${tunisTime(n.created_at)}`}
               </span>
             </div>
             <p dir="auto" className={styles.text}>

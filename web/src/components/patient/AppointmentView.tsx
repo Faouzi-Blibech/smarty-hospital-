@@ -7,15 +7,14 @@ import Link from "next/link";
 import { useState } from "react";
 import { getMyAppointments, replyAppointment } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
+import { useT } from "@/i18n/I18nProvider";
+import type { TFn } from "@/i18n/messages";
 import { tunisTime, USE_MOCKS } from "@/lib/time";
 import type { Appointment } from "@/lib/types";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { dayMonthLong, longDay, myPatientId, offlineSince, useLoad, useOffline, weekday } from "./patient";
 import { OfflineBanner, PatientScreen, SkeletonCard } from "./PatientScreen";
 import styles from "./Patient.module.css";
-
-/** The hospital is not in the record yet; the design's text. */
-const HOSPITAL = "Hôpital Régional · Outpatients";
 
 type View = "open" | "confirmed" | "yes" | "no";
 
@@ -32,7 +31,8 @@ function initialView(a: Appointment): View {
 }
 
 /** A one-event .ics file for "Add to my calendar" (built in the browser, no network). */
-function downloadIcs(a: Appointment) {
+function downloadIcs(a: Appointment, t: TFn) {
+  const hospital = t("patient.hospital");
   if (!a.slot_at) return;
   const stamp = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
   const start = new Date(a.slot_at);
@@ -46,8 +46,8 @@ function downloadIcs(a: Appointment) {
     `DTSTAMP:${stamp(new Date())}`,
     `DTSTART:${stamp(start)}`,
     `DTEND:${stamp(end)}`,
-    `SUMMARY:${[a.doctor_name, a.specialty].filter(Boolean).join(" · ") || "Appointment"}`,
-    `LOCATION:${HOSPITAL}${a.room ? `, ${a.room.split(", ").pop()}` : ""}`,
+    `SUMMARY:${[a.doctor_name, a.specialty].filter(Boolean).join(" · ") || t("patient.icsFallback")}`,
+    `LOCATION:${hospital}${a.room ? `, ${a.room.split(", ").pop()}` : ""}`,
     "END:VEVENT",
     "END:VCALENDAR",
   ].join("\r\n");
@@ -60,6 +60,9 @@ function downloadIcs(a: Appointment) {
 }
 
 export function AppointmentView({ id }: { id: string }) {
+  const { t, lang } = useT();
+  // The hospital is not in the record yet; the design's text.
+  const hospital = t("patient.hospital");
   const flags = useDemoFlags();
   const offline = useOffline();
   const res = useLoad(() => loadAppointment(id), id);
@@ -86,7 +89,7 @@ export function AppointmentView({ id }: { id: string }) {
   }
 
   if (a && current === "confirmed") {
-    const dayBefore = a.slot_at ? weekday(new Date(Date.parse(a.slot_at) - 86_400_000).toISOString()) : null;
+    const dayBefore = a.slot_at ? weekday(new Date(Date.parse(a.slot_at) - 86_400_000).toISOString(), lang) : null;
     return (
       <PatientScreen icons={false} brand={false}>
         <div role="status" className={styles.result}>
@@ -94,17 +97,19 @@ export function AppointmentView({ id }: { id: string }) {
             ✓
           </span>
           <h1 className={styles.resultTitle}>
-            {a.slot_at ? `Thanks, see you on ${longDay(a.slot_at)} at ${tunisTime(a.slot_at)}.` : "Thanks, see you soon."}
+            {a.slot_at
+              ? t("patient.thanksSee", { day: longDay(a.slot_at, lang), time: tunisTime(a.slot_at) })
+              : t("patient.thanksSoon")}
           </h1>
           <span className={styles.resultText}>
-            We’ll send one more reminder{dayBefore ? ` on ${dayBefore}` : ""} by Telegram and email.
+            {dayBefore ? t("patient.reminderOn", { day: dayBefore }) : t("patient.reminder")}
           </span>
           <span className={styles.flex} />
-          <button type="button" className={`${styles.primaryBtn} ${styles.fullWidth}`} onClick={() => downloadIcs(a)}>
-            Add to my calendar
+          <button type="button" className={`${styles.primaryBtn} ${styles.fullWidth}`} onClick={() => downloadIcs(a, t)}>
+            {t("patient.addCalendar")}
           </button>
           <Link href="/patient" className={`${styles.secondaryBtn} ${styles.fullWidth}`}>
-            Back to home
+            {t("patient.backHome")}
           </Link>
         </div>
       </PatientScreen>
@@ -118,12 +123,13 @@ export function AppointmentView({ id }: { id: string }) {
     <PatientScreen>
       <div className={styles.apptBody}>
         {offline ? <OfflineBanner since={offlineSince(res.loadedAt)} /> : null}
-        <h1 className={styles.h1Small}>Your appointment</h1>
+        <h1 className={styles.h1Small}>{t("patient.apptTitle")}</h1>
         {failed ? (
           <ErrorCard
             variant="patient"
-            title="Something went wrong."
-            message="We couldn’t load your appointment."
+            title={t("patient.errTitle")}
+            message={t("patient.apptLoadErr")}
+            retryLabel={t("patient.tryAgain")}
             onRetry={flags.state === "error" ? undefined : res.retry}
           />
         ) : loading || !a ? (
@@ -134,46 +140,51 @@ export function AppointmentView({ id }: { id: string }) {
               <div className={styles.apptHead}>
                 {a.slot_at ? (
                   <>
-                    <span className={styles.apptWeekday}>{weekday(a.slot_at)}</span>
-                    <span className={styles.apptDate}>{dayMonthLong(a.slot_at)}</span>
+                    <span className={styles.apptWeekday}>{weekday(a.slot_at, lang)}</span>
+                    <span className={styles.apptDate}>{dayMonthLong(a.slot_at, lang)}</span>
                     <span className={styles.apptTime}>{tunisTime(a.slot_at)}</span>
                   </>
                 ) : (
-                  <span className={styles.apptDate}>Date to be confirmed</span>
+                  <span className={styles.apptDate}>{t("patient.dateTbc")}</span>
                 )}
               </div>
               <div className={styles.apptFacts}>
                 <div className={styles.fact}>
-                  <span className={styles.factLabel}>Doctor</span>
-                  <b>{[a.doctor_name, a.specialty].filter(Boolean).join(" · ") || "To be confirmed"}</b>
+                  <span className={styles.factLabel}>{t("patient.factDoctor")}</span>
+                  <b>{[a.doctor_name, a.specialty].filter(Boolean).join(" · ") || t("patient.toBeConfirmed")}</b>
                 </div>
                 <div className={styles.fact}>
-                  <span className={styles.factLabel}>Where</span>
+                  <span className={styles.factLabel}>{t("patient.factWhere")}</span>
                   <span>
-                    {HOSPITAL}
+                    {hospital}
                     {a.room ? `, ${a.room.split(", ").pop()}` : ""}
                   </span>
                 </div>
                 <div className={styles.fact}>
-                  <span className={styles.factLabel}>Bring</span>
-                  <span>Your ID card and medicines list</span>
+                  <span className={styles.factLabel}>{t("patient.factBring")}</span>
+                  <span>{t("patient.bringText")}</span>
                 </div>
               </div>
             </section>
 
             {sendError ? (
-              <ErrorCard variant="patient" title="Something went wrong." message="We couldn’t send your answer. Please try again." />
+              <ErrorCard
+                variant="patient"
+                title={t("patient.errTitle")}
+                message={t("patient.sendErr")}
+                retryLabel={t("patient.tryAgain")}
+              />
             ) : null}
 
             {current === "open" ? (
               <div className={styles.apptActions}>
                 <button type="button" className={styles.primaryBtn} disabled={busy} onClick={() => reply("confirm")}>
-                  Confirm I’m coming
+                  {t("patient.confirmComing")}
                 </button>
                 <button type="button" className={styles.secondaryBtn} disabled={busy} onClick={() => reply("cancel")}>
-                  Cancel
+                  {t("patient.cancel")}
                 </button>
-                <span className={styles.apptNote}>If you cancel, your time goes to someone who is waiting.</span>
+                <span className={styles.apptNote}>{t("patient.cancelNote")}</span>
               </div>
             ) : (
               <div role="status" className={`${styles.apptDone} ${current === "yes" ? styles.apptDone_yes : styles.apptDone_no}`}>
@@ -183,13 +194,13 @@ export function AppointmentView({ id }: { id: string }) {
                 <span className={styles.apptDoneMsg}>
                   {current === "yes"
                     ? a.slot_at
-                      ? `Thanks, see you on ${longDay(a.slot_at)} at ${tunisTime(a.slot_at)}.`
-                      : "Thanks, see you soon."
-                    : "Cancelled. Your slot will go to someone who is waiting. Your request stays on the list."}
+                      ? t("patient.thanksSee", { day: longDay(a.slot_at, lang), time: tunisTime(a.slot_at) })
+                      : t("patient.thanksSoon")
+                    : t("patient.cancelledMsg")}
                 </span>
                 {USE_MOCKS ? (
                   <button type="button" className={styles.linkBtn} onClick={() => setView("open")}>
-                    Undo (demo)
+                    {t("patient.undoDemo")}
                   </button>
                 ) : null}
               </div>

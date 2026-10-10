@@ -2,9 +2,11 @@
 
 // Patient / Home (/patient): greeting, today's medicines, yesterday's missed dose,
 // the next appointment and "Ask a question". Plain words only: no NEWS2.
+import { examLabel, deptLabel } from "@/lib/labels";
 import Link from "next/link";
 import { getDoses, getMyAppointments, getPatient, getPatientExams } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
+import { useT } from "@/i18n/I18nProvider";
 import type { Appointment, ExamOrder } from "@/lib/types";
 import { now, tunisDate, tunisTime } from "@/lib/time";
 import { ErrorCard } from "@/components/shared/ErrorCard";
@@ -45,6 +47,7 @@ async function loadHome() {
 }
 
 export function Home() {
+  const { t, lang } = useT();
   const flags = useDemoFlags();
   const offline = useOffline();
   const res = useLoad(loadHome);
@@ -66,7 +69,7 @@ export function Home() {
   const next = (data?.appts ?? []).find(
     (a) => a.status === "confirmed" && a.slot_at && Date.parse(a.slot_at) >= ref.getTime(),
   );
-  const place = data ? bedLine(data.patient.bed, data.patient.ward) : null;
+  const place = data ? bedLine(data.patient.bed, data.patient.ward, t) : null;
 
   return (
     <PatientScreen nav="home" apptHref={next ? `/patient/appointments/${next.id}` : undefined}>
@@ -74,27 +77,33 @@ export function Home() {
         {offline ? <OfflineBanner since={offlineSince(res.loadedAt)} /> : null}
         <div className={styles.titleBlock}>
           <h1 className={styles.h1}>
-            {greeting(ref)}
-            {data ? <span dir="auto">, {data.patient.first_name}</span> : null}
+            {greeting(ref, lang)}
+            {data ? (
+              <>
+                {t("patient.nameSep")}
+                <span dir="auto">{data.patient.first_name}</span>
+              </>
+            ) : null}
           </h1>
-          <span className={styles.subline}>{[place, longDay(todayIso)].filter(Boolean).join(" · ")}</span>
+          <span className={styles.subline}>{[place, longDay(todayIso, lang)].filter(Boolean).join(" · ")}</span>
         </div>
 
         {failed ? (
           <ErrorCard
             variant="patient"
-            title="Something went wrong."
-            message="We couldn’t load your medicines."
+            title={t("patient.errTitle")}
+            message={t("patient.homeLoadErr")}
+            retryLabel={t("patient.tryAgain")}
             onRetry={flags.state === "error" ? undefined : res.retry}
           />
         ) : loading ? (
           <SkeletonCard />
         ) : meds.length === 0 ? (
-          <EmptyCard title="No medicines today">Your doctor hasn’t added any. Ask your nurse if that seems wrong.</EmptyCard>
+          <EmptyCard title={t("patient.noMedsTitle")}>{t("patient.noMedsText")}</EmptyCard>
         ) : (
           <section className={`${styles.card} ${styles.medsCard}`} aria-labelledby="meds-title">
             <h2 id="meds-title" className={styles.cardTitle}>
-              Today’s medicines
+              {t("patient.todaysMeds")}
             </h2>
             {meds.map((d) => {
               const st = medState(d);
@@ -103,9 +112,9 @@ export function Home() {
                   <span className={styles.medTime}>{d.time_of_day}</span>
                   <span className={styles.medText}>
                     <span className={styles.medName}>{d.meds.join(" + ")}</span>
-                    <span className={styles.medSub}>{medSource(d)}</span>
+                    <span className={styles.medSub}>{medSource(d, t)}</span>
                   </span>
-                  <span className={`${styles.medPill} ${styles[`med_${st}`]}`}>{MED_LABEL[st]}</span>
+                  <span className={`${styles.medPill} ${styles[`med_${st}`]}`}>{t(MED_LABEL[st])}</span>
                 </div>
               );
             })}
@@ -113,20 +122,20 @@ export function Home() {
         )}
 
         {!failed && !loading && (data?.exams ?? []).length > 0 ? (
-          <section className={`${styles.card} ${styles.medsCard}`} aria-label="Before your visit">
-            <h2 className={styles.cardTitle}>Before your visit</h2>
+          <section className={`${styles.card} ${styles.medsCard}`} aria-label={t("patient.beforeVisit")}>
+            <h2 className={styles.cardTitle}>{t("patient.beforeVisit")}</h2>
             {(data?.exams ?? []).map((e) => (
               <div key={e.id} className={styles.medRow}>
                 <span className={styles.medText}>
-                  <span className={styles.medName}>{e.label}</span>
-                  <span className={styles.medSub}>{e.department}</span>
+                  <span className={styles.medName}>{examLabel(e, t)}</span>
+                  <span className={styles.medSub}>{deptLabel(e.department, t)}</span>
                 </span>
                 <span className={`${styles.medPill} ${e.status === "done" ? styles.med_taken : styles.med_upcoming}`}>
-                  {e.status === "done" ? "Done" : "To do"}
+                  {t(e.status === "done" ? "patient.examDone" : "patient.examTodo")}
                 </span>
               </div>
             ))}
-            <p className={styles.examNote}>Do these before your appointment so the doctor can decide in one visit.</p>
+            <p className={styles.examNote}>{t("patient.examNote")}</p>
           </section>
         ) : null}
 
@@ -134,26 +143,30 @@ export function Home() {
           <div className={styles.missed}>
             <span className={styles.missedDot} />
             <span>
-              <b>Missed yesterday:</b>{" "}
-              {missedYesterday.map((d) => `${d.meds.map(drugWord).join(" + ")} at ${tunisTime(d.scheduled_at)}`).join(", ")}.
-              Your nurse knows — no need to take extra.
+              <b>{t("patient.missedYesterday")}</b>{" "}
+              {missedYesterday
+                .map((d) => t("patient.missedItem", { drugs: d.meds.map(drugWord).join(" + "), time: tunisTime(d.scheduled_at) }))
+                .join(t("patient.listSep"))}
+              . {t("patient.missedAfter")}
             </span>
           </div>
         ) : null}
 
         {!failed && !loading && next?.slot_at ? (
           <Link href={`/patient/appointments/${next.id}`} className={styles.nextAppt}>
-            <span className={styles.nextEyebrow}>Next appointment</span>
+            <span className={styles.nextEyebrow}>{t("patient.nextAppt")}</span>
             <span className={styles.nextWhen}>
-              {longDay(next.slot_at)} · {tunisTime(next.slot_at)}
+              {longDay(next.slot_at, lang)} · {tunisTime(next.slot_at)}
             </span>
             <span className={styles.nextWho}>{[next.doctor_name, next.room].filter(Boolean).join(" · ")}</span>
-            {next.patient_confirmed_at ? null : <span className={styles.nextCta}>Please confirm ›</span>}
+            {next.patient_confirmed_at ? null : <span className={styles.nextCta}>
+                {t("patient.pleaseConfirm")} <span className="flip">›</span>
+              </span>}
           </Link>
         ) : null}
 
         <Link href="/patient/assistant" className={`${styles.outlineBtn} ${styles.ask}`}>
-          Ask a question
+          {t("patient.askQuestion")}
         </Link>
       </div>
     </PatientScreen>

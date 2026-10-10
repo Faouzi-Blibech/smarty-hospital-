@@ -5,6 +5,7 @@
 // `?why=[id]` opens a row's "Why?" popover; `?state=empty|error` shows the States cards.
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { useT } from "@/i18n/I18nProvider";
 import { Toast, useToast } from "@/components/Toast";
 import { Waitlist } from "@/components/Waitlist";
 import { ErrorCard } from "@/components/shared/ErrorCard";
@@ -44,6 +45,7 @@ function toCsv(rows: Appointment[]): string {
 }
 
 export function WaitlistView() {
+  const { t } = useT();
   const flags = useDemoFlags();
   const params = useSearchParams();
   const confirmId = params.get("confirm") ?? undefined;
@@ -63,38 +65,36 @@ export function WaitlistView() {
         a.click();
         URL.revokeObjectURL(url);
       })
-      .catch(() => showToast({ text: "Couldn’t export the waitlist. Try again.", tone: "warn" }))
+      .catch(() => showToast({ text: t("admin.wlExportFail"), tone: "warn" }))
       .finally(() => setExporting(false));
   };
 
   return (
     <div className={page.page}>
       {confirmId ? (
-        <h2 className={page.h2}>Waitlist</h2>
+        <h2 className={page.h2}>{t("admin.waitlist")}</h2>
       ) : (
         <div className={page.head}>
           <div className={page.titles}>
-            <h2 className={page.h2}>Waitlist</h2>
-            <span className={page.sub}>
-              AI ranks by urgency as a suggestion · people confirm · cancelled slots go to the next person automatically
-            </span>
+            <h2 className={page.h2}>{t("admin.waitlist")}</h2>
+            <span className={page.sub}>{t("admin.wlSubtitle")}</span>
           </div>
           <button type="button" className={page.btn} onClick={exportCsv} disabled={exporting} aria-busy={exporting}>
-            Export CSV
+            {t("admin.wlExport")}
           </button>
         </div>
       )}
 
       {flags.state === "empty" ? (
         <div className={styles.empty}>
-          <span className={styles.emptyTitle}>No one is waiting</span>
-          <span className={styles.emptyText}>New requests from referrals and the patient app appear here, ranked.</span>
+          <span className={styles.emptyTitle}>{t("admin.wlNobody")}</span>
+          <span className={styles.emptyText}>{t("admin.wlNobodyText")}</span>
           <button type="button" className={page.btn}>
-            Add a request by hand
+            {t("admin.wlAddByHand")}
           </button>
         </div>
       ) : flags.state === "error" ? (
-        <ErrorCard title="Couldn’t load the waitlist." onRetry={() => setRetryKey((k) => k + 1)} />
+        <ErrorCard title={t("admin.wlLoadErrorCard")} onRetry={() => setRetryKey((k) => k + 1)} />
       ) : (
         <div className={styles.waitlist}>
           <Waitlist

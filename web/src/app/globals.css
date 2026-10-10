@@ -2,8 +2,8 @@
    (`claude design output/healthcare-ui-mockups/project/*.dc.html`). */
 :root {
   /* Type */
-  --serif: var(--font-fraunces), "Fraunces", serif;
-  --sans: var(--font-public-sans), "Public Sans", system-ui, sans-serif;
+  --serif: var(--font-fraunces), "Fraunces", var(--font-noto-arabic), "Noto Sans Arabic", serif;
+  --sans: var(--font-public-sans), "Public Sans", var(--font-noto-arabic), "Noto Sans Arabic", system-ui, sans-serif;
   --mono: ui-monospace, Menlo, monospace;
 
   /* Ink and surfaces */
@@ -194,4 +194,10 @@ textarea {
   background: linear-gradient(90deg, var(--line-soft) 0, var(--canvas) 50%, var(--line-soft) 100%);
   background-size: 800px 100%;
   animation: wardShimmer 1.4s linear infinite;
+}
+
+/* Directional glyphs (chevrons, arrows) point the other way in Arabic. */
+[dir="rtl"] .flip {
+  display: inline-block;
+  transform: scaleX(-1);
 }

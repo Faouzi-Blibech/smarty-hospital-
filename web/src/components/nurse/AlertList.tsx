@@ -2,6 +2,7 @@
 
 // The nurse alerts list (board side panel and /nurse/alerts): open first, newest first,
 // each with "Acknowledge" or "✓ Acknowledged by …". Trend alerts carry the AI chip.
+import { useT } from "@/i18n/I18nProvider";
 import { aiSourceLabel } from "@/lib/labels";
 import { tunisTime } from "@/lib/time";
 import type { Alert } from "@/lib/types";
@@ -18,10 +19,11 @@ export interface AlertCardProps {
 }
 
 export function AlertCard({ alert: a, aiFallback, note, busy, onAck }: AlertCardProps) {
+  const { t } = useT();
   const acked = !!a.acked_by;
   const crit = a.severity === "critical" && a.kind !== "call_nurse";
   const call = a.kind === "call_nurse";
-  const sev = severityPill(a);
+  const sev = severityPill(a, t);
   const trendFallback = a.kind === "trend" && aiFallback && !acked;
   const border = acked
     ? "1px solid var(--line)"
@@ -38,7 +40,7 @@ export function AlertCard({ alert: a, aiFallback, note, busy, onAck }: AlertCard
       style={{ border, background: bg, opacity: acked ? 0.75 : 1, animation: crit && !acked ? "wardPulse 2.4s ease-in-out infinite" : "none" }}
     >
       <div className={styles.head}>
-        <span className={styles.kind}>{KIND_LABEL[a.kind]}</span>
+        <span className={styles.kind}>{t(KIND_LABEL[a.kind])}</span>
         <span className={styles.sev} style={{ background: sev.bg, color: sev.fg }}>
           {sev.word}
         </span>
@@ -46,7 +48,7 @@ export function AlertCard({ alert: a, aiFallback, note, busy, onAck }: AlertCard
         <span className={styles.time}>{tunisTime(a.created_at)}</span>
       </div>
       <div className={styles.where}>
-        <span className={styles.bed}>Bed {a.bed ?? "—"}</span>
+        <span className={styles.bed}>{t("nurse.bed", { bed: a.bed ?? "—" })}</span>
         <span dir="auto" className={styles.who}>
           {a.patient_first_name ?? a.patient_id}
         </span>
@@ -58,9 +60,9 @@ export function AlertCard({ alert: a, aiFallback, note, busy, onAck }: AlertCard
         <span className={styles.ai}>
           <span className={styles.aiChip}>
             <span className={styles.aiDot} style={{ background: aiFallback ? "transparent" : "var(--ai)" }} />
-            AI suggestion · {aiSourceLabel(aiFallback ? "rules" : "model")}
+            {t("nurse.aiSuggestion", { source: aiSourceLabel(aiFallback ? "rules" : "model", t) })}
           </span>
-          <span className={styles.review}>Needs review</span>
+          <span className={styles.review}>{t("nurse.needsReview")}</span>
         </span>
       ) : null}
       {!acked ? (
@@ -72,11 +74,11 @@ export function AlertCard({ alert: a, aiFallback, note, busy, onAck }: AlertCard
           aria-busy={busy || undefined}
           onClick={() => onAck(a.id)}
         >
-          Acknowledge
+          {t("nurse.acknowledge")}
         </button>
       ) : (
         <span className={styles.acked}>
-          ✓ Acknowledged by {a.acked_by_name ?? a.acked_by}
+          {t("nurse.ackedBy", { name: a.acked_by_name ?? a.acked_by ?? "" })}
           {a.acked_at ? ` · ${tunisTime(a.acked_at)}` : ""}
           {note ? ` ${note}` : ""}
         </span>
@@ -87,11 +89,12 @@ export function AlertCard({ alert: a, aiFallback, note, busy, onAck }: AlertCard
 
 /** Nurse / States · "Alerts · Empty". */
 export function AlertsEmpty() {
+  const { t } = useT();
   return (
     <div className={styles.empty}>
       <span className={styles.emptyIcon}>✓</span>
-      <span className={styles.emptyTitle}>No open alerts</span>
-      <span className={styles.emptyText}>New alerts appear here.</span>
+      <span className={styles.emptyTitle}>{t("nurse.noOpenAlerts")}</span>
+      <span className={styles.emptyText}>{t("nurse.newAlertsHere")}</span>
     </div>
   );
 }

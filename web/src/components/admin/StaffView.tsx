@@ -6,38 +6,42 @@
 // mode it says invites aren't available instead of claiming one was sent.
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useT } from "@/i18n/I18nProvider";
+import type { Key, TFn } from "@/i18n/messages";
+import type { Lang } from "@/i18n/config";
 import { Toast, useToast } from "@/components/Toast";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { getStaff } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
-import { dayLabel, tunisTime, USE_MOCKS } from "@/lib/time";
+import { dayLabel, now, tunisTime, USE_MOCKS } from "@/lib/time";
 import type { StaffMember } from "@/lib/types";
 import page from "./AdminPage.module.css";
 import styles from "./StaffView.module.css";
 
 type StaffRole = StaffMember["role"];
 
-const ROLE_LABEL: Record<StaffRole, string> = { doctor: "Doctor", nurse: "Nurse", admin: "Admin" };
+const ROLE_LABEL: Record<StaffRole, Key> = { doctor: "admin.roleDoctor", nurse: "admin.roleNurse", admin: "admin.roleAdmin" };
 const ROLE_COLORS: Record<StaffRole, [string, string]> = {
   doctor: ["var(--doctor-bg)", "var(--doctor-fg)"],
   nurse: ["var(--ai-bg)", "var(--news-normal-fg)"],
   admin: ["var(--segment)", "var(--text)"],
 };
-const WARDS = [
-  { value: "Cardiology · Ward C", ward: "Cardiology" },
-  { value: "Pediatrics", ward: "Pediatrics" },
-  { value: "Pulmonology", ward: "Pulmonology" },
-  { value: "Administration", ward: null },
+const WARDS: { value: string; ward: string | null; label: Key }[] = [
+  { value: "Cardiology · Ward C", ward: "Cardiology", label: "admin.wardCardiology" },
+  { value: "Pediatrics", ward: "Pediatrics", label: "admin.wardPediatrics" },
+  { value: "Pulmonology", ward: "Pulmonology", label: "admin.wardPulmonology" },
+  { value: "Administration", ward: null, label: "admin.wardAdministration" },
 ];
-const ROLE_HELP: Partial<Record<StaffRole, string>> = {
-  nurse: "Nurses see live vitals, alerts, doses and notes for their ward. They can’t edit prescriptions.",
+const ROLE_HELP: Partial<Record<StaffRole, Key>> = {
+  nurse: "admin.roleHelpNurse",
 };
 const DESIGN_DRAFT = { name: "Nour Hammami", email: "n.hammami@hr-ward.tn", role: "nurse" as StaffRole, scope: WARDS[0].value };
 const EMPTY_DRAFT = { name: "", email: "", role: "nurse" as StaffRole, scope: WARDS[0].value };
 
-const lastLogin = (iso: string | null) => (iso ? `${dayLabel(iso)} ${tunisTime(iso)}` : "Invited");
+const lastLogin = (iso: string | null, t: TFn, lang: Lang) => (iso ? `${dayLabel(iso, now(), lang)} ${tunisTime(iso)}` : t("admin.staffInvited"));
 
 export function StaffView() {
+  const { t, lang } = useT();
   const flags = useDemoFlags();
   const params = useSearchParams();
   const startOpen = params.get("add") === "1";
@@ -88,7 +92,7 @@ export function StaffView() {
       return;
     }
     if (!USE_MOCKS) {
-      showToast("Invites aren’t available yet.");
+      showToast(t("admin.staffNoInvites"));
       return;
     }
     const ward = WARDS.find((w) => w.value === draft.scope)?.ward ?? null;
@@ -99,7 +103,7 @@ export function StaffView() {
     setDraft(EMPTY_DRAFT);
     setInvalid(false);
     setOpen(false);
-    showToast(`Invite sent to ${email}.`);
+    showToast(t("admin.staffInviteSent", { email }));
   };
 
   const help = ROLE_HELP[draft.role];
@@ -109,8 +113,8 @@ export function StaffView() {
       <div className={`${page.page} ${styles.main}`}>
         <div className={page.head}>
           <div className={page.titles}>
-            <h2 className={page.h2}>Staff</h2>
-            <span className={page.sub}>Each role only sees what it needs</span>
+            <h2 className={page.h2}>{t("admin.staff")}</h2>
+            <span className={page.sub}>{t("admin.staffSub")}</span>
           </div>
           <button
             ref={addBtnRef}
@@ -120,19 +124,19 @@ export function StaffView() {
             aria-expanded={open}
             aria-controls="add-staff"
           >
-            Add staff
+            {t("admin.staffAdd")}
           </button>
         </div>
 
         {state === "error" ? (
-          <ErrorCard title="Couldn’t load staff accounts." onRetry={load} />
+          <ErrorCard title={t("admin.staffLoadError")} onRetry={load} />
         ) : (
           <div className={`${styles.table} ${page.scrollX}`}>
             <div className={`${styles.grid} ${page.th}`}>
-              <span>Name</span>
-              <span>Role</span>
-              <span>Ward / service</span>
-              <span>Last login</span>
+              <span>{t("admin.staffColName")}</span>
+              <span>{t("admin.staffColRole")}</span>
+              <span>{t("admin.staffColWard")}</span>
+              <span>{t("admin.staffColLogin")}</span>
             </div>
             {state === "loading"
               ? [1, 2, 3, 4, 5, 6].map((k) => (
@@ -152,10 +156,10 @@ export function StaffView() {
                       <span className={styles.email}>{s.email}</span>
                     </span>
                     <span className={styles.role} style={{ background: ROLE_COLORS[s.role][0], color: ROLE_COLORS[s.role][1] }}>
-                      {ROLE_LABEL[s.role]}
+                      {t(ROLE_LABEL[s.role])}
                     </span>
                     <span className={styles.cell}>{s.scope}</span>
-                    <span className={styles.cell}>{lastLogin(s.last_login_at)}</span>
+                    <span className={styles.cell}>{lastLogin(s.last_login_at, t, lang)}</span>
                   </div>
                 ))}
           </div>
@@ -166,14 +170,14 @@ export function StaffView() {
         <aside id="add-staff" aria-labelledby="add-staff-title" className={styles.panel}>
           <div className={styles.panelHead}>
             <span id="add-staff-title" className={styles.panelTitle}>
-              Add staff
+              {t("admin.staffAdd")}
             </span>
-            <button type="button" aria-label="Close" className={styles.close} onClick={close}>
+            <button type="button" aria-label={t("admin.staffClose")} className={styles.close} onClick={close}>
               ×
             </button>
           </div>
           <label className={page.field}>
-            <span className={page.fieldLabel}>Full name</span>
+            <span className={page.fieldLabel}>{t("admin.staffFullName")}</span>
             <input
               ref={nameRef}
               className={page.input}
@@ -184,7 +188,7 @@ export function StaffView() {
             />
           </label>
           <label className={page.field}>
-            <span className={page.fieldLabel}>Work email</span>
+            <span className={page.fieldLabel}>{t("admin.staffEmail")}</span>
             <input
               type="email"
               className={page.input}
@@ -196,7 +200,7 @@ export function StaffView() {
           </label>
           <div className={page.field}>
             <span id="role-label" className={page.fieldLabel}>
-              Role
+              {t("admin.staffRole")}
             </span>
             <div role="radiogroup" aria-labelledby="role-label" className={styles.segment}>
               {(["doctor", "nurse", "admin"] as StaffRole[]).map((r) => (
@@ -208,13 +212,13 @@ export function StaffView() {
                   className={`${styles.segBtn} ${draft.role === r ? styles.segOn : ""}`}
                   onClick={() => setDraft((d) => ({ ...d, role: r }))}
                 >
-                  {ROLE_LABEL[r]}
+                  {t(ROLE_LABEL[r])}
                 </button>
               ))}
             </div>
           </div>
           <label className={page.field}>
-            <span className={page.fieldLabel}>Ward</span>
+            <span className={page.fieldLabel}>{t("admin.staffWard")}</span>
             <span className={page.selectWrap}>
               <select
                 className={page.select}
@@ -223,20 +227,20 @@ export function StaffView() {
               >
                 {WARDS.map((w) => (
                   <option key={w.value} value={w.value}>
-                    {w.value === "Cardiology · Ward C" ? "Ward C · Cardiology" : w.value}
+                    {t(w.label)}
                   </option>
                 ))}
               </select>
             </span>
           </label>
-          {help ? <span className={page.help}>{help}</span> : null}
+          {help ? <span className={page.help}>{t(help)}</span> : null}
           {invalid ? (
             <span role="alert" className={styles.invalid}>
-              Enter a full name and a work email.
+              {t("admin.staffInvalid")}
             </span>
           ) : null}
           <button type="button" className={styles.send} onClick={sendInvite}>
-            Send invite
+            {t("admin.staffSend")}
           </button>
         </aside>
       ) : null}

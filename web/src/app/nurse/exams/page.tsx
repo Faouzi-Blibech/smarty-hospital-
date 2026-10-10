@@ -1,7 +1,11 @@
 import { Suspense } from "react";
+import { getT } from "@/i18n/server";
 import { ExamWorklist } from "@/components/nurse/ExamWorklist";
 
-export const metadata = { title: "Exams · Ward" };
+export async function generateMetadata() {
+  const { t } = await getT();
+  return { title: `${t("nurse.metaExams")} · Ward` };
+}
 
 export default function NurseExamsPage() {
   return (

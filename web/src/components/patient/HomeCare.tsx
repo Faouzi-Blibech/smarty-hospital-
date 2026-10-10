@@ -4,6 +4,7 @@
 // nurses' desk. Data: getHomeCare (NOT IN CONTRACT). The design shows this screen on Thu 8 Oct, 18:30.
 import { getHomeCare, getPatient } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
+import { useT } from "@/i18n/I18nProvider";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { tunisDay } from "@/lib/time";
 import type { HomeCarePlan } from "@/lib/types";
@@ -19,6 +20,7 @@ async function load() {
 }
 
 export function HomeCare() {
+  const { t, lang } = useT();
   const flags = useDemoFlags();
   const res = useLoad(load);
   const data = flags.state === "loading" || flags.state === "error" ? null : res.data;
@@ -31,27 +33,28 @@ export function HomeCare() {
         {failed ? (
           <ErrorCard
             variant="patient"
-            title="Something went wrong."
-            message="We couldn’t load your care plan."
+            title={t("patient.errTitle")}
+            message={t("patient.careLoadErr")}
+            retryLabel={t("patient.tryAgain")}
             onRetry={flags.state === "error" ? undefined : res.retry}
           />
         ) : !data ? (
           <SkeletonCard />
         ) : !plan ? (
-          <EmptyCard title="No care plan yet">Your care plan after discharge isn’t available. Ask your nurse.</EmptyCard>
+          <EmptyCard title={t("patient.noPlanTitle")}>{t("patient.noPlanText")}</EmptyCard>
         ) : (
           <>
             <div className={styles.titleBlock}>
               <h1 className={styles.h1Small}>
-                Welcome home, <span dir="auto">{data.patient.first_name}</span>
+                {t("patient.welcomeHome")} <span dir="auto">{data.patient.first_name}</span>
               </h1>
               <span className={styles.sublineSmall}>
-                Discharged {tunisDay(plan.discharged_at)} from {plan.ward_label}
+                {t("patient.dischargedFrom", { day: tunisDay(plan.discharged_at, lang), ward: plan.ward_label })}
               </span>
             </div>
 
             <section className={`${styles.card} ${styles.followCard}`}>
-              <span className={styles.followEyebrow}>Follow-up</span>
+              <span className={styles.followEyebrow}>{t("patient.followUp")}</span>
               <h2 className={styles.followTitle}>{plan.follow_up.title}</h2>
               {plan.follow_up.steps.map((s, i) => (
                 <div key={s.title} className={styles.step}>
@@ -67,7 +70,7 @@ export function HomeCare() {
             </section>
 
             <section className={`${styles.card} ${styles.homeMedsCard}`}>
-              <h2 className={styles.cardTitle}>Medicines at home</h2>
+              <h2 className={styles.cardTitle}>{t("patient.medsAtHome")}</h2>
               {plan.medicines.map((m) => (
                 <div key={m.name} className={styles.homeMedRow}>
                   <span className={styles.homeMedWhen}>{m.when}</span>
@@ -80,11 +83,11 @@ export function HomeCare() {
             </section>
 
             <section className={styles.deskCard}>
-              <span className={styles.deskText}>Questions about your care? {plan.ward_label} nurses’ desk, every day.</span>
+              <span className={styles.deskText}>{t("patient.deskText", { ward: plan.ward_label })}</span>
               <a href={`tel:${plan.desk_phone.replace(/\s+/g, "")}`} className={styles.deskBtn}>
-                Call {plan.desk_phone}
+                {t("patient.callPhone", { phone: plan.desk_phone })}
               </a>
-              <span className={styles.emergency}>Emergency: call {plan.emergency_number}</span>
+              <span className={styles.emergency}>{t("patient.emergency", { n: plan.emergency_number })}</span>
             </section>
           </>
         )}

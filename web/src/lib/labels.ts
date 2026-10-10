@@ -1,9 +1,22 @@
 // UI-only labels and colours derived from API values (not stored in fixtures).
+// Words are translated: helpers take the caller's `t` (from useT() or getT()).
+import type { Key, TFn } from "@/i18n/messages";
+import type { News2Word } from "./news2";
 import type { AiSource, Urgency } from "./types";
 
 /** Design: "AI suggestion · Model" / "AI suggestion · Rules fallback". */
-export function aiSourceLabel(source: AiSource): "Model" | "Rules fallback" {
-  return source === "rules" ? "Rules fallback" : "Model";
+export function aiSourceLabel(source: AiSource, t: TFn): string {
+  return t(source === "rules" ? "shared.aiRulesFallback" : "shared.aiModel");
+}
+
+/** The translated word for an urgency level (`URGENCY[u].word` is the English design word). */
+export function urgencyWord(u: Urgency, t: TFn): string {
+  return t(`shared.urgency${u}`);
+}
+
+/** The translated word for a NEWS2 level (`level(score).word`). */
+export function news2Word(word: News2Word, t: TFn): string {
+  return t(`shared.news2${word}`);
 }
 
 export interface UrgencyLevel {
@@ -31,17 +44,43 @@ export const URGENCY_BAR: Record<Urgency, string> = {
   1: "#A4B3BB",
 };
 
-/** Display labels for triage `red_flags` codes. */
-export const RED_FLAG_LABELS: Record<string, string> = {
-  chest_pain: "Chest pain",
-  short_of_breath: "Short of breath",
-  exertional_chest_pain: "Exertional chest pain",
-  infant_fever: "Infant fever",
-  cough_over_3_weeks: "Cough > 3 weeks",
+const DEPT_KEYS: Record<string, Key> = {
+  Cardiology: "shared.deptCardiology",
+  Laboratory: "shared.deptLaboratory",
+  Imaging: "shared.deptImaging",
+  Pediatrics: "shared.deptPediatrics",
+  Pulmonology: "shared.deptPulmonology",
+  "Internal Medicine": "shared.deptInternalMedicine",
 };
 
-export function redFlagLabel(code: string): string {
-  return RED_FLAG_LABELS[code] ?? code.replace(/_/g, " ");
+/** A department or specialty name in the interface language; unknown names are shown as written. */
+export function deptLabel(name: string | null | undefined, t: TFn): string {
+  if (!name) return "";
+  const key = DEPT_KEYS[name];
+  return key ? t(key) : name;
+}
+
+const EXAM_CODES = new Set([
+  "ecg", "echo", "troponin", "cbc", "crp", "d_dimer", "inr", "hba1c", "creatinine", "chest_xray", "brain_ct", "leg_doppler",
+]);
+
+/** A catalogue exam (`rules/exam_bundles.v1.json`) by code; unknown codes keep the API label. */
+export function examLabel(exam: { code: string; label: string }, t: TFn): string {
+  return EXAM_CODES.has(exam.code) ? t(`shared.exam_${exam.code}` as Key) : exam.label;
+}
+
+/** Message keys for triage `red_flags` codes. */
+export const RED_FLAG_LABELS: Record<string, Key> = {
+  chest_pain: "shared.flagChestPain",
+  short_of_breath: "shared.flagShortOfBreath",
+  exertional_chest_pain: "shared.flagExertionalChestPain",
+  infant_fever: "shared.flagInfantFever",
+  cough_over_3_weeks: "shared.flagCoughOver3Weeks",
+};
+
+export function redFlagLabel(code: string, t: TFn): string {
+  const key = RED_FLAG_LABELS[code];
+  return key ? t(key) : code.replace(/_/g, " ");
 }
 
 /** Waitlist language column: "FR", "AR", "Darija". */
@@ -53,9 +92,9 @@ export const LANG_LABELS: Record<string, string> = {
 };
 
 /** Design: no-show ≥ 30 % "likely to miss", ≥ 15 % "medium", else "low". */
-export function noShowWord(prob: number | null | undefined): string {
+export function noShowWord(prob: number | null | undefined, t: TFn): string {
   const pct = Math.round((prob ?? 0) * 100);
-  return pct >= 30 ? "likely to miss" : pct >= 15 ? "medium" : "low";
+  return t(pct >= 30 ? "shared.noShowLikely" : pct >= 15 ? "shared.noShowMedium" : "shared.noShowLow");
 }
 
 export interface ClinicDoctor {

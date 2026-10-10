@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { Toast, useToast } from "@/components/Toast";
+import { useT } from "@/i18n/I18nProvider";
 import { getAlerts, getMedRound, getPrescriptions, markDoseGiven } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
 import { now, tunisDay, tunisTime } from "@/lib/time";
@@ -22,6 +23,7 @@ interface Data {
 }
 
 export function MedRound() {
+  const { t, lang } = useT();
   const flags = useDemoFlags();
   const [data, setData] = useState<Data | null>(null);
   const [failed, setFailed] = useState(false);
@@ -58,7 +60,7 @@ export function MedRound() {
           : d,
       );
     } catch {
-      showNotice("Couldn’t record the dose. Try again — nothing was saved.");
+      showNotice(t("nurse.doseSaveFailed"));
     } finally {
       setBusy((b) => {
         const next = new Set(b);
@@ -70,7 +72,7 @@ export function MedRound() {
 
   const ref = now();
   const refIso = ref.toISOString();
-  const ctx: DoseContext = { ref, prescriptions: data?.prescriptions, alerts: data?.alerts };
+  const ctx: DoseContext = { ref, t, prescriptions: data?.prescriptions, alerts: data?.alerts };
   const origOf = (d: Dose) => original[d.id] ?? d;
   const done = (d: Dose) => d.status === "taken";
   const inDue = (d: Dose) => {
@@ -82,9 +84,9 @@ export function MedRound() {
 
   const all = data?.groups.flatMap((g) => g.doses) ?? [];
   const filters: [Filter, string][] = [
-    ["all", "All today"],
-    ["due", `Due next hour · ${all.filter(inDue).length}`],
-    ["missed", `Missed · ${all.filter(inMissed).length}`],
+    ["all", t("nurse.filterAll")],
+    ["due", t("nurse.filterDue", { n: all.filter(inDue).length })],
+    ["missed", t("nurse.filterMissed", { n: all.filter(inMissed).length })],
   ];
 
   const groups = (flags.state === "empty" ? [] : (data?.groups ?? []))
@@ -95,19 +97,19 @@ export function MedRound() {
     .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))[0];
 
   const state = flags.state === "error" || failed ? "error" : flags.state === "loading" || (!data && flags.state !== "empty") ? "loading" : null;
-  const ward = wardLabel((data?.groups ?? []).map((g) => g.patient.ward));
+  const ward = wardLabel(t, (data?.groups ?? []).map((g) => g.patient.ward));
 
   return (
     <div className={styles.page}>
       <div className={styles.head}>
         <div className={styles.titleBlock}>
-          <h2 className={styles.title}>Med round</h2>
+          <h2 className={styles.title}>{t("nurse.medRound")}</h2>
           <span className={styles.sub}>
-            Today, {tunisDay(refIso)} · now {tunisTime(refIso)}
+            {t("nurse.medSub", { day: tunisDay(refIso, lang), time: tunisTime(refIso) })}
             {ward ? <> · {ward}</> : null}
           </span>
         </div>
-        <div className={styles.segment} role="group" aria-label="Filter doses">
+        <div className={styles.segment} role="group" aria-label={t("nurse.filterDoses")}>
           {filters.map(([k, label]) => (
             <button
               key={k}
@@ -123,7 +125,7 @@ export function MedRound() {
       </div>
 
       {state === "error" ? (
-        <ErrorCard title="Couldn’t load the med round." onRetry={load} secondaryLabel={null} />
+        <ErrorCard title={t("nurse.loadMedTitle")} onRetry={load} secondaryLabel={null} />
       ) : state === "loading" ? (
         Array.from({ length: 3 }, (_, i) => (
           <div key={i} className={styles.group} aria-busy="true">
@@ -141,9 +143,10 @@ export function MedRound() {
         ))
       ) : groups.length === 0 ? (
         <div className={styles.empty}>
-          <span className={styles.emptyTitle}>Nothing here right now</span>
+          <span className={styles.emptyTitle}>{t("nurse.nothingHere")}</span>
           <span className={styles.emptyText}>
-            All doses in this view are done.{nextRound ? ` Next round at ${tunisTime(nextRound.scheduled_at)}.` : ""}
+            {t("nurse.allDone")}
+            {nextRound ? ` ${t("nurse.nextRound", { time: tunisTime(nextRound.scheduled_at) })}` : ""}
           </span>
         </div>
       ) : (
@@ -156,10 +159,10 @@ export function MedRound() {
                 <span dir="auto" className={styles.name}>
                   {g.patient.first_name} {g.patient.last_name}
                 </span>
-                <span className={`${styles.allergy} ${allergic ? styles.allergyOn : ""}`}>{allergyLabel(g.patient.allergies)}</span>
+                <span className={`${styles.allergy} ${allergic ? styles.allergyOn : ""}`}>{allergyLabel(g.patient.allergies, t)}</span>
                 <span className={styles.spacer} />
                 <span className={styles.dev}>
-                  {g.device ? `${g.device.id} · ${g.device.online ? "online" : "offline"}` : "No bedside unit"}
+                  {g.device ? t(g.device.online ? "nurse.unitOnline" : "nurse.unitOffline", { id: g.device.id }) : t("nurse.noBedsideUnit")}
                 </span>
               </div>
               <div className={styles.rows}>
@@ -184,7 +187,7 @@ export function MedRound() {
                           aria-busy={busy.has(d.id) || undefined}
                           onClick={() => void give(d)}
                         >
-                          Mark given
+                          {t("nurse.markGiven")}
                         </button>
                       ) : (
                         <span className={styles.by}>{v.by}</span>

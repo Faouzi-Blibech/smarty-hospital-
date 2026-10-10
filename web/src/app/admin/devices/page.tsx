@@ -1,7 +1,11 @@
 import { Suspense } from "react";
+import { getT } from "@/i18n/server";
 import { DevicesView } from "@/components/admin/DevicesView";
 
-export const metadata = { title: "Beds & devices · Ward" };
+export async function generateMetadata() {
+  const { t } = await getT();
+  return { title: `${t("admin.bedsDevices")} · Ward` };
+}
 
 export default function AdminDevicesPage() {
   return (

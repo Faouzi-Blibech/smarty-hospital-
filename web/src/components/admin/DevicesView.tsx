@@ -4,27 +4,31 @@
 // Assign → POST /devices/{id}/assign, Discharge → POST /admissions/{id}/discharge (api.md 1.4).
 // In mock mode, discharging an offline unit shows the "Couldn’t reach" result from Admin / States.
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useT } from "@/i18n/I18nProvider";
+import type { Lang } from "@/i18n/config";
+import type { TFn } from "@/i18n/messages";
 import { Toast, useToast } from "@/components/Toast";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { assignDevice, dischargeAdmission, getDevices } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
 import { ago, now, tunisTime, USE_MOCKS } from "@/lib/time";
 import type { Device } from "@/lib/types";
-import { MOCK_WARD, usePatientWards, wardsOf } from "./wards";
+import { usePatientWards, wardsOf } from "./wards";
 import page from "./AdminPage.module.css";
 import styles from "./DevicesView.module.css";
 
 const LATEST_FW = "v0.4.2";
 /** The admitted patient waiting for a bed (design sample; no admissions endpoint yet). */
-const NEW_PATIENT = { id: "p-0008", name: "Karim Ben Ali", label: "Karim Ben Ali · admitted 09:40" };
+const NEW_PATIENT = { id: "p-0008", name: "Karim Ben Ali", admittedAt: "09:40" };
 
-function lastSeen(d: Device): string {
-  if (d.online) return ago(d.last_seen);
+function lastSeen(d: Device, t: TFn, lang: Lang): string {
+  if (d.online) return ago(d.last_seen, now(), lang);
   const min = Math.max(0, Math.round((now().getTime() - Date.parse(d.last_seen)) / 60_000));
-  return `${tunisTime(d.last_seen)} (${min} min)`;
+  return t("admin.devSeenOffline", { time: tunisTime(d.last_seen), n: min });
 }
 
 export function DevicesView() {
+  const { t, lang } = useT();
   const flags = useDemoFlags();
   const [devices, setDevices] = useState<Device[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -60,8 +64,8 @@ export function DevicesView() {
   const list = devices ?? [];
   const online = list.filter((d) => d.online).length;
   const patientWards = usePatientWards();
-  const ward = wardsOf(list.map((d) => d.patient_id), patientWards);
-  const bedWard = (d: Device) => wardsOf([d.patient_id], patientWards);
+  const ward = wardsOf(list.map((d) => d.patient_id), patientWards, t);
+  const bedWard = (d: Device) => wardsOf([d.patient_id], patientWards, t);
 
   const patientOf = (d: Device) => assigned[d.id] ?? (discharged[d.id] ? null : d.patient_name ? { name: d.patient_name, bed: d.bed ?? "" } : d.patient_id ? { name: d.patient_id, bed: d.bed ?? "" } : null);
 
@@ -74,7 +78,7 @@ export function DevicesView() {
     // A unit assigned on this screen has no admission id until the list reloads.
     const admissionId = assigned[d.id] ? null : d.admission_id;
     if (!admissionId && !USE_MOCKS) {
-      showToast(`${d.id}: Couldn’t discharge — no admission found for this unit. Reload the page and try again.`);
+      showToast(t("admin.devNoAdmission", { id: d.id }));
       return;
     }
     setUnreachable(null);
@@ -87,9 +91,9 @@ export function DevicesView() {
         delete next[d.id];
         return next;
       });
-      showToast(`${d.id}: Device cleared. Follow-up request created automatically for ${p?.name ?? "the patient"}.`);
+      showToast(t("admin.devCleared", { id: d.id, name: p?.name ?? t("admin.devThePatient") }));
     } catch {
-      showToast(`${d.id}: Couldn’t discharge. Nothing was changed — try again.`);
+      showToast(t("admin.devDischargeFail", { id: d.id }));
     } finally {
       setWorking(null);
     }
@@ -115,9 +119,9 @@ export function DevicesView() {
       setAssigned((s) => ({ ...s, [id]: { name: NEW_PATIENT.name, bed: assignBed } }));
       setDischarged((s) => ({ ...s, [id]: false }));
       setAssignId(null);
-      showToast(`${id} assigned to ${NEW_PATIENT.name} · Bed ${assignBed}. Schedule sent to the unit.`);
+      showToast(t("admin.devAssigned", { id, name: NEW_PATIENT.name, bed: assignBed }));
     } catch {
-      showToast(`Couldn’t assign ${id}. Nothing was changed — try again.`);
+      showToast(t("admin.devAssignFail", { id }));
     } finally {
       setWorking(null);
     }
@@ -127,10 +131,10 @@ export function DevicesView() {
     <div className={page.page}>
       <div className={page.head}>
         <div className={page.titles}>
-          <h2 className={page.h2}>Beds &amp; devices</h2>
+          <h2 className={page.h2}>{t("admin.bedsDevices")}</h2>
           <span className={page.sub}>
             {ward ? `${ward} · ` : ""}
-            {state === "loading" ? "…" : online} of {state === "loading" ? 8 : list.length} bedside units online
+            {t("admin.devSub", { online: state === "loading" ? "…" : online, total: state === "loading" ? 8 : list.length })}
           </span>
         </div>
       </div>
@@ -138,25 +142,25 @@ export function DevicesView() {
       {unreachable ? (
         <div role="alert" className={styles.unreachable}>
           <span>
-            <b>Couldn’t reach {unreachable}.</b> The unit will clear when it reconnects.{" "}
+            <b>{t("admin.devUnreachable", { id: unreachable })}</b> {t("admin.devUnreachableBody")}{" "}
             <button type="button" className={styles.retry} onClick={retry} disabled={retrying}>
-              {retrying ? "Retrying…" : "Retry"}
+              {retrying ? t("admin.devRetrying") : t("admin.retry")}
             </button>
           </span>
         </div>
       ) : null}
 
       {state === "error" ? (
-        <ErrorCard title="Couldn’t load the bedside units." onRetry={load} />
+        <ErrorCard title={t("admin.devLoadError")} onRetry={load} />
       ) : (
         <div className={`${styles.table} ${page.scrollX}`}>
           <div className={`${styles.grid} ${page.th}`}>
-            <span>Unit</span>
-            <span>Status</span>
-            <span>Firmware</span>
-            <span>Last seen</span>
-            <span>Assigned to</span>
-            <span>Actions</span>
+            <span>{t("admin.devColUnit")}</span>
+            <span>{t("admin.devColStatus")}</span>
+            <span>{t("admin.devColFirmware")}</span>
+            <span>{t("admin.devColSeen")}</span>
+            <span>{t("admin.devColAssigned")}</span>
+            <span>{t("admin.devColActions")}</span>
           </div>
           {state === "loading"
             ? [1, 2, 3, 4, 5, 6, 7, 8].map((k) => (
@@ -182,27 +186,27 @@ export function DevicesView() {
                           borderColor: d.online ? "var(--teal)" : "var(--news-high-fg)",
                         }}
                       />
-                      {d.online ? "Online" : "Offline"}
+                      {d.online ? t("admin.devOnline") : t("admin.devOffline")}
                     </span>
                     <span className={styles.stack}>
                       <span className={styles.fw}>{d.fw_version}</span>
-                      {d.fw_version !== LATEST_FW ? <span className={styles.update}>Update available</span> : null}
+                      {d.fw_version !== LATEST_FW ? <span className={styles.update}>{t("admin.devUpdate")}</span> : null}
                     </span>
-                    <span className={styles.seen}>{lastSeen(d)}</span>
+                    <span className={styles.seen}>{lastSeen(d, t, lang)}</span>
                     <span className={styles.stack}>
                       <span dir="auto" className={styles.patient} style={{ color: p ? "var(--ink)" : "var(--muted)" }}>
-                        {p ? p.name : "Unassigned"}
+                        {p ? p.name : t("admin.devUnassigned")}
                       </span>
-                      <span className={styles.bed}>{p ? [`Bed ${p.bed}`, bedWard(d)].filter(Boolean).join(" · ") : "Idle"}</span>
+                      <span className={styles.bed}>{p ? [t("admin.bedN", { bed: p.bed }), bedWard(d)].filter(Boolean).join(" · ") : t("admin.devIdle")}</span>
                     </span>
                     <div className={styles.actions}>
                       {p ? (
                         <button type="button" className={styles.btn} disabled={working === d.id} onClick={() => void discharge(d)}>
-                          Discharge
+                          {t("admin.devDischarge")}
                         </button>
                       ) : (
                         <button type="button" className={styles.btnPrimary} onClick={() => setAssignId(d.id)}>
-                          Assign to patient + bed
+                          {t("admin.devAssignBtn")}
                         </button>
                       )}
                     </div>
@@ -216,31 +220,31 @@ export function DevicesView() {
         <div className={styles.scrim} onClick={(e) => e.target === e.currentTarget && setAssignId(null)}>
           <div role="dialog" aria-modal="true" aria-labelledby="assign-title" className={styles.dialog}>
             <span id="assign-title" className={styles.dialogTitle}>
-              Assign {assignId}
+              {t("admin.devAssignTitle", { id: assignId })}
             </span>
             <label className={page.field}>
-              <span className={page.fieldLabel}>Patient</span>
+              <span className={page.fieldLabel}>{t("admin.patient")}</span>
               <span className={page.selectWrap}>
                 <select ref={firstField} className={page.select} defaultValue={NEW_PATIENT.name}>
-                  <option value={NEW_PATIENT.name}>{NEW_PATIENT.label}</option>
+                  <option value={NEW_PATIENT.name}>{t("admin.devAdmittedAt", { name: NEW_PATIENT.name, time: NEW_PATIENT.admittedAt })}</option>
                 </select>
               </span>
             </label>
             <label className={page.field}>
-              <span className={page.fieldLabel}>Bed</span>
+              <span className={page.fieldLabel}>{t("admin.bed")}</span>
               <span className={page.selectWrap}>
                 <select className={page.select} defaultValue={assignBed}>
-                  <option value={assignBed}>{USE_MOCKS ? `${assignBed} · ${MOCK_WARD}` : assignBed}</option>
+                  <option value={assignBed}>{USE_MOCKS ? `${assignBed} · ${t("admin.wardC")}` : assignBed}</option>
                 </select>
               </span>
             </label>
-            <span className={page.help}>The unit will show the patient’s schedule within a minute.</span>
+            <span className={page.help}>{t("admin.devAssignHelp")}</span>
             <div className={styles.dialogActions}>
               <button type="button" className={page.btn} onClick={() => setAssignId(null)}>
-                Cancel
+                {t("admin.cancel")}
               </button>
               <button type="button" className={page.btnPrimary} disabled={!!working} onClick={() => void doAssign()}>
-                Assign
+                {t("admin.devAssign")}
               </button>
             </div>
           </div>

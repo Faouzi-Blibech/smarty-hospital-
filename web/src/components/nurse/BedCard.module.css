@@ -162,7 +162,7 @@ a.card:hover {
 
 .ago {
   flex: 1;
-  text-align: right;
+  text-align: end;
   font-variant-numeric: tabular-nums;
 }
 
@@ -266,6 +266,6 @@ a.card:hover {
   }
 
   .ago {
-    text-align: left;
+    text-align: start;
   }
 }

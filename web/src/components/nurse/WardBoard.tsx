@@ -9,8 +9,10 @@ import { LiveBanner } from "@/components/LiveBanner";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { useLiveTick } from "@/components/shared/useLiveTick";
 import { Toast } from "@/components/Toast";
+import { useT } from "@/i18n/I18nProvider";
 import { getWard } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
+import { news2Word } from "@/lib/labels";
 import { level } from "@/lib/news2";
 import { pausedAt, tunisTime, tunisTimeSeconds, USE_MOCKS } from "@/lib/time";
 import type { Alert, WardBed } from "@/lib/types";
@@ -20,11 +22,11 @@ import { boardOrder, wardLabel } from "./nurse";
 import { useWardAlerts } from "./useWardAlerts";
 import styles from "./WardBoard.module.css";
 
-const LEGEND: [number, string][] = [
-  [0, "Normal 0"],
-  [2, "Low 1–4"],
-  [5, "High 5–6"],
-  [7, "Critical 7+"],
+const LEGEND: [number, "Normal" | "Low" | "High" | "Critical", string][] = [
+  [0, "Normal", "0"],
+  [2, "Low", "1–4"],
+  [5, "High", "5–6"],
+  [7, "Critical", "7+"],
 ];
 
 const MUTE_MS = 60_000;
@@ -33,6 +35,7 @@ const newestOpen = (alerts: Alert[], pick: (a: Alert) => boolean) =>
   alerts.filter((a) => !a.acked_by && pick(a)).sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
 
 export function WardBoard() {
+  const { t } = useT();
   const flags = useDemoFlags();
   const { tick } = useLiveTick(flags.live && USE_MOCKS);
   const wardAlerts = useWardAlerts();
@@ -90,18 +93,19 @@ export function WardBoard() {
     <div className={styles.board}>
       <div className={styles.main}>
         {!flags.live ? (
-          <LiveBanner className={styles.banner}>Values frozen at {pausedAt()}. Check patients in person if this lasts.</LiveBanner>
+          <LiveBanner className={styles.banner}>{t("nurse.frozen", { time: pausedAt() })}</LiveBanner>
         ) : null}
         <div className={styles.head}>
           <div className={styles.titleBlock}>
-            <h2 className={styles.title}>{wardLabel((beds ?? []).map((b) => b.patient?.ward)) ?? "Ward board"}</h2>
+            <h2 className={styles.title}>{wardLabel(t, (beds ?? []).map((b) => b.patient?.ward)) ?? t("nurse.wardBoard")}</h2>
             <span className={`${styles.sub} ${styles.desk}`}>
-              {occupied} patients · {emptyBeds} empty bed{emptyBeds === 1 ? "" : "s"} · highest NEWS2 first
+              {t(emptyBeds === 1 ? "nurse.boardSubOne" : "nurse.boardSubMany", { n: occupied, e: emptyBeds })}
             </span>
           </div>
           <div className={`${styles.legend} ${styles.desk}`}>
-            {LEGEND.map(([s, label]) => {
+            {LEGEND.map(([s, word, range]) => {
               const lv = level(s);
+              const label = `${news2Word(word, t)} ${range}`;
               return (
                 <span key={label} className={styles.chip} style={{ background: lv.bg, color: lv.fg }}>
                   <span className={styles.chipDot} style={{ background: lv.edge }} />
@@ -117,15 +121,15 @@ export function WardBoard() {
             aria-controls="nurse-alerts"
             onClick={() => setDrawer(true)}
           >
-            Alerts<span className={styles.alertsCount}>{openCount}</span>
+            {t("nurse.alerts")}<span className={styles.alertsCount}>{openCount}</span>
           </button>
         </div>
 
         {boardState === "error" ? (
           <ErrorCard
             variant="box"
-            title="Couldn’t load the ward."
-            message="Check patients in person until the board is back."
+            title={t("nurse.loadWardTitle")}
+            message={t("nurse.checkInPerson")}
             onRetry={retry}
             className={styles.error}
           />
@@ -147,21 +151,21 @@ export function WardBoard() {
         )}
       </div>
 
-      <aside id="nurse-alerts" aria-label="Alerts" className={`${styles.aside} ${drawer ? styles.drawerOpen : ""}`}>
+      <aside id="nurse-alerts" aria-label={t("nurse.alerts")} className={`${styles.aside} ${drawer ? styles.drawerOpen : ""}`}>
         <div className={styles.asideHead}>
-          <h3 className={styles.asideTitle}>Alerts</h3>
-          <span className={styles.openCount}>{openCount} open</span>
+          <h3 className={styles.asideTitle}>{t("nurse.alerts")}</h3>
+          <span className={styles.openCount}>{t("nurse.openCount", { n: openCount })}</span>
           <span className={styles.spacer} />
-          <span className={styles.newest}>Newest first</span>
+          <span className={styles.newest}>{t("nurse.newestFirst")}</span>
           <button type="button" className={`${styles.close} ${styles.tab}`} onClick={() => setDrawer(false)}>
-            Close
+            {t("nurse.close")}
           </button>
         </div>
         {alertsState === "error" ? (
           <ErrorCard
             variant="box"
-            title="Couldn’t load alerts."
-            message="Check patients in person until the board is back."
+            title={t("nurse.loadAlertsTitle")}
+            message={t("nurse.checkInPerson")}
             onRetry={wardAlerts.reload}
           />
         ) : alertsState === "loading" ? (
@@ -187,9 +191,9 @@ export function WardBoard() {
         <div role="alert" className={`${styles.call} ${styles.desk}`}>
           <div className={styles.callTop}>
             <div className={styles.callText}>
-              <span className={styles.callTitle}>Bed {callAlert.bed ?? "—"} is calling</span>
+              <span className={styles.callTitle}>{t("nurse.bedCalling", { bed: callAlert.bed ?? "—" })}</span>
               <span dir="auto" className={styles.callSub}>
-                {callAlert.patient_first_name ?? callAlert.patient_id} · call request {tunisTimeSeconds(callAlert.created_at)}
+                {t("nurse.callRequestAt", { name: callAlert.patient_first_name ?? callAlert.patient_id, time: tunisTimeSeconds(callAlert.created_at) })}
               </span>
             </div>
           </div>
@@ -198,12 +202,12 @@ export function WardBoard() {
               type="button"
               className={styles.onMyWay}
               disabled={busy.has(callAlert.id)}
-              onClick={() => void ack(callAlert.id, "(on my way)")}
+              onClick={() => void ack(callAlert.id, t("nurse.onMyWayNote"))}
             >
-              On my way
+              {t("nurse.onMyWay")}
             </button>
             <button type="button" className={styles.mute} onClick={() => mute(callAlert.id)}>
-              Snooze 1 min
+              {t("nurse.snooze")}
             </button>
           </div>
         </div>
@@ -212,13 +216,13 @@ export function WardBoard() {
       {critAlert && !boardState ? (
         <div role="alert" className={`${styles.critToast} ${styles.tab}`}>
           <div className={styles.critHead}>
-            <span className={styles.critTag}>CRITICAL</span>
+            <span className={styles.critTag}>{t("nurse.critical")}</span>
             <span className={styles.critMeta}>
-              {critAlert.kind === "news2" ? "NEWS2 alert" : "Alert"} · {tunisTime(critAlert.created_at)}
+              {t(critAlert.kind === "news2" ? "nurse.news2Alert" : "nurse.alert")} · {tunisTime(critAlert.created_at)}
             </span>
           </div>
           <span dir="auto" className={styles.critTitle}>
-            Bed {critAlert.bed ?? "—"} · {critAlert.patient_first_name ?? critAlert.patient_id}
+            {t("nurse.bedName", { bed: critAlert.bed ?? "—", name: critAlert.patient_first_name ?? critAlert.patient_id })}
           </span>
           <span className={styles.critMsg}>{critAlert.message}</span>
           <div className={styles.critActions}>
@@ -228,10 +232,10 @@ export function WardBoard() {
               disabled={busy.has(critAlert.id)}
               onClick={() => void ack(critAlert.id)}
             >
-              Acknowledge
+              {t("nurse.acknowledge")}
             </button>
             <Link href={`/nurse/patients/${encodeURIComponent(critAlert.patient_id)}`} className={styles.openBed}>
-              Open bed
+              {t("nurse.openBed")}
             </Link>
           </div>
         </div>

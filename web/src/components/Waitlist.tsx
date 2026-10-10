@@ -1,8 +1,9 @@
 "use client";
 
+import { useT } from "@/i18n/I18nProvider";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { confirmAppointment, getStaff, getWaitlist, overrideUrgency } from "@/lib/api";
-import { doctorForSpecialty, LANG_LABELS, noShowWord, redFlagLabel, URGENCY, type ClinicDoctor } from "@/lib/labels";
+import { LANG_LABELS, URGENCY, deptLabel, doctorForSpecialty, noShowWord, redFlagLabel, type ClinicDoctor, urgencyWord } from "@/lib/labels";
 import { daysSince, tunisDay, USE_MOCKS } from "@/lib/time";
 import type { Appointment, StaffMember, Urgency } from "@/lib/types";
 import { useMeState } from "@/lib/useMe";
@@ -30,6 +31,7 @@ export interface WaitlistProps {
   doctorId?: string;
 }
 
+/** `label` is the stable id of a day; it is shown with tunisDay(date, lang). */
 const DAYS = [
   { label: "Tue 6 Oct", date: "2026-10-06" },
   { label: "Wed 7 Oct", date: "2026-10-07" },
@@ -54,6 +56,8 @@ export function Waitlist({
   whyId,
   doctorId,
 }: WaitlistProps) {
+  const { t, lang: uiLang } = useT();
+  const dayText = (label: string) => tunisDay(`${DAYS.find((x) => x.label === label)!.date}T12:00:00Z`, uiLang);
   const [fetched, setFetched] = useState<Appointment[] | null>(null);
   const [failed, setFailed] = useState(false);
   // Confirmed rows leave GET /appointments/waitlist, so keep them here (id to row + slot label).
@@ -96,9 +100,9 @@ export function Waitlist({
   /** Why a row can't be booked (real mode), once the lookup has finished: load error or no matching doctor. */
   const noDoctorNote = (a: Appointment): string | null => {
     if (USE_MOCKS || doctorFor(a)) return null;
-    if (caller === "doctor") return meFailed ? "Couldn’t load your account — refresh to book." : null;
-    if (staffFailed) return "Couldn’t load the doctor list";
-    return staff != null ? `No doctor on file for ${a.specialty ?? "this specialty"}` : null;
+    if (caller === "doctor") return meFailed ? t("admin.wlNoAccount") : null;
+    if (staffFailed) return t("admin.wlNoDoctorList");
+    return staff != null ? t("admin.wlNoDoctorFor", { spec: a.specialty ?? t("admin.wlThisSpecialty") }) : null;
   };
 
   const load = useCallback(() => {
@@ -131,7 +135,7 @@ export function Waitlist({
         x.id === a.id ? { ...x, ...upd, human_confirmed_by_name: upd.human_confirmed_by_name ?? (actor || null) } : x;
       setFetched((f) => f && f.map(patch));
     } catch {
-      showToast({ text: "Could not save the override. Try again.", tone: "warn" });
+      showToast({ text: t("admin.wlSaveFail"), tone: "warn" });
     }
   }
 
@@ -142,13 +146,13 @@ export function Waitlist({
     setBusy(true);
     try {
       const upd = await confirmAppointment(a.id, { slot_at: new Date(`${d.date}T${time}:00+01:00`).toISOString(), doctor_id: doc.id }, by);
-      const slot = `${day} · ${time} · ${doc.name}`;
+      const slot = `${dayText(day)} · ${time} · ${doc.name}`;
       setConfirmed((c) => ({ ...c, [a.id]: { row: { ...a, ...upd }, slot } }));
       setDlg(null);
-      showToast({ text: `${a.patient_name} booked ${day}, ${time}. Reminder scheduled 24 h before.`, tone: "ok" });
+      showToast({ text: t("admin.wlBooked", { name: a.patient_name ?? "", day: dayText(day), time }), tone: "ok" });
     } catch (e) {
       const taken = (e as { code?: string }).code === "slot_taken";
-      showToast({ text: taken ? "That time was just booked. Pick another." : "Could not confirm the appointment. Try again.", tone: "warn" });
+      showToast({ text: t(taken ? "admin.wlSlotTaken" : "admin.wlConfirmFail"), tone: "warn" });
     } finally {
       setBusy(false);
     }
@@ -158,15 +162,15 @@ export function Waitlist({
   const dlgDoctor = dlgRow ? doctorFor(dlgRow.a) : null;
   const dlgNote = dlgRow ? noDoctorNote(dlgRow.a) : null;
   const filters = specialty
-    ? [{ label: specialty, on: true }, { label: "All specialties", on: false }]
-    : [{ label: "All specialties", on: true }, { label: "Cardiology", on: false }, { label: "Pediatrics", on: false }];
+    ? [{ label: specialty, on: true }, { label: t("admin.wlAllSpecialties"), on: false }]
+    : [{ label: t("admin.wlAllSpecialties"), on: true }, { label: t("admin.wlCardiology"), on: false }, { label: t("admin.wlPediatrics"), on: false }];
 
   return (
     <div className={styles.root}>
       {aiFallback && (
         <div role="status" className={styles.fallback}>
           <span className={styles.fallbackDiamond} />
-          <span><b>AI unavailable — showing rules fallback.</b> Rankings come from fixed keyword rules (no confidence score). Everything else works as normal.</span>
+          <span><b>{t("admin.wlAiUnavailable")}</b> {t("admin.wlAiUnavailableBody")}</span>
         </div>
       )}
       <div className={styles.bar}>
@@ -175,17 +179,17 @@ export function Waitlist({
             <span key={f.label} className={cls(styles.filter, f.on && styles.filterOn)}>{f.label}</span>
           ))}
         </div>
-        <span className={styles.meta}>{rows.length} requests · sorted by final urgency, then longest wait</span>
+        <span className={styles.meta}>{t("admin.wlMeta", { n: rows.length })}</span>
         <span className={styles.grow} />
-        <span className={styles.meta}>Every ranking is a suggestion until a person confirms it.</span>
+        <span className={styles.meta}>{t("admin.wlSuggestion")}</span>
       </div>
       <div className={styles.card}>
         <div className={cls(styles.grid, styles.head)}>
-          <span>#</span><span>Patient</span><span>Referral · red flags</span><span>Urgency ↓</span><span>Requested</span><span>Actions</span>
+          <span>#</span><span>{t("admin.wlColPatient")}</span><span>{t("admin.wlColReferral")}</span><span>{t("admin.wlColUrgency")}</span><span>{t("admin.wlColRequested")}</span><span>{t("admin.wlColActions")}</span>
         </div>
-        {failed && <div className={styles.error} role="alert">Could not load the waitlist. <button className={styles.why} onClick={load}>Retry</button></div>}
+        {failed && <div className={styles.error} role="alert">{t("admin.wlLoadError")} <button className={styles.why} onClick={load}>{t("admin.retry")}</button></div>}
         {!failed && !fetched && [0, 1, 2].map((i) => <div key={i} className={cls("ward-skeleton", styles.skelRow)} />)}
-        {fetched && rows.length === 0 && <div className={styles.empty}>No requests waiting.</div>}
+        {fetched && rows.length === 0 && <div className={styles.empty}>{t("admin.wlEmpty")}</div>}
         {rows.map(({ a, days }, i) => {
           const f = fin(a);
           const U = URGENCY[f];
@@ -194,13 +198,13 @@ export function Waitlist({
           const source = aiFallback ? "rules" : a.triage.source;
           const pct = a.triage.confidence != null ? Math.round(a.triage.confidence * 100) : null;
           const ns = Math.round((a.no_show_prob ?? 0) * 100);
-          const lang = a.lang ?? "fr";
+          const lang = a.lang ?? "fr"; // language of the referral text (data), not the interface
           return (
             <div key={a.id} className={cls(styles.grid, styles.row, conf && styles.rowConfirmed)}>
               <span className={styles.rank}>{i + 1}</span>
               <div className={cls(styles.col, styles.who)}>
                 <span className={styles.name}>{a.patient_name}</span>
-                <span className={styles.sub}>{a.patient_age} · {a.specialty}</span>
+                <span className={styles.sub}><bdi>{a.patient_age}</bdi> · {deptLabel(a.specialty, t)}</span>
               </div>
               <div className={cls(styles.col, styles.ref)}>
                 <div className={styles.refLine}>
@@ -209,7 +213,7 @@ export function Waitlist({
                 </div>
                 <div className={styles.flags}>
                   {a.triage.red_flags.map((fl) => (
-                    <span key={fl} className={styles.flag}><span className={styles.flagDot} />{redFlagLabel(fl)}</span>
+                    <span key={fl} className={styles.flag}><span className={styles.flagDot} />{redFlagLabel(fl, t)}</span>
                   ))}
                 </div>
                 {caller === "doctor" ? <ExamSuggestions
@@ -226,63 +230,63 @@ export function Waitlist({
               <div className={cls(styles.col, styles.urgency)}>
                 <div className={styles.urgencyLine}>
                   <span className={styles.urgPill} style={{ background: U.bg, color: U.fg }}>
-                    <span className={styles.urgNum}>{f}</span>{U.word}
+                    <span className={styles.urgNum}>{f}</span>{urgencyWord(f, t)}
                   </span>
-                  <button className={styles.why} aria-expanded={why === a.id} onClick={() => { setWhy(why === a.id ? null : a.id); setMenu(null); }}>Why?</button>
+                  <button className={styles.why} aria-expanded={why === a.id} onClick={() => { setWhy(why === a.id ? null : a.id); setMenu(null); }}>{t("admin.wlWhy")}</button>
                 </div>
                 <AiBadge
                   variant="split"
                   source={source}
                   detail={pct != null ? `${pct}%` : undefined}
                   state={conf ? "confirmed" : isOver ? "overridden" : "needs_review"}
-                  stateLabel={conf ? (actor ? `Confirmed by ${actor}` : "Confirmed") : undefined}
+                  stateLabel={conf ? (actor ? t("admin.wlConfirmedBy", { name: actor }) : t("admin.wlConfirmed")) : undefined}
                 />
                 {isOver && (
-                  <span className={styles.overBy}><span className={styles.overDot} /><span>{(a.human_confirmed_by_name ?? actor) ? <>Human override by {a.human_confirmed_by_name ?? actor} · AI said {a.urgency_ai}</> : <>Human override · AI said {a.urgency_ai}</>}</span></span>
+                  <span className={styles.overBy}><span className={styles.overDot} /><span>{(a.human_confirmed_by_name ?? actor) ? t("admin.wlOverrideBy", { name: a.human_confirmed_by_name ?? actor, n: a.urgency_ai }) : t("admin.wlOverride", { n: a.urgency_ai })}</span></span>
                 )}
                 {a.triage?.scale ? (
                   <span className={styles.urgMeta}>
-                    {a.triage.scale.level} · {a.triage.scale.name}{a.triage.scale.confirmed ? "" : " (to confirm)"}
+                    {a.triage.scale.level} · {a.triage.scale.name}{a.triage.scale.confirmed ? "" : ` ${t("admin.wlToConfirm")}`}
                   </span>
                 ) : null}
                 {a.exams_total ? (
-                  <span className={styles.urgMeta}>Exams {a.exams_done ?? 0}/{a.exams_total}{a.exams_done === a.exams_total ? " · results in" : ""}</span>
+                  <span className={styles.urgMeta}>{t(a.exams_done === a.exams_total ? "admin.wlExamsIn" : "admin.wlExams", { done: a.exams_done ?? 0, total: a.exams_total })}</span>
                 ) : a.exams_suggested ? (
-                  <span className={styles.urgMeta}>{a.exams_suggested} exams suggested · doctor to review</span>
+                  <span className={styles.urgMeta}>{t("admin.wlExamsSuggested", { n: a.exams_suggested })}</span>
                 ) : null}
                 {why === a.id && (
                   <div role="dialog" className={styles.popover}>
-                    <span className={styles.popTitle}>Why urgency {a.urgency_ai}?</span>
+                    <span className={styles.popTitle}>{t("admin.wlWhyTitle", { n: a.urgency_ai })}</span>
                     {a.triage.reasons.map((re) => (
                       <div key={re} className={styles.reason}><span className={styles.reasonDot} /><span>{re}</span></div>
                     ))}
                     <div className={styles.popFoot}>
-                      {source === "rules" ? "Source: rules fallback (keyword rules)." : pct != null ? `Confidence ${pct}% · Model.` : "Model."} Not clinically validated — a person confirms every ranking.
+                      {source === "rules" ? t("admin.wlSrcRules") : pct != null ? t("admin.wlSrcConf", { pct }) : t("admin.wlSrcModel")} {t("admin.wlNotValidated")}
                     </div>
                   </div>
                 )}
               </div>
               <div className={cls(styles.col, styles.when)}>
-                <span className={styles.date}>{tunisDay(a.created_at)}</span>
-                <span className={styles.small}>waiting {days} d</span>
-                <span className={cls(styles.small, styles.ns)}>No-show <b>{ns}%</b> · {noShowWord(a.no_show_prob)}</span>
+                <span className={styles.date}>{tunisDay(a.created_at, uiLang)}</span>
+                <span className={styles.small}>{t("admin.wlWaiting", { n: days })}</span>
+                <span className={cls(styles.small, styles.ns)}>{t("admin.wlNoShow")} <b>{ns}%</b> · {noShowWord(a.no_show_prob, t)}</span>
               </div>
               <div className={cls(styles.col, styles.actions)}>
                 {conf ? (
-                  <div className={styles.confirmedBox}><b>{actor ? <>✓ Confirmed by {actor}</> : "✓ Confirmed"}</b><span>{conf.slot}</span><span>Reminder 24 h before · Telegram + email</span></div>
+                  <div className={styles.confirmedBox}><b>✓ {actor ? t("admin.wlConfirmedBy", { name: actor }) : t("admin.wlConfirmed")}</b><span>{conf.slot}</span><span>{t("admin.wlReminderLine")}</span></div>
                 ) : (
                   <div className={styles.btnCol}>
-                    <button className={styles.override} onClick={() => { setMenu(menu === a.id ? null : a.id); setWhy(null); }}>Override urgency ▾</button>
-                    <button className={styles.confirmBtn} disabled={!doctorFor(a)} onClick={() => { setDlg(a.id); setWhy(null); setMenu(null); }}>Confirm + pick slot</button>
+                    <button className={styles.override} onClick={() => { setMenu(menu === a.id ? null : a.id); setWhy(null); }}>{t("admin.wlOverrideBtn")} ▾</button>
+                    <button className={styles.confirmBtn} disabled={!doctorFor(a)} onClick={() => { setDlg(a.id); setWhy(null); setMenu(null); }}>{t("admin.wlConfirmPick")}</button>
                     {noDoctorNote(a) ? <span className={styles.small}>{noDoctorNote(a)}</span> : null}
                   </div>
                 )}
                 {menu === a.id && (
                   <div className={styles.menu}>
-                    <span className={styles.menuHead}>Set urgency (human)</span>
+                    <span className={styles.menuHead}>{t("admin.wlSetUrgency")}</span>
                     {LEVELS.map((n) => (
                       <button key={n} className={cls(styles.level, n === f && styles.levelOn)} onClick={() => pickLevel(a, n)}>
-                        <span className={styles.levelNum}>{n}</span>{URGENCY[n].word}
+                        <span className={styles.levelNum}>{n}</span>{urgencyWord(n, t)}
                       </button>
                     ))}
                   </div>
@@ -296,43 +300,43 @@ export function Waitlist({
         <div className={styles.scrim}>
           <div role="dialog" aria-modal="true" className={styles.dialog}>
             <div className={styles.dlgHead}>
-              <span className={styles.dlgKicker}>Confirm appointment</span>
+              <span className={styles.dlgKicker}>{t("admin.wlConfirmAppt")}</span>
               <span className={styles.dlgName}>{dlgRow.a.patient_name}</span>
-              <span className={styles.dlgSub}>Urgency {fin(dlgRow.a)} · {URGENCY[fin(dlgRow.a)].word} · {dlgRow.a.specialty} · waiting {dlgRow.days} days</span>
+              <span className={styles.dlgSub}>{t("admin.wlDlgSub", { n: fin(dlgRow.a), word: urgencyWord(fin(dlgRow.a), t), spec: dlgRow.a.specialty ?? "", days: dlgRow.days })}</span>
             </div>
             <div className={styles.dlgBody}>
               <div className={styles.field}>
-                <span className={styles.label}>Day</span>
+                <span className={styles.label}>{t("admin.wlDay")}</span>
                 <div className={styles.chips}>
                   {DAYS.map((d) => (
-                    <button key={d.label} className={cls(styles.pick, d.label === day && styles.pickOn)} onClick={() => setDay(d.label)}>{d.label}</button>
+                    <button key={d.label} className={cls(styles.pick, d.label === day && styles.pickOn)} onClick={() => setDay(d.label)}>{dayText(d.label)}</button>
                   ))}
                 </div>
               </div>
               <div className={styles.field}>
-                <span className={styles.label}>Time</span>
+                <span className={styles.label}>{t("admin.wlTime")}</span>
                 <div className={styles.times}>
-                  {TIMES.map((t) => {
-                    const taken = TAKEN.includes(t);
+                  {TIMES.map((tm) => {
+                    const taken = TAKEN.includes(tm);
                     return (
-                      <button key={t} disabled={taken} className={cls(styles.pick, styles.time, taken ? styles.pickTaken : t === time && styles.pickOn)} onClick={() => setTime(t)}>{t}</button>
+                      <button key={tm} disabled={taken} className={cls(styles.pick, styles.time, taken ? styles.pickTaken : tm === time && styles.pickOn)} onClick={() => setTime(tm)}>{tm}</button>
                     );
                   })}
                 </div>
-                <span className={styles.small}>Struck-through times are already booked.</span>
+                <span className={styles.small}>{t("admin.wlStruck")}</span>
               </div>
               <label className={styles.field}>
-                <span className={styles.label}>Doctor</span>
-                <span className={styles.select}>{dlgDoctor ? <>{dlgDoctor.name} · {dlgDoctor.specialty}</> : (dlgNote ?? "…")}<span>▾</span></span>
+                <span className={styles.label}>{t("admin.wlDoctor")}</span>
+                <span className={styles.select}>{dlgDoctor ? <>{dlgDoctor.name} · {deptLabel(dlgDoctor.specialty, t)}</> : (dlgNote ?? "…")}<span>▾</span></span>
               </label>
               <div className={styles.info}>
                 <span className={styles.infoDot} />
-                <span><b>Reminder will be sent 24 h before (Telegram + email).</b> The patient can confirm or cancel from the link. If they cancel, the slot is offered to the next person on this list.</span>
+                <span><b>{t("admin.wlReminderInfo")}</b> {t("admin.wlReminderInfoBody")}</span>
               </div>
             </div>
             <div className={styles.dlgFoot}>
-              <button className={styles.cancel} onClick={() => setDlg(null)}>Cancel</button>
-              <button className={styles.go} disabled={busy || !dlgDoctor} onClick={() => confirm(dlgRow.a)}>Confirm {day} at {time}</button>
+              <button className={styles.cancel} onClick={() => setDlg(null)}>{t("admin.cancel")}</button>
+              <button className={styles.go} disabled={busy || !dlgDoctor} onClick={() => confirm(dlgRow.a)}>{t("admin.wlConfirmAt", { day: dayText(day), time })}</button>
             </div>
           </div>
         </div>

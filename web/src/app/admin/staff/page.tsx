@@ -1,7 +1,11 @@
 import { Suspense } from "react";
+import { getT } from "@/i18n/server";
 import { StaffView } from "@/components/admin/StaffView";
 
-export const metadata = { title: "Staff · Ward" };
+export async function generateMetadata() {
+  const { t } = await getT();
+  return { title: `${t("admin.staff")} · Ward` };
+}
 
 export default function AdminStaffPage() {
   return (

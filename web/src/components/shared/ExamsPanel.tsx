@@ -2,13 +2,16 @@
 
 // Exams for one patient: ordered and done, with the uploaded files and report lines. A person reads the
 // results; Ward only stores and shows them.
+import { examLabel, deptLabel } from "@/lib/labels";
 import { useEffect, useState } from "react";
+import { useT } from "@/i18n/I18nProvider";
 import { examFileUrl, getPatientExams } from "@/lib/api";
 import { tunisDay, tunisTime } from "@/lib/time";
 import type { ExamOrder } from "@/lib/types";
 import styles from "./ExamsPanel.module.css";
 
 export function ExamsPanel({ patientId }: { patientId: string }) {
+  const { t, lang } = useT();
   const [rows, setRows] = useState<ExamOrder[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [openMsg, setOpenMsg] = useState<string | null>(null);
@@ -27,7 +30,7 @@ export function ExamsPanel({ patientId }: { patientId: string }) {
     setOpenMsg(null);
     const w = window.open("", "_blank");
     if (!w) {
-      setOpenMsg("Your browser blocked the new tab — allow pop-ups for this site and try again.");
+      setOpenMsg(t("shared.examsPopup"));
       return;
     }
     setOpening(resultId);
@@ -37,7 +40,7 @@ export function ExamsPanel({ patientId }: { patientId: string }) {
       if (url.startsWith("blob:")) setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch {
       w.close();
-      setOpenMsg("Couldn’t open that file.");
+      setOpenMsg(t("shared.examsOpenFail"));
     } finally {
       setOpening(null);
     }
@@ -45,19 +48,23 @@ export function ExamsPanel({ patientId }: { patientId: string }) {
 
   const shown = (rows ?? []).filter((e) => e.status === "ordered" || e.status === "done");
   return (
-    <section className={styles.card} aria-label="Exams">
-      <h3 className={styles.h3}>Exams</h3>
-      {failed ? <p className={styles.note}>Couldn’t load the exams.</p> : null}
+    <section className={styles.card} aria-label={t("shared.examsTitle")}>
+      <h3 className={styles.h3}>{t("shared.examsTitle")}</h3>
+      {failed ? <p className={styles.note}>{t("shared.examsLoadFail")}</p> : null}
       {openMsg ? <p className={styles.note} role="alert">{openMsg}</p> : null}
       {!rows && !failed ? <span className="ward-skeleton" style={{ height: 60, width: "100%" }} /> : null}
-      {rows && !shown.length ? <p className={styles.note}>No exams ordered.</p> : null}
+      {rows && !shown.length ? <p className={styles.note}>{t("shared.examsNone")}</p> : null}
       {shown.map((e) => (
         <div key={e.id} className={styles.row}>
           <div className={styles.line}>
-            <b>{e.label}</b>
-            <span className={styles.dept}>{e.department}</span>
+            <b>{examLabel(e, t)}</b>
+            <span className={styles.dept}>{deptLabel(e.department, t)}</span>
             <span className={e.status === "done" ? styles.done : styles.waiting}>
-              {e.status === "done" ? `Result in${e.done_at ? ` · ${tunisDay(e.done_at)} ${tunisTime(e.done_at)}` : ""}` : "Waiting for the result"}
+              {e.status === "done"
+                ? e.done_at
+                  ? t("shared.examResultInAt", { when: `${tunisDay(e.done_at, lang)} ${tunisTime(e.done_at)}` })
+                  : t("shared.examResultIn")
+                : t("shared.examWaiting")}
             </span>
           </div>
           {(e.results ?? []).map((r) => (

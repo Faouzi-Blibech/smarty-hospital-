@@ -482,6 +482,15 @@ Spec: `docs/superpowers/specs/2026-10-09-single-visit-and-case-notebook-design.m
 - [ ] n8n W7 (exams ordered → patient) and W8 (results ready → doctor)
 - [ ] Ask the doctors which triage scale they use; set `confirmed: true` in `rules/triage_scale.v1.json`
 
+### Interface languages (2026-10-10)
+
+Plan: `docs/superpowers/plans/2026-10-10-i18n.md`.
+
+- [x] i18n core: typed messages per area, `useT()` / `getT()`, `ward_lang` cookie, `<html lang dir>` from the server, Noto Sans Arabic
+- [x] Language switcher on the sign-in page, the staff sidebar and the patient app header
+- [x] Every role's screens in English, French and Arabic; RTL layout for Arabic
+- [ ] Backend texts in the user's language (alert messages, AI reasons, exam labels, assistant replies)
+
 ## Day 4 — Fri 10-09 (polish + pitch)
 
 - [ ] Verify the whole demo with `LLM_PROVIDER=none` and the Wi-Fi off (local stack only).

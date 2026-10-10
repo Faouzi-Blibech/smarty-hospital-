@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { useT } from "@/i18n/I18nProvider";
 import { LiveBanner } from "@/components/LiveBanner";
 import { DosesTimeline } from "@/components/shared/DosesTimeline";
 import { ErrorCard } from "@/components/shared/ErrorCard";
@@ -38,6 +39,7 @@ interface Data {
 }
 
 export function PatientDetail({ id }: { id: string }) {
+  const { t } = useT();
   const flags = useDemoFlags();
   const router = useRouter();
   const me = useMe("doctor");
@@ -62,9 +64,9 @@ export function PatientDetail({ id }: { id: string }) {
       const [prescriptions, doses] = await Promise.all([getPrescriptions(id), dosesOrEmpty(id)]);
       setData((d) => (d ? { ...d, prescriptions, doses } : d));
     } catch {
-      showNoteError("Saved, but couldn’t refresh the prescriptions. Reload the page to see them.");
+      showNoteError(t("doctor.rxRefreshError"));
     }
-  }, [id, showNoteError]);
+  }, [id, showNoteError, t]);
 
   const onAddNote = useCallback(
     async (text: string) => {
@@ -72,11 +74,11 @@ export function PatientDetail({ id }: { id: string }) {
         const note = await addNote(id, text, { by: DOCTOR_ID });
         setData((d) => (d ? { ...d, notes: [note, ...d.notes] } : d));
       } catch (e) {
-        showNoteError("Couldn’t save the note. Your text is still in the box — try again.");
+        showNoteError(t("doctor.noteSaveError"));
         throw e; // keeps the draft in NotesPanel
       }
     },
-    [id, showNoteError],
+    [id, showNoteError, t],
   );
 
   const state = flags.state === "error" || failed ? "error" : flags.state === "loading" || !data ? "loading" : null;
@@ -87,25 +89,25 @@ export function PatientDetail({ id }: { id: string }) {
     <div className={styles.page}>
       <div className={styles.crumbs}>
         <Link href="/doctor" className={styles.crumbLink}>
-          My patients
+          {t("doctor.myPatients")}
         </Link>
         <span>/</span>
         <span dir="auto" className={styles.crumbHere}>
-          {state ? "Patient" : name}
+          {state ? t("doctor.patientCrumb") : name}
         </span>
         <span className={styles.spacer} />
         <span className={styles.audit}>
           <span className={styles.lock} />
-          Access logged · {viewer} · {openedAt}
+          {t("doctor.auditLine", { viewer, time: openedAt })}
         </span>
       </div>
-      {!flags.live ? <LiveBanner>Chart frozen at {pausedAt()}. New readings will fill in automatically.</LiveBanner> : null}
+      {!flags.live ? <LiveBanner>{t("doctor.chartFrozen", { time: pausedAt() })}</LiveBanner> : null}
 
       {state === "error" ? (
         <ErrorCard
-          title="Couldn’t load this patient."
+          title={t("doctor.loadPatientError")}
           onRetry={load}
-          secondaryLabel="Back to my patients"
+          secondaryLabel={t("doctor.backToPatients")}
           onSecondary={() => router.push("/doctor")}
         />
       ) : state === "loading" || !data ? (

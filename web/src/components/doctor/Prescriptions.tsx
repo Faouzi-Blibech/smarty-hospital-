@@ -3,6 +3,7 @@
 // Prescriptions card: active list, then the "New prescription" form (time chips, pill
 // slots, allergy rule check) and the save toast.
 import { useMemo, useState, type ReactNode } from "react";
+import { useT } from "@/i18n/I18nProvider";
 import { Toast, useToast } from "@/components/Toast";
 import { createPrescription } from "@/lib/api";
 import { daysSince, now, tunisTime } from "@/lib/time";
@@ -15,7 +16,6 @@ type SlotKey = (typeof SLOTS)[number];
 /** Rule check (fixed rule, not AI): penicillin-family names. */
 const PENICILLIN_FAMILY = /amox|penic|ampic|augment/i;
 const DEFAULT_MED = "Furosemide 40mg";
-const DEFAULT_PLAN = "Weigh every morning. Stop and call if weight drops more than 1 kg in a day.";
 
 const drugName = (med: string) => med.split(" ")[0];
 
@@ -29,6 +29,7 @@ export interface PrescriptionsProps {
 }
 
 export function Prescriptions({ patient, prescriptions, actorId, onSaved }: PrescriptionsProps) {
+  const { t } = useT();
   const rows = useMemo(
     () => prescriptions.flatMap((rx) => rx.items.map((item, i) => ({ key: `${rx.id}-${i}`, rx, item }))),
     [prescriptions],
@@ -44,7 +45,7 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
   const [days, setDays] = useState(5);
   const [times, setTimes] = useState<string[]>(["08:00"]);
   const [slot, setSlot] = useState<SlotKey | null>(null);
-  const [plan, setPlan] = useState(DEFAULT_PLAN);
+  const [plan, setPlan] = useState(() => t("doctor.defaultPlan"));
   const [saving, setSaving] = useState(false);
   const [timesError, setTimesError] = useState(false);
   const [toast, showToast] = useToast<{ tone: "ok" | "warn"; body: ReactNode }>(4500);
@@ -60,14 +61,14 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
     setTimes(["08:00"]);
     setTimesError(false);
     setSlot(null);
-    setPlan(DEFAULT_PLAN);
+    setPlan(t("doctor.defaultPlan"));
   }
 
   function firstDose(): string {
-    if (!sortedTimes.length) return "not scheduled";
+    if (!sortedTimes.length) return t("doctor.notScheduled");
     const hm = tunisTime(now().toISOString());
-    const today = sortedTimes.find((t) => t > hm);
-    return today ? `today ${today}` : `tomorrow ${sortedTimes[0]}`;
+    const today = sortedTimes.find((x) => x > hm);
+    return today ? t("doctor.todayAt", { time: today }) : t("doctor.tomorrowAt", { time: sortedTimes[0] });
   }
 
   async function save() {
@@ -77,7 +78,7 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
       return;
     }
     setSaving(true);
-    const slotText = pickedSlot === "r" ? "reminder only" : `slot ${pickedSlot}`;
+    const slotText = pickedSlot === "r" ? t("doctor.reminderOnlyLower") : t("doctor.slotLower", { n: pickedSlot });
     const first = firstDose();
     try {
       const rx = await createPrescription(
@@ -93,7 +94,7 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
           tone: "ok",
           body: (
             <>
-              <b>Sent to bedside unit</b> · {patient.device_id}, {slotText}. First dose {first}.
+              <b>{t("doctor.toastSentTitle")}</b> · {t("doctor.toastSentBody", { id: patient.device_id, slot: slotText, first })}
             </>
           ),
         });
@@ -102,7 +103,7 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
           tone: "warn",
           body: (
             <>
-              <b>Saved · No device assigned.</b> Nurses will give doses from the med round.
+              <b>{t("doctor.toastSavedTitle")}</b> {t("doctor.toastSavedBody")}
             </>
           ),
         });
@@ -114,7 +115,7 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
         tone: "warn",
         body: (
           <>
-            <b>Couldn’t save the prescription.</b> Nothing was sent. Try again.
+            <b>{t("doctor.toastFailTitle")}</b> {t("doctor.toastFailBody")}
           </>
         ),
       });
@@ -125,29 +126,29 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
 
   const sel = (on: boolean) => (on ? styles.on : "");
   const deviceLine = patient.device_id
-    ? `bedside unit ${patient.device_id} has 4 pill slots`
-    : "no bedside unit assigned";
+    ? t("doctor.deviceHasSlots", { id: patient.device_id })
+    : t("doctor.noDeviceAssigned");
 
   return (
     <section className={styles.card}>
       <div className={styles.head}>
-        <h3 className={styles.h3}>Prescriptions</h3>
+        <h3 className={styles.h3}>{t("doctor.rxTitle")}</h3>
         <span className={styles.sub}>
-          {rows.length} active · {deviceLine}
+          {t("doctor.rxActive", { n: rows.length })} · {deviceLine}
         </span>
       </div>
       <div className={`${styles.rxGrid} ${styles.th}`}>
-        <span>Medicine</span>
-        <span>Times</span>
-        <span>Pill slot</span>
-        <span>Days left</span>
+        <span>{t("doctor.colMedicine")}</span>
+        <span>{t("doctor.colTimes")}</span>
+        <span>{t("doctor.colPillSlot")}</span>
+        <span>{t("doctor.colDaysLeft")}</span>
         <span />
       </div>
       {rows.map(({ key, rx, item }) => {
         const left = Math.max(0, item.days - daysSince(rx.created_at));
         const override = !!rx.allergy_override;
         const by = rx.doctor_id === patient.attending_doctor_id ? patient.attending_doctor_name : null;
-        const note = override ? `Allergy conflict flagged · override by ${by ?? rx.doctor_id}` : rx.care_plan;
+        const note = override ? t("doctor.allergyOverride", { name: by ?? rx.doctor_id }) : rx.care_plan;
         return (
           <div key={key} className={`${styles.rxGrid} ${styles.tr}`}>
             <div className={styles.medCell}>
@@ -159,9 +160,9 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
               ) : null}
             </div>
             <div className={styles.times}>
-              {item.times.map((t) => (
-                <span key={t} className={styles.time}>
-                  {t}
+              {item.times.map((tm) => (
+                <span key={tm} className={styles.time}>
+                  {tm}
                 </span>
               ))}
             </div>
@@ -171,21 +172,21 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
                   <span key={i} className={styles.cell} style={{ background: i === item.slot ? "var(--ink)" : "transparent" }} />
                 ))}
               </span>
-              <span className={styles.slotLabel}>{item.slot != null ? `Slot ${item.slot}` : "Reminder only"}</span>
+              <span className={styles.slotLabel}>{item.slot != null ? t("doctor.slotN", { n: item.slot }) : t("doctor.reminderOnly")}</span>
             </div>
             <span className={styles.days}>{left}</span>
             <button type="button" className={styles.edit}>
-              Edit
+              {t("doctor.edit")}
             </button>
           </div>
         );
       })}
 
       <div className={styles.form}>
-        <span className={styles.formTitle}>New prescription</span>
+        <span className={styles.formTitle}>{t("doctor.newRx")}</span>
         <div className={styles.formRow}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Medicine and dose</span>
+            <span className={styles.fieldLabel}>{t("doctor.medAndDose")}</span>
             <input
               value={med}
               onChange={(e) => setMed(e.target.value)}
@@ -195,13 +196,13 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Number of days</span>
+            <span className={styles.fieldLabel}>{t("doctor.numberOfDays")}</span>
             <span className={styles.stepper}>
-              <button type="button" onClick={() => setDays((d) => Math.max(1, d - 1))} aria-label="Fewer days" className={styles.step}>
+              <button type="button" onClick={() => setDays((d) => Math.max(1, d - 1))} aria-label={t("doctor.fewerDays")} className={styles.step}>
                 −
               </button>
               <span className={styles.stepValue}>{days}</span>
-              <button type="button" onClick={() => setDays((d) => Math.min(90, d + 1))} aria-label="More days" className={styles.step}>
+              <button type="button" onClick={() => setDays((d) => Math.min(90, d + 1))} aria-label={t("doctor.moreDays")} className={styles.step}>
                 +
               </button>
             </span>
@@ -211,45 +212,44 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
           <div role="alert" className={styles.rule}>
             <span className={styles.ruleDiamond} />
             <span>
-              <b>Rule check: allergy conflict — High.</b> This medicine is in the penicillin family and the patient is allergic to
-              penicillin. You can still save; the override will be logged.
+              <b>{t("doctor.ruleTitle")}</b> {t("doctor.ruleBody")}
             </span>
           </div>
         ) : null}
         <div className={styles.group}>
-          <span id="rx-times-label" className={styles.fieldLabel}>Times of day</span>
+          <span id="rx-times-label" className={styles.fieldLabel}>{t("doctor.timesOfDay")}</span>
           <div
             className={styles.chips}
             role="group"
             aria-labelledby="rx-times-label"
             aria-describedby={timesError ? "rx-times-error" : undefined}
           >
-            {TIME_CHIPS.map((t) => {
-              const on = times.includes(t);
+            {TIME_CHIPS.map((tm) => {
+              const on = times.includes(tm);
               return (
                 <button
-                  key={t}
+                  key={tm}
                   type="button"
                   aria-pressed={on}
                   onClick={() => {
-                    setTimes((s) => (on ? s.filter((x) => x !== t) : [...s, t]));
+                    setTimes((s) => (on ? s.filter((x) => x !== tm) : [...s, tm]));
                     if (!on) setTimesError(false);
                   }}
                   className={`${styles.chip} ${sel(on)}`}
                 >
-                  {t}
+                  {tm}
                 </button>
               );
             })}
           </div>
           {timesError ? (
             <span id="rx-times-error" role="alert" className={styles.fieldError}>
-              Pick at least one time of day.
+              {t("doctor.pickOneTime")}
             </span>
           ) : null}
         </div>
         <div className={styles.group}>
-          <span className={styles.fieldLabel}>Pill slot on bedside unit</span>
+          <span className={styles.fieldLabel}>{t("doctor.pillSlotOnUnit")}</span>
           <div className={styles.slots}>
             {SLOTS.map((k) => {
               const taken = k !== "r" && !!slotMeds[k];
@@ -263,28 +263,28 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
                   onClick={() => !taken && setSlot(k)}
                   className={`${styles.slot} ${taken ? styles.taken : sel(on)}`}
                 >
-                  <span className={styles.slotName}>{k === "r" ? "Reminder only" : `Slot ${k}`}</span>
-                  <span className={styles.slotSub}>{k === "r" ? "No pill loaded" : taken ? `In use · ${slotMeds[k]}` : "Empty"}</span>
+                  <span className={styles.slotName}>{k === "r" ? t("doctor.reminderOnly") : t("doctor.slotN", { n: k })}</span>
+                  <span className={styles.slotSub}>{k === "r" ? t("doctor.noPillLoaded") : taken ? t("doctor.inUse", { med: slotMeds[k] ?? "" }) : t("doctor.slotEmpty")}</span>
                 </button>
               );
             })}
           </div>
         </div>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Care plan note</span>
+          <span className={styles.fieldLabel}>{t("doctor.carePlanNote")}</span>
           <textarea rows={2} value={plan} onChange={(e) => setPlan(e.target.value)} dir="auto" className={styles.textarea} />
         </label>
         <div className={styles.formBar}>
           <span className={styles.formHint}>
             {patient.device_id
-              ? `Saving sends the schedule to ${patient.device_id} and adds the doses to the nurse’s med round.`
-              : "Saving adds the doses to the nurse’s med round."}
+              ? t("doctor.hintWithDevice", { id: patient.device_id })
+              : t("doctor.hintNoDevice")}
           </span>
           <button type="button" onClick={reset} className={styles.secondary}>
-            Cancel
+            {t("doctor.cancel")}
           </button>
           <button type="button" onClick={save} disabled={saving} className={styles.primary}>
-            Save prescription
+            {t("doctor.saveRx")}
           </button>
         </div>
       </div>

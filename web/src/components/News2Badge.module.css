@@ -3,7 +3,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 11px 6px 6px;
+  padding-block: 6px;
+  padding-inline: 6px 11px;
   border-radius: 999px;
   font-size: 14px;
   font-weight: 700;
