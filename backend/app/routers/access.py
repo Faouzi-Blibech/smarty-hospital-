@@ -1,4 +1,4 @@
-"""Who may reach a patient beyond the defaults (spec §6.3, §6.6): enrollment codes and doctor-to-doctor sharing."""
+"""Who may reach a patient beyond the defaults (spec §6.3, §6.6): patient reset codes and doctor-to-doctor sharing."""
 
 from datetime import UTC, datetime, timedelta
 
@@ -27,18 +27,6 @@ def owner_or_admin(db: Session, user: User, patient_id: str) -> Patient:
     if user.role == "admin" or (user.role == "doctor" and p.attending_doctor_id == user.id):
         return p
     raise forbidden("only the hospital admin or the attending doctor")
-
-
-@router.post("/{patient_id}/enrollment-code")
-def enrollment_code(patient_id: str, request: Request, user: User = Depends(require_roles("admin", "doctor")),
-                    db: Session = Depends(get_db)) -> dict:
-    p = owner_or_admin(db, user, patient_id)
-    if db.scalar(select(User.id).where(User.patient_id == p.id, User.status != "disabled")):
-        raise ApiError(409, "already_enrolled", "this patient already has an account")
-    code, row = codes.issue(db, "enrollment", issued_by=user.id, patient_id=p.id)
-    audit(db, user, "create", "access_code", row.id, patient_id=p.id, ip=client_ip(request))
-    db.commit()
-    return {"code": code, "expires_at": iso(row.expires_at)}
 
 
 @router.post("/{patient_id}/reset-code")

@@ -22,7 +22,7 @@ def test_staff_supervisor(seeded):
 def test_access_code_and_grant_rows(seeded):
     now = datetime.now(UTC)
     p = make_patient(seeded, attending="u-0001")
-    seeded.add(AccessCode(id="ac-9001", purpose="enrollment", code_hash="x" * 64, patient_id=p.id,
+    seeded.add(AccessCode(id="ac-9001", purpose="reset", code_hash="x" * 64, user_id="u-0002",
                           issued_by="u-0004", expires_at=now + timedelta(hours=48)))
     seeded.add(PatientAccess(id="pa-9001", patient_id=p.id, user_id="u-0001", granted_by="u-0004",
                              expires_at=now + timedelta(days=30)))

@@ -57,7 +57,7 @@ def detail(db: Session, p: Patient) -> dict:
 
 
 def search(db: Session, *, where=None, doctor_id: str | None = None, ward: str | None = None,
-           q: str | None = None) -> list[Patient]:
+           q: str | None = None, unlinked: bool = False) -> list[Patient]:
     stmt = select(Patient)
     if where is not None:
         stmt = stmt.where(where)
@@ -65,6 +65,9 @@ def search(db: Session, *, where=None, doctor_id: str | None = None, ward: str |
         stmt = stmt.where(Patient.attending_doctor_id == doctor_id)
     if ward:
         stmt = stmt.where(Patient.ward == ward)
+    if unlinked:  # records no (non-disabled) account is linked to: the candidates for approving a patient
+        taken = select(User.id).where(User.patient_id == Patient.id, User.status != "disabled")
+        stmt = stmt.where(~taken.exists())
     if q:
         like = f"%{q}%"
         stmt = stmt.where(or_(Patient.first_name.ilike(like), Patient.last_name.ilike(like),

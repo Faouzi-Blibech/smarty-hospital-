@@ -10,7 +10,7 @@
 - Auth: `Authorization: Bearer <jwt>`. JWT claims: `sub` (user id), `role` (`doctor|nurse|admin|patient`), `patient_id` (only for the patient role), `exp` (8 h).
 - IDs are prefixed strings: `u-0001` user, `p-0001` patient, `a-0001` appointment, `rx-0001` prescription, `d-000001` dose, `al-0001` alert, `adm-0001` admission, `ex-0001` exam order, `er-0001` exam result, `nb-0001` notebook entry, `bsu-001` device.
 - Timestamps are ISO-8601 UTC strings (`2026-10-08T09:30:00Z`). (MQTT uses epoch seconds; the backend converts.)
-- Errors: `{"detail": "human readable", "code": "snake_case_code"}` with the right HTTP status (400, 401, 403, 404, 409, 422).
+- Errors: `{"detail": "human readable", "code": "snake_case_code"}` with the right HTTP status (400, 401, 403, 404, 409, 422, 423, 429).
 - **Every read of a patient record** (`GET /patients/{id}` and every `GET /patients/{id}/*`) writes an `audit_log` row.
 - Permissions per endpoint: see the role matrix in `data-model.md`. The column "Roles" below is the short version.
 
@@ -29,26 +29,29 @@ Added in 1.9 (spec `docs/superpowers/specs/2026-10-10-accounts-and-access-design
 
 | Method and path | Who | Notes |
 |---|---|---|
-| `POST /auth/register` | anyone | `{name, email, password, note?, requested_doctor_id?, enrollment_code?}` → 202 `RECEIVED` (always the same answer). No `role`/`ward` in the body (422). With a valid enrollment code the patient account is created active; otherwise a pending staff account. |
+| `GET /hospital` | anyone | `{"name": "Ward Hospital"}`: this install's hospital (one install per hospital), from the setting `HOSPITAL_NAME`. Rate-limited like the directory (30/min per IP). Feeds the hospital select on the sign-up form. |
+| `POST /auth/register` | anyone | `{name, email, password, role, requested_doctor_id?, note?}` with `role` in `patient`/`nurse`/`doctor` (required; anything else, including `admin`, is 422). `role: "doctor"` with a `requested_doctor_id` is 422. Unknown extra fields (`ward`, `enrollment_code`...) are 422. An unknown or inactive `requested_doctor_id` is stored as null. → 202 `RECEIVED` (always the same answer). The account is `pending`; `role` is stored as `requested_role`, and the real role is set at approval. |
 | `POST /auth/reset` | anyone | `{email, code, new_password}` → 204, or generic 400 `invalid_code` |
-| `POST /auth/login` | anyone | adds 403 `account_pending` / `account_disabled` / `account_rejected` and 423 `account_locked`, only after the password is correct |
+| `POST /auth/login` | anyone | `email` at most 254 and `password` at most 200 characters (422 above). Adds 403 `account_pending` / `account_disabled` / `account_rejected` and 423 `account_locked`, only after the password is correct |
 | `POST /auth/change-password` | logged-in user | `{current_password, new_password}` → 204 |
 | `POST /auth/logout` | logged-in user | 204; audit row. Device-only: the client deletes its token; tokens are not revoked server-side |
-| `GET /doctors/directory` | anyone | doctor display names and ids only, for the sign-up "I work with" picker. Rate-limited, no emails. → `[{id, name}]` |
+| `GET /doctors/directory` | anyone | doctor display names and ids only, for the sign-up "I work with" picker and the share panel. No emails. → `[{id, name}]`. Rate-limited: anonymous callers share a per-IP bucket; a logged-in caller (bearer token) has a bucket of their own. |
 | `GET /users?status=pending` | admin (all), doctor (his requests) | `status` is `pending` (default) or `rejected` → list of `pending_out` |
-| `POST /users/{id}/approve` | admin, doctor | admin: `{role, ward?}`, role in doctor/nurse/admin. Doctor: role nurse only, into his team (403 otherwise). → `admin_out` |
-| `POST /users/{id}/reject` · `/disable` · `/enable` | admin (anyone), doctor (his team only) | → `admin_out`; wrong current status → 409 `bad_status` |
+| `POST /users/{id}/approve` | admin, doctor | `{role, ward?, patient_id?}`; `role` is patient, nurse, doctor or admin (the approver may change the requested role; 422 otherwise). **Admin:** any pending or rejected request. **Doctor:** only a request whose `requested_doctor_id` is himself, and only as `patient` or `nurse` (403 otherwise; his nurses join his team, `ward` is ignored). A doctor cannot approve a request an admin rejected (403). `role: "patient"` links the account to a record: with `patient_id` the existing record (404 if missing, 409 `conflict` if it already has an account, 403 for a doctor if he is not its attending doctor); without `patient_id` a new record is created from the request's name (first word = first name, the rest = last name; other fields empty) with the approving doctor as attending, or, for the admin, the requested doctor if still active, else none. `patient_id` with any other role is 422. → `admin_out` |
+| `POST /users/{id}/reject` | admin (any request), doctor (requests naming him) | → `admin_out`; only a pending request, otherwise 409 `bad_status` |
+| `POST /users/{id}/disable` · `/enable` | admin (anyone but himself), doctor (his team only) | → `admin_out`; wrong current status → 409 `bad_status`. Disabling closes the user's open WebSockets (code 4401). A doctor cannot enable an account an admin disabled (403). |
 | `GET /doctors/me/team` | doctor | his team members and their status → list of `admin_out` |
 | `PATCH /users/{id}` | admin | `{ward}`: add or clear a ward on an active doctor or nurse (e.g. a team nurse) → `admin_out`; 409 `bad_status` for other roles |
 | `POST /patients/{id}/reset-code` | admin, attending doctor | reset code for the patient's account → `{code, expires_at}` |
 | `POST /users/{id}/reset-code` | admin | → `{code, expires_at}`, shown once |
-| `POST /patients/{id}/enrollment-code` | admin, attending doctor | → `{code, expires_at}`, shown once; 409 `already_enrolled` |
 | `GET /patients/{id}/access` | attending doctor, admin | active grants → list of `_grant_out` |
-| `POST /patients/{id}/access` | attending doctor, admin | `{doctor_id, expires_at?}` (default 30 days, at most 365; 422 otherwise) → `_grant_out`. A new grant replaces the doctor's live one. |
+| `POST /patients/{id}/access` | attending doctor, admin | `{doctor_id, expires_at?}` (default 30 days, at most 365; 422 otherwise) → `_grant_out`. A new grant replaces the doctor's live one. **Sharing is read-only:** a grant lets the doctor read the patient (detail, list, vitals, exams, appointments, alerts, notes, WebSocket frames) but every write on that patient returns 403 `forbidden`. |
 | `DELETE /patients/{id}/access/{doctor_id}` | attending doctor, admin | → 204; 404 if no live grant |
 | `GET /staff` | admin | gains `status` |
 
-Codes are 10 characters shown as `XXXXX-XXXXX`, valid 48 h, single use; a new code for the same target revokes the previous unused one.
+Codes are 10 characters shown as `XXXXX-XXXXX`, valid 48 h, single use; a new code for the same user revokes the previous unused one. Only password-reset codes exist (the first-admin bootstrap code is a reset code too): there are no enrollment codes.
+
+A disabled or rejected account receives nothing more: its open WebSockets are closed on disable, it is left out of Telegram alert recipients, results-ready events and the daily digest, and appointment confirm rejects it as `doctor_id` (422).
 
 ### Error codes (additions)
 
@@ -56,8 +59,8 @@ Codes are 10 characters shown as `XXXXX-XXXXX`, valid 48 h, single use; a new co
 |---|---|---|
 | 422 | `weak_password` | under 10 characters, over 72 UTF-8 bytes, in the common list, or equal to the email, its local part or the name |
 | 400 | `invalid_code` | unknown, expired or used code (one generic answer) |
-| 409 | `already_enrolled` | the patient already has an account |
-| 429 | `rate_limited` | failed logins (10/min per IP), `/auth/register` and `/auth/reset` (5/min, 30/day per IP), `/doctors/directory` (30/min per IP) |
+| 409 | `conflict` | approve: the chosen patient record already has an account |
+| 429 | `rate_limited` | failed logins (10/min per IP), `/auth/register` and `/auth/reset` (5/min, 30/day per IP), `/doctors/directory` and `/hospital` (30/min per IP, or per user when logged in) |
 | 403 | `account_pending` | login with the right password while waiting for approval |
 | 403 | `account_disabled` | login with the right password on a disabled account |
 | 403 | `account_rejected` | login with the right password after a rejected sign-up |
@@ -79,11 +82,11 @@ Codes are 10 characters shown as `XXXXX-XXXXX`, valid 48 h, single use; a new co
 
 `pending_out` (`GET /users`):
 ```json
-{ "id": "u-0008", "name": "...", "email": "...", "note": "nurse, Cardiology", "requested_doctor_id": "u-0001", "requested_doctor_name": "Dr Trabelsi", "status": "pending", "created_at": "2026-10-10T09:30:00Z" }
+{ "id": "u-0008", "name": "...", "email": "...", "note": "nurse, Cardiology", "requested_role": "nurse", "requested_doctor_id": "u-0001", "requested_doctor_name": "Dr Trabelsi", "status": "pending", "created_at": "2026-10-10T09:30:00Z" }
 ```
-`note`, `requested_doctor_id` and `requested_doctor_name` are null when not given.
+`note`, `requested_doctor_id` and `requested_doctor_name` are null when not given; `requested_role` is `patient`, `nurse` or `doctor` (null only for accounts created before 1.9).
 
-Codes (`enrollment-code`, `reset-code`):
+Codes (`reset-code`):
 ```json
 { "code": "ABCDE-23456", "expires_at": "2026-10-12T09:30:00Z" }
 ```
@@ -97,7 +100,7 @@ Codes (`enrollment-code`, `reset-code`):
 
 | Method & path | Roles | Notes |
 |---|---|---|
-| `GET /patients?ward=&q=` | doctor (own), nurse (ward), admin (list only: name, bed, device) | → `[PatientSummary]` |
+| `GET /patients?ward=&q=&unlinked=` | doctor (own), nurse (ward), admin (list only: name, bed, device) | → `[PatientSummary]`. `unlinked=true` keeps only records with no active account (the candidates when approving a patient). |
 | `GET /patients/{id}` | doctor (own), nurse (ward), patient (self) | → `Patient` |
 | `PATCH /patients/{id}` | doctor (own), nurse (ward; allergies + notes only) | partial `Patient` → `Patient` |
 | `GET /patients/{id}/vitals?from=&to=` | doctor, nurse, patient (self) | → `[Vital]`, default last 24 h, max 5000 points |
@@ -299,7 +302,7 @@ Clarifications of 1.4 behaviour, as built:
 - `GET /alerts?status=` accepts `open` or `all` (default all); anything else is a 422. An admin gets 403.
 - `POST /alerts/{id}/ack` is idempotent: a second ack keeps the first `acked_by`. The acked alert is pushed again as an `alert` WS frame so other dashboards drop it.
 - 422 validation errors use the same envelope: `{"detail": "<field>: <message>", "code": "invalid"}`.
-- `WS /ws`: an invalid token is closed with code 4401, a patient token with 4403.
+- `WS /ws`: an invalid token (or a disabled account) is closed with code 4401, a patient token with 4403. Disabling a user closes their open sockets with 4401.
 - `POST /devices/{id}/assign` → `{"admission_id","patient_id","device_id","bed","schedule_version","published_to_device"}`; 409 `device_busy` if the device has another active patient. Moving a patient to another device sends the old device an unassigned schedule.
 - `POST /admissions/{id}/discharge` → `{"admission_id","patient_id","device_id","discharged_at"}`; 409 `already_discharged`.
 - `POST /devices/{id}/command` → `{"published": bool}`.
@@ -353,7 +356,7 @@ Still proposed: `GET /offers/{id}`, `POST /offers/{id}/accept` and `GET /patient
 
 ## Changelog
 
-- **1.9** (2026-10-10): accounts — register/reset/change-password, doctor directory, account approval (/users*), doctor team, enrollment codes, patient sharing; login error codes; JWT exp 8 h; logout
+- **1.9** (2026-10-10): accounts — sign-up with a requested role and doctor (`role` required on register), `GET /hospital`, reset/change-password, doctor directory, account approval (/users*) that links or creates the patient record, `GET /patients?unlinked=`, doctor team, patient sharing; no enrollment codes (reset codes only); login error codes and length limits; JWT exp 8 h; logout; disabled accounts lose WebSockets and notifications
 
 - **1.8** (2026-10-09): proposes the exam and notebook routes above and the new `Appointment`/`triage` fields (spec 2026-10-09). Nothing earlier changes. Needs a 👍 from Wali.
 

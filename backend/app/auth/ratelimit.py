@@ -57,14 +57,15 @@ def client_ip(request: Request) -> str:
     return request.client.host if request.client else ""
 
 
-def _keys(request: Request, route: str, limits: tuple[tuple[int, float], ...]):
-    ip = client_ip(request)
-    return [(f"{route}:{ip}:{window}", limit, window) for limit, window in limits]
+def _keys(request: Request, route: str, limits: tuple[tuple[int, float], ...], who: str | None = None):
+    who = who or client_ip(request)
+    return [(f"{route}:{who}:{window}", limit, window) for limit, window in limits]
 
 
-def enforce(request: Request, route: str, limits: tuple[tuple[int, float], ...]) -> None:
-    """Count this request; 429 once a window is full (register, reset, directory)."""
-    for key, limit, window in _keys(request, route, limits):
+def enforce(request: Request, route: str, limits: tuple[tuple[int, float], ...], who: str | None = None) -> None:
+    """Count this request; 429 once a window is full (register, reset, directory). `who` replaces the client IP
+    as the bucket key (a logged-in user gets a bucket of their own, not the IP's shared one)."""
+    for key, limit, window in _keys(request, route, limits, who):
         if not limiter.allow(key, limit, window):
             raise ApiError(429, *_TOO_MANY)
 

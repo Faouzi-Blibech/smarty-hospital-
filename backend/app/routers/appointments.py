@@ -162,7 +162,9 @@ def list_appointments(request: Request, patient_id: str | None = None, status: s
         patient_id = user.patient_id
     stmt = select(Appointment)
     if user.role == "doctor":  # pending requests are the pool; everything else only for own patients / bookings
-        mine = select(Patient.id).where(doctor_patient_filter(db, user))
+        # the work queue (no patient_id) is own patients only; a shared doctor reads one patient's list read-only
+        mine = select(Patient.id).where(doctor_patient_filter(db, user) if patient_id
+                                        else Patient.attending_doctor_id == user.id)
         stmt = stmt.where(or_(Appointment.status == "requested", Appointment.doctor_id == user.id,
                               Appointment.patient_id.in_(mine)))
     if patient_id:
@@ -197,8 +199,8 @@ def confirm(appointment_id: str, body: ConfirmIn, request: Request,
     a = _load(db, appointment_id)
     check_appointment_access(db, user, a, write=True, ip=_ip(request))
     doctor = db.get(User, body.doctor_id)
-    if doctor is None or doctor.role != "doctor":
-        raise ApiError(422, "invalid", "doctor_id: not a doctor")
+    if doctor is None or doctor.role != "doctor" or doctor.status != "active":
+        raise ApiError(422, "invalid", "doctor_id: not an active doctor")
     taken = db.scalar(select(Appointment.id).where(Appointment.status == "confirmed", Appointment.id != a.id,
                                                    Appointment.doctor_id == body.doctor_id,
                                                    Appointment.slot_at == body.slot_at).limit(1))

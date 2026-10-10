@@ -145,7 +145,7 @@ def add_exam(body: ExamIn, request: Request, user: User = Depends(require_roles(
         a = db.get(Appointment, body.appointment_id)
         if a is None or a.patient_id != p.id:
             raise ApiError(422, "invalid", "appointment_id: not this patient's appointment")
-        if not can_see_appointment(db, user, a):
+        if not can_see_appointment(db, user, a, write=True):
             raise forbidden("not your appointment")
     elif p.attending_doctor_id != user.id:
         raise forbidden("not your patient")

@@ -17,6 +17,7 @@ from app.models import Staff, User
 from app.schemas import iso
 from app.services import accounts as A
 from app.services.audit import audit
+from app.ws.hub import hub
 
 router = APIRouter(tags=["users"])
 
@@ -24,6 +25,7 @@ router = APIRouter(tags=["users"])
 class ApproveIn(BaseModel):
     role: str
     ward: str | None = None
+    patient_id: str | None = None  # role patient: link this existing record; omitted = create a record from the name
 
 
 def _target(db: Session, user_id: str) -> User:
@@ -33,8 +35,8 @@ def _target(db: Session, user_id: str) -> User:
     return u
 
 
-def _done(db: Session, actor: User, target: User, request: Request) -> dict:
-    audit(db, actor, "update", "user", target.id, ip=client_ip(request))
+def _done(db: Session, actor: User, target: User, request: Request, patient_id: str | None = None) -> dict:
+    audit(db, actor, "update", "user", target.id, patient_id=patient_id, ip=client_ip(request))
     db.flush()
     out = A.admin_out(db, target)
     db.commit()
@@ -57,8 +59,11 @@ def list_requests(request: Request, status: Literal["pending", "rejected"] = "pe
 def approve(user_id: str, body: ApproveIn, request: Request, user: User = Depends(require_roles("admin", "doctor")),
             db: Session = Depends(get_db)) -> dict:
     target = _target(db, user_id)
-    A.approve(db, user, target, body.role, body.ward, now=datetime.now(UTC))
-    return _done(db, user, target, request)
+    patient, created = A.approve(db, user, target, body.role, body.ward, now=datetime.now(UTC),
+                                 patient_id=body.patient_id)
+    if created:
+        audit(db, user, "create", "patient", patient.id, patient_id=patient.id, ip=client_ip(request))
+    return _done(db, user, target, request, patient_id=patient.id if patient else None)
 
 
 @router.post("/users/{user_id}/reject")
@@ -74,7 +79,9 @@ def disable(user_id: str, request: Request, user: User = Depends(require_roles("
             db: Session = Depends(get_db)) -> dict:
     target = _target(db, user_id)
     A.set_active(db, user, target, False)
-    return _done(db, user, target, request)
+    out = _done(db, user, target, request)
+    hub.close_user(user_id)  # after the commit: a socket must not outlive the disable
+    return out
 
 
 @router.post("/users/{user_id}/enable")

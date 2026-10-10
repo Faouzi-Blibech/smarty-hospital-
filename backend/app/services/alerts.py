@@ -13,6 +13,7 @@ from app.ids import new_id
 from app.integrations import n8n
 from app.models import Admission, Alert, Patient, Staff, User, Vital
 from app.schemas import iso
+from app.services import accounts
 
 DEDUPE_WINDOW = timedelta(minutes=10)
 TREND_WINDOW = 30
@@ -54,8 +55,9 @@ def chat_ids(db: Session, p: Patient | None) -> tuple[list[str], str | None]:
     nurses = db.scalars(select(Staff.telegram_chat_id).join(User, User.id == Staff.user_id)
                         .where(User.role == "nurse", User.status == "active", or_(Staff.ward == p.ward, *team),
                                Staff.telegram_chat_id.is_not(None))).all()
-    doc = db.get(Staff, p.attending_doctor_id) if p.attending_doctor_id else None
-    return list(dict.fromkeys(nurses)), doc.telegram_chat_id if doc else None
+    doc = accounts.active_doctor(db, p.attending_doctor_id)  # a disabled doctor gets no patient data
+    staff = db.get(Staff, doc.id) if doc else None
+    return list(dict.fromkeys(nurses)), staff.telegram_chat_id if staff else None
 
 
 def _recent(db: Session, patient_id: str, kind: str, severity: str | None = None) -> bool:

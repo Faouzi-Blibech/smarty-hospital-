@@ -2,16 +2,19 @@ from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 
 from fastapi import APIRouter, Depends, Request, Response
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import codes
-from app.auth.deps import get_current_user
+from app.auth.deps import get_current_user, oauth2_scheme, user_from_token
 from app.auth.passwords import check_password
 from app.auth.ratelimit import CODE_LIMITS, DIRECTORY_LIMITS, LOGIN_LIMITS, check, client_ip, enforce, record
 from app.auth.security import create_token, hash_password, verify_password
+from app.config import get_settings
 from app.db import get_db
 from app.errors import ApiError
 from app.ids import new_id
@@ -74,13 +77,19 @@ RECEIVED = {"status": "received",
 
 
 class RegisterIn(BaseModel):
-    model_config = ConfigDict(extra="forbid")  # no role, no ward: only an approver sets those
+    model_config = ConfigDict(extra="forbid")  # no ward, never admin: only an approver sets those
     name: str = Field(min_length=1, max_length=120)
     email: str = Field(min_length=3, max_length=254, pattern=r"^\s*[^@\s]+@[^@\s]+\.[^@\s]+\s*$")
     password: str = Field(min_length=1, max_length=200)
+    role: Literal["patient", "nurse", "doctor"]  # a request: the approver may change it
     note: str | None = Field(default=None, max_length=300)
     requested_doctor_id: str | None = Field(default=None, max_length=20)
-    enrollment_code: str | None = Field(default=None, max_length=20)
+
+    @model_validator(mode="after")
+    def _doctors_pick_no_doctor(self) -> "RegisterIn":
+        if self.role == "doctor" and self.requested_doctor_id:
+            raise ValueError("requested_doctor_id: doctors do not pick a doctor")
+        return self
 
 
 class ResetIn(BaseModel):
@@ -106,38 +115,22 @@ def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)) 
     ip, email, name = client_ip(request), body.email.strip().lower(), body.name.strip()
     check_password(body.password, email=email, name=name)
     pw_hash = hash_password(body.password)  # before any lookup: every path pays the same bcrypt cost
-    row = None
-    if body.enrollment_code:  # judged first, independent of the email, so a bad code never reveals an account
-        row = codes.find_valid(db, "enrollment", body.enrollment_code)
-        if row is None:
-            raise _invalid_code(db, ip)
-        if db.scalar(select(User.id).where(User.patient_id == row.patient_id, User.status != "disabled")):
-            raise ApiError(409, "already_enrolled", "this patient already has an account")
     if db.scalar(select(User.id).where(User.email == email)):
         audit(db, None, "register_duplicate", "user", "", ip=ip)  # same answer: emails are not enumerable
-        db.commit()  # an enrollment code stays unused
+        db.commit()
         return RECEIVED
     try:
-        if row is not None:
-            u = User(id=new_id(db, "u"), email=email, name=name, role="patient", status="active",
-                     patient_id=row.patient_id, password_hash=pw_hash)
-            db.add(u)
-            db.flush()
-            codes.mark_used(row, used_by=u.id)
-            audit(db, u, "register", "user", u.id, patient_id=row.patient_id, ip=ip)
-            audit(db, u, "code_used", "access_code", row.id, patient_id=row.patient_id, ip=ip)
-        else:
-            doctor = db.get(User, body.requested_doctor_id) if body.requested_doctor_id else None
-            if doctor is not None and (doctor.role != "doctor" or doctor.status != "active"):
-                doctor = None
-            u = User(id=new_id(db, "u"), email=email, name=name, role=None, status="pending",
-                     password_hash=pw_hash, requested_note=(body.note or "").strip() or None,
-                     requested_doctor_id=doctor.id if doctor else None)
-            db.add(u)
-            db.flush()
-            audit(db, u, "register", "user", u.id, ip=ip)
+        doctor = db.get(User, body.requested_doctor_id) if body.requested_doctor_id else None
+        if doctor is not None and (doctor.role != "doctor" or doctor.status != "active"):
+            doctor = None
+        u = User(id=new_id(db, "u"), email=email, name=name, role=None, status="pending",
+                 password_hash=pw_hash, requested_note=(body.note or "").strip() or None,
+                 requested_role=body.role, requested_doctor_id=doctor.id if doctor else None)
+        db.add(u)
+        db.flush()
+        audit(db, u, "register", "user", u.id, ip=ip)
         db.commit()
-    except IntegrityError:  # lost a race on the unique email (or a concurrent enrollment): same answer
+    except IntegrityError:  # lost a race on the unique email: same answer
         db.rollback()
     return RECEIVED
 
@@ -146,11 +139,12 @@ def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)) 
 def reset_password(body: ResetIn, request: Request, db: Session = Depends(get_db)) -> Response:
     enforce(request, "reset", CODE_LIMITS)
     ip, email = client_ip(request), body.email.strip().lower()
+    check_password(body.new_password, email=email)  # generic first: nothing below may depend on the email existing
     user = db.scalar(select(User).where(User.email == email))
-    check_password(body.new_password, email=email, name=user.name if user else "")  # before the code is spent
     row = codes.find_valid(db, "reset", body.code, user_id=user.id) if user else None
     if row is None:
         raise _invalid_code(db, ip)
+    check_password(body.new_password, email=email, name=user.name)  # the name rule: only a valid code reveals it
     codes.mark_used(row, used_by=user.id)
     user.password_hash = hash_password(body.new_password)
     user.failed_logins, user.locked_until = 0, None
@@ -175,11 +169,21 @@ def change_password(body: ChangePasswordIn, request: Request, user: User = Depen
 
 
 @router.get("/doctors/directory")
-def doctor_directory(request: Request, db: Session = Depends(get_db)) -> list[dict]:
-    """Names for the sign-up "I work with" picker: no emails, no wards."""
-    enforce(request, "directory", DIRECTORY_LIMITS)
+def doctor_directory(request: Request, token: str | None = Depends(oauth2_scheme),
+                     db: Session = Depends(get_db)) -> list[dict]:
+    """Names for the sign-up "I work with" picker and the share panel: no emails, no wards. Anonymous callers share
+    the per-IP bucket (a hospital may sit behind one IP); a logged-in caller has a bucket of their own."""
+    caller = user_from_token(db, token)
+    enforce(request, "directory", DIRECTORY_LIMITS, who=f"user:{caller.id}" if caller else None)
     rows = db.scalars(select(User).where(User.role == "doctor", User.status == "active").order_by(User.name))
     return [{"id": u.id, "name": u.name} for u in rows]
+
+
+@router.get("/hospital")
+def hospital(request: Request) -> dict:
+    """The sign-up hospital select: one install is one hospital, named by HOSPITAL_NAME."""
+    enforce(request, "hospital", DIRECTORY_LIMITS)
+    return {"name": get_settings().hospital_name}
 
 
 @router.post("/auth/logout", status_code=204)

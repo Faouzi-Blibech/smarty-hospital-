@@ -71,9 +71,10 @@ def doctor_patient_filter(db: Session, user: User):
     return or_(Patient.attending_doctor_id == user.id, Patient.id.in_(granted))
 
 
-def can_access(db: Session, user: User, patient: Patient) -> bool:
+def can_access(db: Session, user: User, patient: Patient, write: bool = False) -> bool:
+    """A sharing grant is read-only: it counts for reads, never for writes (the one place this rule lives)."""
     if user.role == "doctor":
-        return patient.attending_doctor_id == user.id or has_grant(db, user.id, patient.id)
+        return patient.attending_doctor_id == user.id or (not write and has_grant(db, user.id, patient.id))
     if user.role == "nurse":
         ward, sup = nurse_scope(db, user)
         return (ward is not None and patient.ward == ward) or (
@@ -83,7 +84,7 @@ def can_access(db: Session, user: User, patient: Patient) -> bool:
     return False  # admin: summary fields only, through GET /patients
 
 
-def can_see_appointment(db: Session, user: User, a: Appointment) -> bool:
+def can_see_appointment(db: Session, user: User, a: Appointment, write: bool = False) -> bool:
     """Who may see/act on an appointment. A doctor reaches a patient who is not theirs only through a pending
     request (`requested`), plus appointments they are booked on and their own patients' appointments.
     Admin handles scheduling. Nurses have no appointment access."""
@@ -95,14 +96,14 @@ def can_see_appointment(db: Session, user: User, a: Appointment) -> bool:
         if a.status == "requested" or a.doctor_id == user.id:
             return True
         p = db.get(Patient, a.patient_id)
-        return p is not None and (p.attending_doctor_id == user.id or has_grant(db, user.id, p.id))
+        return p is not None and (p.attending_doctor_id == user.id or (not write and has_grant(db, user.id, p.id)))
     return False
 
 
 def check_appointment_access(db: Session, user: User, a: Appointment, write: bool = False,
                              resource: str = "appointment", ip: str = "") -> None:
     """403 unless `user` may see this appointment; on success writes the audit row (patient_id = its patient)."""
-    if not can_see_appointment(db, user, a) or (write and user.role == "patient"):
+    if not can_see_appointment(db, user, a, write) or (write and user.role == "patient"):
         raise forbidden("not your appointment")
     audit(db, user, "update" if write else "read", resource, a.id, patient_id=a.patient_id, ip=ip)
 
@@ -114,7 +115,7 @@ def check_patient_access(db: Session, user: User, patient_id: str, write: bool =
     patient = db.get(Patient, patient_id)
     if patient is None:
         raise not_found("patient")
-    if not can_access(db, user, patient) or (write and user.role == "patient"):
+    if not can_access(db, user, patient, write) or (write and user.role == "patient"):
         raise forbidden("not your patient")
     audit(db, user, "update" if write else "read", resource, patient_id, patient_id=patient_id, ip=ip)
     return patient

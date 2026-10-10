@@ -39,7 +39,9 @@ erDiagram
 | `locked_until` | timestamptz, null | (1.5) set for 15 min after 5 failures |
 | `approved_by`, `approved_at` | text FK → users, null · timestamptz, null | (1.5) the approver and time |
 | `requested_note` | text, null | (1.5) what the person typed at sign-up, e.g. "nurse, Cardiology" (information only) |
-| `requested_doctor_id` | text FK → users, null | (1.5) the doctor chosen at sign-up ("I work with Dr ..."); decides who sees the pending request |
+| `requested_role` | text, null | (1.5) `patient` \| `nurse` \| `doctor`: the role picked on the sign-up form. A request only; the approver sets `role`. |
+| `requested_doctor_id` | text FK → users, null | (1.5) the doctor chosen at sign-up ("I work with Dr ..."); decides which doctor sees the pending request (patients and nurses only; a doctor request has none) |
+| `status_changed_by` | text FK → users, null | (1.5) who last disabled or rejected the account; null while active and for rows disabled before this column existed. A doctor may only enable or approve what a non-admin decided; null counts as an admin's decision. |
 | `created_at` | timestamptz | |
 
 ### `staff`
@@ -48,24 +50,23 @@ erDiagram
 | `user_id` | text PK FK → users | |
 | `ward` | text | e.g. `Cardiology` (nurse scope) |
 | `rfid_uid` | text unique, null | nurse badge UID, uppercase hex |
-| `supervisor_id` | text FK → users, null | (1.5) the doctor whose team this nurse belongs to; set when that doctor approves the account |
+| `supervisor_id` | text FK → users, null | (1.5) the doctor whose team this nurse belongs to; set when that doctor approves the account, or when the admin approves a nurse request that named him |
 | `telegram_chat_id` | text, null | for n8n W4 |
 
 ### `access_codes` (1.5)
-One table for both one-time code uses.
+Password-reset codes (the first-admin bootstrap code is one too). Enrollment codes were removed before release: a patient account is linked to a record when it is approved.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | text PK | `ac-0001` |
-| `purpose` | text | `enrollment` (link a patient account to a record) or `reset` (set a new password) |
+| `purpose` | text | `reset` (set a new password) |
 | `code_hash` | text | sha256 of the code. The plain code is shown once to the issuer and never stored. |
-| `patient_id` | text FK → patients, null | for `enrollment` |
-| `user_id` | text FK → users, null | for `reset` |
+| `user_id` | text FK → users, null | the user the code is for |
 | `issued_by` | text FK → users | |
 | `created_at`, `expires_at` | timestamptz | default lifetime 48 h |
 | `used_at`, `used_by` | timestamptz, null · text FK → users, null | single use |
 
-Issuing a new code for the same patient or user revokes the previous unused one by setting its `expires_at` to now.
+Issuing a new code for the same user revokes the previous unused one by setting its `expires_at` to now.
 
 ### `patient_access` (1.5)
 A doctor shares a patient with another doctor.
@@ -292,7 +293,7 @@ Enforcement: FastAPI dependencies (`require_role`, `require_patient_access`) are
 
 ## Changelog
 
-- **1.5** (2026-10-10): accounts — users.status/failed_logins/locked_until/approved_by/approved_at/requested_note/requested_doctor_id, users.role nullable while pending, staff.supervisor_id, new access_codes and patient_access tables
+- **1.5** (2026-10-10): accounts — users.status/failed_logins/locked_until/approved_by/approved_at/requested_note/requested_role/requested_doctor_id/status_changed_by, users.role nullable while pending, staff.supervisor_id, new access_codes (reset codes only) and patient_access tables
 
 - **1.4** (2026-10-09): adds `exam_orders`, `exam_results`, `notebook_entries`, the Exams and Notebook permission rows and two department nurses in the seed (single-visit pathway and case notebook, see `docs/superpowers/specs/2026-10-09-single-visit-and-case-notebook-design.md`). Needs a 👍 from Wali.
 
