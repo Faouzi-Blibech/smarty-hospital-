@@ -1,0 +1,77 @@
+.page {
+  padding: 36px 40px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-height: 100vh;
+}
+
+.h2 {
+  margin: 0;
+  font: 600 40px/1.1 var(--serif);
+  color: var(--ink);
+}
+
+.sub {
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.section {
+  margin: 8px 0 0;
+  font: 600 20px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.members {
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.member {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.member:last-child {
+  border-bottom: none;
+}
+
+.mwho {
+  flex: 1 1 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mname {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.memail {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: start;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.off {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--danger-ink);
+}
+
+.empty {
+  padding: 24px;
+  color: var(--muted);
+}

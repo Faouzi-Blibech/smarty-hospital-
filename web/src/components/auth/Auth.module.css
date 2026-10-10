@@ -1,0 +1,86 @@
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  font: 600 15px/1.2 var(--sans);
+}
+
+.links a,
+.back {
+  color: var(--teal-deep);
+  text-decoration: underline;
+}
+
+.hint {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.detail {
+  font-size: 13px;
+  color: var(--danger-ink);
+}
+
+.notice {
+  font-size: 14px;
+  line-height: 1.4;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-line);
+  color: var(--warn-ink);
+}
+
+.done {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+  padding: 24px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.doneTitle {
+  margin: 0;
+  font: 600 22px/1.2 var(--serif);
+  color: var(--ink);
+}
+
+.doneBody {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.select {
+  font-size: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.pageWrap {
+  padding: 36px 40px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.pageTitle {
+  margin: 0;
+  font: 600 32px/1.1 var(--serif);
+  color: var(--ink);
+}
+
+/* Codes, emails and passwords are always left-to-right, even inside Arabic pages. */
+.ltr {
+  direction: ltr;
+  text-align: start;
+  unicode-bidi: isolate;
+}

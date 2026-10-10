@@ -303,7 +303,7 @@ export interface Device {
   admission_id?: string | null;
 }
 
-/** GET /staff — NOT in api.md 1.4 (admin "Staff" screen). */
+/** GET /staff — NOT in api.md 1.4 (admin "Staff" screen). `status` arrives with api.md 1.9. */
 export interface StaffMember {
   id: string; // u-0001
   name: string;
@@ -312,6 +312,72 @@ export interface StaffMember {
   ward: string | null; // data-model staff.ward
   scope: string; // "Cardiology · Ward C"
   last_login_at: string | null;
+  status: AccountStatus;
+}
+
+// ── Accounts and access (api.md 1.9) ────────────────────────────────────────
+
+export type AccountStatus = "pending" | "active" | "disabled" | "rejected";
+
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+  note?: string;
+  requested_doctor_id?: string;
+  enrollment_code?: string;
+}
+export interface RegisterResponse {
+  status: "received";
+  detail: string;
+}
+export interface ResetRequest {
+  email: string;
+  code: string;
+  new_password: string;
+}
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+export interface DoctorRef {
+  id: string;
+  name: string;
+}
+/** GET /users?status=pending|rejected */
+export interface PendingUser {
+  id: string;
+  name: string;
+  email: string;
+  note: string | null;
+  requested_doctor_id: string | null;
+  requested_doctor_name: string | null;
+  status: "pending" | "rejected";
+  created_at: string;
+}
+export interface ApproveRequest {
+  role: "doctor" | "nurse" | "admin";
+  ward?: string | null;
+}
+export interface UserAdmin {
+  id: string;
+  name: string;
+  email: string;
+  role: Exclude<Role, "patient"> | null;
+  status: AccountStatus;
+  ward: string | null;
+  supervisor_id: string | null;
+}
+/** Shown once to the issuer; never stored by the UI. */
+export interface OneTimeCode {
+  code: string; // "K7M2Q-9XR4T"
+  expires_at: string;
+}
+export interface PatientAccessGrant {
+  patient_id: string;
+  doctor_id: string;
+  doctor_name: string;
+  expires_at: string;
 }
 
 // ── Composed views (built client-side from several contract calls) ──────────

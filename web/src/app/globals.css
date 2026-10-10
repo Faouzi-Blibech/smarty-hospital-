@@ -201,3 +201,30 @@ textarea {
   display: inline-block;
   transform: scaleX(-1);
 }
+
+/* One-time code print sheet: hidden on screen, the only thing printed while body[data-printing="code"]. */
+[data-print-sheet] {
+  display: none;
+}
+
+@media print {
+  body[data-printing="code"] * {
+    visibility: hidden;
+  }
+
+  body[data-printing="code"] [data-print-sheet],
+  body[data-printing="code"] [data-print-sheet] * {
+    visibility: visible;
+  }
+
+  body[data-printing="code"] [data-print-sheet] {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    position: fixed;
+    inset: 0;
+    padding: 48px;
+    background: #fff;
+    color: #000;
+  }
+}
