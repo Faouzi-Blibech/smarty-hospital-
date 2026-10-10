@@ -11,7 +11,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.ai.exams import suggest_exams
-from app.auth.deps import check_appointment_access, require_roles
+from app.auth.deps import check_appointment_access, doctor_patient_filter, require_roles
 from app.db import get_db
 from app.errors import ApiError, forbidden, not_found
 from app.ids import new_id
@@ -162,7 +162,7 @@ def list_appointments(request: Request, patient_id: str | None = None, status: s
         patient_id = user.patient_id
     stmt = select(Appointment)
     if user.role == "doctor":  # pending requests are the pool; everything else only for own patients / bookings
-        mine = select(Patient.id).where(Patient.attending_doctor_id == user.id)
+        mine = select(Patient.id).where(doctor_patient_filter(db, user))
         stmt = stmt.where(or_(Appointment.status == "requested", Appointment.doctor_id == user.id,
                               Appointment.patient_id.in_(mine)))
     if patient_id:

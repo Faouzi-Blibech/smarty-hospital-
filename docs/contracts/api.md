@@ -1,13 +1,13 @@
 # REST + WebSocket contract — v1.0
 
-> **Version:** 1.8 (2026-10-09) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations, exams, notebook)
+> **Version:** 1.9 (2026-10-10) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations, exams, notebook)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Conventions
 
 - Base URL: `http://localhost:8000` (backend container `api`). The web app reads it from `NEXT_PUBLIC_API_URL`.
 - JSON everywhere.
-- Auth: `Authorization: Bearer <jwt>`. JWT claims: `sub` (user id), `role` (`doctor|nurse|admin|patient`), `patient_id` (only for the patient role), `exp` (12 h).
+- Auth: `Authorization: Bearer <jwt>`. JWT claims: `sub` (user id), `role` (`doctor|nurse|admin|patient`), `patient_id` (only for the patient role), `exp` (8 h).
 - IDs are prefixed strings: `u-0001` user, `p-0001` patient, `a-0001` appointment, `rx-0001` prescription, `d-000001` dose, `al-0001` alert, `adm-0001` admission, `ex-0001` exam order, `er-0001` exam result, `nb-0001` notebook entry, `bsu-001` device.
 - Timestamps are ISO-8601 UTC strings (`2026-10-08T09:30:00Z`). (MQTT uses epoch seconds; the backend converts.)
 - Errors: `{"detail": "human readable", "code": "snake_case_code"}` with the right HTTP status (400, 401, 403, 404, 409, 422).
@@ -22,6 +22,76 @@
 | `GET /me` | any | → `{"id","name","email","role","patient_id"}` |
 
 Seed accounts (password `ward1234` for all): `doctor@ward.tn`, `nurse@ward.tn`, `admin@ward.tn`, `patient@ward.tn` (linked to `p-0001`).
+
+## Accounts and access
+
+Added in 1.9 (spec `docs/superpowers/specs/2026-10-10-accounts-and-access-design.md`). Existing endpoints keep their shapes. Error envelope and status-code conventions are unchanged.
+
+| Method and path | Who | Notes |
+|---|---|---|
+| `POST /auth/register` | anyone | `{name, email, password, note?, requested_doctor_id?, enrollment_code?}` → 202 `RECEIVED` (always the same answer). No `role`/`ward` in the body (422). With a valid enrollment code the patient account is created active; otherwise a pending staff account. |
+| `POST /auth/reset` | anyone | `{email, code, new_password}` → 204, or generic 400 `invalid_code` |
+| `POST /auth/login` | anyone | adds 403 `account_pending` / `account_disabled` / `account_rejected` and 423 `account_locked`, only after the password is correct |
+| `POST /auth/change-password` | logged-in user | `{current_password, new_password}` → 204 |
+| `POST /auth/logout` | logged-in user | 204; audit row. Device-only: the client deletes its token; tokens are not revoked server-side |
+| `GET /doctors/directory` | anyone | doctor display names and ids only, for the sign-up "I work with" picker. Rate-limited, no emails. → `[{id, name}]` |
+| `GET /users?status=pending` | admin (all), doctor (his requests) | `status` is `pending` (default) or `rejected` → list of `pending_out` |
+| `POST /users/{id}/approve` | admin, doctor | admin: `{role, ward?}`, role in doctor/nurse/admin. Doctor: role nurse only, into his team (403 otherwise). → `admin_out` |
+| `POST /users/{id}/reject` · `/disable` · `/enable` | admin (anyone), doctor (his team only) | → `admin_out`; wrong current status → 409 `bad_status` |
+| `GET /doctors/me/team` | doctor | his team members and their status → list of `admin_out` |
+| `PATCH /users/{id}` | admin | `{ward}`: add or clear a ward on an active doctor or nurse (e.g. a team nurse) → `admin_out`; 409 `bad_status` for other roles |
+| `POST /patients/{id}/reset-code` | admin, attending doctor | reset code for the patient's account → `{code, expires_at}` |
+| `POST /users/{id}/reset-code` | admin | → `{code, expires_at}`, shown once |
+| `POST /patients/{id}/enrollment-code` | admin, attending doctor | → `{code, expires_at}`, shown once; 409 `already_enrolled` |
+| `GET /patients/{id}/access` | attending doctor, admin | active grants → list of `_grant_out` |
+| `POST /patients/{id}/access` | attending doctor, admin | `{doctor_id, expires_at?}` (default 30 days, at most 365; 422 otherwise) → `_grant_out`. A new grant replaces the doctor's live one. |
+| `DELETE /patients/{id}/access/{doctor_id}` | attending doctor, admin | → 204; 404 if no live grant |
+| `GET /staff` | admin | gains `status` |
+
+Codes are 10 characters shown as `XXXXX-XXXXX`, valid 48 h, single use; a new code for the same target revokes the previous unused one.
+
+### Error codes (additions)
+
+| Status | `code` | When |
+|---|---|---|
+| 422 | `weak_password` | under 10 characters, over 72 UTF-8 bytes, in the common list, or equal to the email, its local part or the name |
+| 400 | `invalid_code` | unknown, expired or used code (one generic answer) |
+| 409 | `already_enrolled` | the patient already has an account |
+| 429 | `rate_limited` | failed logins (10/min per IP), `/auth/register` and `/auth/reset` (5/min, 30/day per IP), `/doctors/directory` (30/min per IP) |
+| 403 | `account_pending` | login with the right password while waiting for approval |
+| 403 | `account_disabled` | login with the right password on a disabled account |
+| 403 | `account_rejected` | login with the right password after a rejected sign-up |
+| 423 | `account_locked` | 5 failed logins lock the account for 15 min |
+| 409 | `bad_status` | the account is not in a status that allows the action |
+
+### Response shapes
+
+`RECEIVED` (`POST /auth/register`, 202):
+```json
+{ "status": "received", "detail": "If the details are valid, your account was created or is waiting for approval." }
+```
+
+`admin_out` (approve, reject, disable, enable, `PATCH /users/{id}`, `/doctors/me/team`):
+```json
+{ "id": "u-0007", "name": "...", "email": "...", "role": "nurse", "status": "active", "ward": "Cardiology", "supervisor_id": "u-0001" }
+```
+`role` is null for pending and rejected accounts; `ward` and `supervisor_id` are null when unset.
+
+`pending_out` (`GET /users`):
+```json
+{ "id": "u-0008", "name": "...", "email": "...", "note": "nurse, Cardiology", "requested_doctor_id": "u-0001", "requested_doctor_name": "Dr Trabelsi", "status": "pending", "created_at": "2026-10-10T09:30:00Z" }
+```
+`note`, `requested_doctor_id` and `requested_doctor_name` are null when not given.
+
+Codes (`enrollment-code`, `reset-code`):
+```json
+{ "code": "ABCDE-23456", "expires_at": "2026-10-12T09:30:00Z" }
+```
+
+`_grant_out` (sharing):
+```json
+{ "patient_id": "p-0001", "doctor_id": "u-0003", "doctor_name": "Dr ...", "expires_at": "2026-11-09T09:30:00Z" }
+```
 
 ## Patients and records
 
@@ -282,6 +352,8 @@ Still proposed: `GET /offers/{id}`, `POST /offers/{id}/accept` and `GET /patient
 ```
 
 ## Changelog
+
+- **1.9** (2026-10-10): accounts — register/reset/change-password, doctor directory, account approval (/users*), doctor team, enrollment codes, patient sharing; login error codes; JWT exp 8 h; logout
 
 - **1.8** (2026-10-09): proposes the exam and notebook routes above and the new `Appointment`/`triage` fields (spec 2026-10-09). Nothing earlier changes. Needs a 👍 from Wali.
 

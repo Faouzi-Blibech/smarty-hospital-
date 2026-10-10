@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth.deps import check_patient_access, require_roles, staff_ward
+from app.auth.deps import check_patient_access, doctor_patient_filter, nurse_patient_filter, require_roles
 from app.db import get_db
 from app.errors import forbidden, not_found
 from app.iot import publisher
@@ -20,12 +20,9 @@ MAX_ALERTS = 200
 def list_alerts(status: Literal["open", "all"] | None = None, user: User = Depends(require_roles("doctor", "nurse")),
                 db: Session = Depends(get_db)) -> list[dict]:
     if user.role == "nurse":
-        ward = staff_ward(db, user)
-        if ward is None:  # `ward == None` would match every patient without a ward
-            return []
-        mine = select(Patient.id).where(Patient.ward == ward)
+        mine = select(Patient.id).where(nurse_patient_filter(db, user))
     else:
-        mine = select(Patient.id).where(Patient.attending_doctor_id == user.id)
+        mine = select(Patient.id).where(doctor_patient_filter(db, user))
     stmt = select(Alert).where(Alert.patient_id.in_(mine))
     if status == "open":
         stmt = stmt.where(Alert.acked_at.is_(None))

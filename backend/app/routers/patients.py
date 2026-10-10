@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth.deps import check_patient_access, require_roles, staff_ward
+from app.auth.deps import (check_patient_access, doctor_patient_filter, nurse_patient_filter, nurse_scope,
+                           require_roles)
 from app.db import get_db
 from app.errors import forbidden
 from app.ids import new_id
@@ -32,12 +33,12 @@ def list_patients(request: Request, ward: str | None = None, q: str | None = Non
         rows = [PatientListItem(**P.list_item(db, p)) for p in P.search(db, ward=ward, q=q)]
     else:
         if user.role == "nurse":
-            own = staff_ward(db, user)
-            if ward and ward != own:
+            own, sup = nurse_scope(db, user)
+            if ward and own and ward != own and not sup:
                 raise forbidden("another ward")
-            found = P.search(db, ward=own, q=q) if own else []  # a nurse without a ward sees nobody
+            found = P.search(db, where=nurse_patient_filter(db, user), ward=ward, q=q)
         else:
-            found = P.search(db, doctor_id=user.id, ward=ward, q=q)
+            found = P.search(db, where=doctor_patient_filter(db, user), ward=ward, q=q)
         rows = [PatientSummary(**P.summary(db, p)) for p in found]
         rows.sort(key=lambda r: (-(r.latest_news2 if r.latest_news2 is not None else -1), r.id))
     audit(db, user, "read", "patient_list", ward or "", ip=_ip(request))

@@ -14,6 +14,7 @@ class Client:
     user_id: str
     role: str
     ward: str | None
+    supervisor_id: str | None = None
 
 
 def wants(c: Client, frame: dict) -> bool:
@@ -21,9 +22,10 @@ def wants(c: Client, frame: dict) -> bool:
     if c.role == "admin":
         return frame.get("type") == "device_status"
     if c.role == "nurse":
-        return c.ward is not None and scope.get("ward") == c.ward
+        return (c.ward is not None and scope.get("ward") == c.ward) or (
+            c.supervisor_id is not None and scope.get("doctor_id") == c.supervisor_id)
     if c.role == "doctor":
-        return scope.get("doctor_id") == c.user_id
+        return scope.get("doctor_id") == c.user_id or c.user_id in (scope.get("shared_with") or ())
     return False
 
 

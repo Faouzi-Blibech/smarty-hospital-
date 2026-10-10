@@ -35,7 +35,9 @@ class Settings(BaseSettings):
     mqtt_password: str = DEFAULT_MQTT_PASSWORD
 
     jwt_secret: str = DEFAULT_JWT_SECRET
-    jwt_expire_hours: int = 12
+    jwt_expire_hours: int = 8
+    # comma-separated; the proxy domain in the internet profile
+    web_origin: str = "http://localhost:3000"
     bcrypt_rounds: int = 12
     # demo password of the synthetic seed accounts (api.md); set SEED_PASSWORD for any other deployment
     seed_password: str = DEFAULT_SEED_PASSWORD  # overridable via SEED_PASSWORD

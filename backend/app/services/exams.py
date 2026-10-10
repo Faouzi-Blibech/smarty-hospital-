@@ -7,7 +7,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth.deps import can_access, staff_ward
+from app.auth.deps import can_access, has_grant, staff_ward
 from app.models import Appointment, ExamResult, Patient, Staff, User
 from app.schemas import iso
 
@@ -57,7 +57,8 @@ def can_read_results(db: Session, user: User, o) -> bool:
     if user.role == "doctor":
         p = db.get(Patient, o.patient_id)
         a = db.get(Appointment, o.appointment_id) if o.appointment_id else None
-        return (p is not None and p.attending_doctor_id == user.id) or o.human_confirmed_by == user.id or (
+        return (p is not None and (p.attending_doctor_id == user.id or has_grant(db, user.id, p.id))) or (
+            o.human_confirmed_by == user.id) or (
             a is not None and a.doctor_id == user.id)
     if user.role == "nurse":
         p = db.get(Patient, o.patient_id)
