@@ -28,10 +28,13 @@ const STATUS_KEY = {
 
 export function RadiographReadingCard({
   resultId,
+  readOnly = false,
   onConfirmed,
   onStatus,
 }: {
   resultId: string;
+  /** A doctor with a read-only sharing grant sees the draft but cannot confirm (the server refuses it too). */
+  readOnly?: boolean;
   onConfirmed?: () => void;
   /** Called when the reading's status changes (lets the exams list refresh its chip). */
   onStatus?: (status: ReadingStatus) => void;
@@ -211,8 +214,9 @@ export function RadiographReadingCard({
         <p className={styles.note}>{reading?.status === "failed" ? t("radiology.statusFailed") : t("radiology.noModel")}</p>
       ) : null}
 
-      {reading && !pending ? (
+      {reading && !readOnly ? (
         <div className={styles.form}>
+          {pending ? <p className={styles.note}>{t("radiology.draftRunning")}</p> : null}
           <label className={styles.label} htmlFor={`report-${resultId}`}>{t("radiology.report")}</label>
           <textarea
             id={`report-${resultId}`}

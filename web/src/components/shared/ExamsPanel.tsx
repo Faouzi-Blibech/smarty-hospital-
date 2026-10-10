@@ -23,7 +23,16 @@ const STATUS_KEY = {
 } as const;
 const isPending = (s: ReadingStatus) => s === "queued" || s === "running";
 
-export function ExamsPanel({ patientId, role }: { patientId: string; role?: Role }) {
+export function ExamsPanel({
+  patientId,
+  role,
+  readOnly = false,
+}: {
+  patientId: string;
+  role?: Role;
+  /** The patient is shared read-only: no uploads, and the reading card cannot confirm. */
+  readOnly?: boolean;
+}) {
   const { t, lang } = useT();
   const [rows, setRows] = useState<ExamOrder[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -127,13 +136,13 @@ export function ExamsPanel({ patientId, role }: { patientId: string; role?: Role
     <section className={styles.card} aria-label={t("shared.examsTitle")}>
       <div className={styles.header}>
         <h3 className={styles.h3}>{t("shared.examsTitle")}</h3>
-        {isDoctor && !adding ? (
+        {isDoctor && !readOnly && !adding ? (
           <button type="button" className={styles.ghost} onClick={() => setAdding(true)}>
             {t("radiology.addOutside")}
           </button>
         ) : null}
       </div>
-      {isDoctor && adding ? (
+      {isDoctor && !readOnly && adding ? (
         <OutsideUpload
           patientId={patientId}
           onCancel={() => setAdding(false)}
@@ -165,7 +174,7 @@ export function ExamsPanel({ patientId, role }: { patientId: string; role?: Role
               <div className={styles.result}>
                 <button className={styles.file} onClick={() => void open(r.id)}>{r.file_name}</button>
                 <span aria-live="polite" className={styles.chipSlot}>{readingChip(r)}</span>
-                {r.report_text ? <span dir="auto">“{r.report_text}”</span> : null}
+                {r.report_text ? <span className={styles.report} dir="auto">“{r.report_text}”</span> : null}
                 {r.uploaded_by_name ? <span className={styles.dept}>· {r.uploaded_by_name}</span> : null}
                 {isDoctor && r.reading ? (
                   <button
@@ -181,6 +190,7 @@ export function ExamsPanel({ patientId, role }: { patientId: string; role?: Role
               {isDoctor && r.reading && reviewing.has(r.id) ? (
                 <RadiographReadingCard
                   resultId={r.id}
+                  readOnly={readOnly}
                   onConfirmed={() => void reload()}
                   onStatus={(s) => {
                     if (s !== r.reading?.status) void reload();
@@ -236,7 +246,15 @@ function OutsideUpload({ patientId, onCancel, onDone }: { patientId: string; onC
       </label>
       <label className={styles.field}>
         <span>{t("radiology.outsideTitle")}</span>
-        <input dir="auto" className={styles.input} value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} />
+        <input
+          dir="auto"
+          className={styles.input}
+          value={title}
+          maxLength={120}
+          placeholder={t("radiology.outsideTitleHint")}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <span className={styles.hint}>{t("radiology.outsideTitleHint")}</span>
       </label>
       <div className={styles.actions}>
         <button type="button" className={styles.btn} disabled={!file || busy} onClick={() => void send()}>
