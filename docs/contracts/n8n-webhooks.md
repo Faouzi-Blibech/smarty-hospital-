@@ -9,7 +9,7 @@
 - The backend → n8n direction carries **events**. The n8n → backend direction carries **callbacks** to `/integrations/n8n/*` with the header `X-N8N-Secret`.
 - On-device medication reminders never go through n8n.
 - Event posting is fire-and-forget: 3 s timeout, failures are logged, and the API never fails because n8n is down.
-- Demo channels: **Telegram** (bot token in n8n credentials) and **email** (SMTP, e.g. a Gmail app password). SMS is out of scope.
+- Demo channels: **Telegram** (bot token in n8n credentials), **WhatsApp** (WhatsApp Cloud API, used by W9 and the current workflows) and **email** (SMTP, e.g. a Gmail app password). SMS is out of scope.
 - Payloads carry **first names only**, never national IDs or full records.
 - Every workflow is exported as JSON to `n8n/workflows/W<n>-<slug>.json` (credentials are NOT exported; recreate them from `n8n/README.md`).
 
@@ -45,7 +45,7 @@ def emit(event: str, data: dict) -> None:
 | `patient.discharged` | `POST /admissions/{id}/discharge` | `{patient_id, patient_first_name, patient_email, patient_telegram_chat_id, doctor_id, discharged_at}` | W6 |
 | `exam.ordered` | `POST /appointments/{id}/exams/order` or `POST /exams` | `{appointment_id, patient_first_name, patient_telegram_chat_id, patient_email, exams:[{label, department}]}` | W7 tells the patient where to go |
 | `exam.results_ready` | the last ordered exam of an appointment gets its result | `{appointment_id, patient_first_name, doctor_id, doctor_name, doctor_email, doctor_chat_id}` | W8 tells the ordering doctor |
-| `health_event.upcoming` | `POST /health-events/{id}/notify` (Notify now), and each item returned by `GET /integrations/n8n/health-events/due` | `{event_id, title:{en,fr,ar}, category, starts_on, ends_on, organizer, source_url, web_url, recipients:[{first_name, role, email, lang}], recipient_count}`. `web_url` = `http://<WEB_URL>/calendar`; first names only; `lang` defaults to `fr` (no per-user language stored server-side yet) | W9 |
+| `health_event.upcoming` | `POST /health-events/{id}/notify` (Notify now), and each item returned by `GET /integrations/n8n/health-events/due` | `{event_id, title:{en,fr,ar}, category, starts_on, ends_on, organizer, source_url, web_url, recipients:[{first_name, role, email, lang}], recipient_count}`. `web_url` = `${WEB_URL}/calendar`; first names only; `lang` defaults to `fr` (no per-user language stored server-side yet) | W9 |
 
 W5 (daily digest) is cron-driven inside n8n and pulls from `GET /integrations/n8n/daily-digest`.
 

@@ -245,8 +245,8 @@ Index `(patient_id, ts DESC)`.
 | `ts` | timestamptz | |
 | `user_id` | text | |
 | `role` | text | |
-| `action` | text | `read` \| `create` \| `update` \| `delete` \| `login` |
-| `resource` | text | e.g. `patient`, `vitals`, `prescription` |
+| `action` | text | `read` \| `create` \| `update` \| `delete` \| `login` \| `notify` |
+| `resource` | text | e.g. `patient`, `vitals`, `prescription`, `health_event` |
 | `resource_id` | text | |
 | `patient_id` | text, null | |
 | `ip` | text | |
@@ -303,6 +303,7 @@ R = read, W = write, — = no access. "own" = `patients.attending_doctor_id = me
 | Devices / admissions | R | R | RW | — |
 | Users / staff | — | — | RW | — |
 | Audit log | — | — | R | — |
+| Health events | R; W own prefs | R; W own prefs | RW; W own prefs | R; W own prefs |
 
 Accounts (1.5): nurse: own ward OR patients of her supervisor doctor; doctor: attending OR an unexpired, unrevoked `patient_access` grant.
 
