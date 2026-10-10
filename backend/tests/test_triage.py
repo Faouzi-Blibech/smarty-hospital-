@@ -58,11 +58,7 @@ def test_scale_label_maps_our_urgency_to_the_hospital_scale():
     assert triage("douleur thoracique", [], 50).scale == scale_label(5)
 
 
-# Phrasings red_flags.v1.json does not cover yet (reported to Faouzi, owner of app/ai). strict: an XPASS fails,
-# so remove the mark once the rule file covers the phrase.
-GAP = pytest.mark.xfail(strict=True, reason="not covered by red_flags.v1 yet")
-
-
+# Phrasings the first rule file missed (suicide, seizure, overdose, anaphylaxis); each must raise its own flag to 5.
 @pytest.mark.parametrize("text,flag", [
     ("patient a fait une tentative de suicide hier", "suicide_self_harm"),
     ("I want to kill myself, I have pills ready", "suicide_self_harm"),
@@ -72,17 +68,17 @@ GAP = pytest.mark.xfail(strict=True, reason="not covered by red_flags.v1 yet")
     ("crise convulsive ce matin", "seizure"),
     ("my son had a seizure for 5 minutes", "seizure"),
     ("طفلي عنده تشنجات", "seizure"),
-    pytest.param("weldi 3andou sar3 w techennoj", "seizure", marks=GAP),
+    ("weldi 3andou sar3 w techennoj", "seizure"),
     ("took 30 paracetamol tablets", "overdose"),
     ("suspicion d'intoxication medicamenteuse", "overdose"),
-    pytest.param("il a avale tous les comprimes", "overdose", marks=GAP),
+    ("il a avale tous les comprimes", "overdose"),
     ("ولدي تسمم بالدواء", "overdose"),
-    pytest.param("chrab barcha dwa, bla3 dwa lkol", "overdose", marks=GAP),
+    ("chrab barcha dwa, bla3 dwa lkol", "overdose"),
     ("swelling of the throat after eating peanuts, hard to swallow", "anaphylaxis"),
     ("choc anaphylactique apres piqure de guepe", "anaphylaxis"),
     ("gorge qui gonfle apres un medicament", "anaphylaxis"),
-    pytest.param("عنده حساسية وما يقدرش يتنفس", "anaphylaxis", marks=GAP),
-    pytest.param("7asasiya w ma najjamch nitnaffes", "anaphylaxis", marks=GAP),
+    ("عنده حساسية وما يقدرش يتنفس", "anaphylaxis"),
+    ("7asasiya w ma najjamch nitnaffes", "anaphylaxis"),
 ])
 def test_safety_red_flags_floor_is_five(text, flag):
     assert flag in [f["id"] for f in T.match_red_flags(text)]
