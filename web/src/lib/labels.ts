@@ -62,7 +62,7 @@ export function deptLabel(name: string | null | undefined, t: TFn): string {
 }
 
 const EXAM_CODES = new Set([
-  "ecg", "echo", "troponin", "cbc", "crp", "d_dimer", "inr", "hba1c", "creatinine", "chest_xray", "brain_ct", "leg_doppler",
+  "ecg", "echo", "troponin", "cbc", "crp", "d_dimer", "inr", "hba1c", "creatinine", "chest_xray", "xray", "xray_outside", "brain_ct", "leg_doppler",
 ]);
 
 /** A catalogue exam (`rules/exam_bundles.v1.json`) by code; unknown codes keep the API label. */
