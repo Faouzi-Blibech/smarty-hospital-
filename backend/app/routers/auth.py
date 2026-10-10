@@ -1,15 +1,19 @@
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Response
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.auth import codes
 from app.auth.deps import get_current_user
-from app.auth.ratelimit import LOGIN_LIMITS, check, client_ip, record
+from app.auth.passwords import check_password
+from app.auth.ratelimit import CODE_LIMITS, DIRECTORY_LIMITS, LOGIN_LIMITS, check, client_ip, enforce, record
 from app.auth.security import create_token, hash_password, verify_password
 from app.db import get_db
 from app.errors import ApiError
+from app.ids import new_id
 from app.models import User
 from app.schemas import LoginIn, LoginOut, LoginUser, Me
 from app.services.audit import audit
@@ -62,3 +66,109 @@ def login(body: LoginIn, request: Request, db: Session = Depends(get_db)) -> Log
 @router.get("/me", response_model=Me)
 def me(user: User = Depends(get_current_user)) -> User:
     return user
+
+
+RECEIVED = {"status": "received",
+            "detail": "If the details are valid, your account was created or is waiting for approval."}
+
+
+class RegisterIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")  # no role, no ward: only an approver sets those
+    name: str = Field(min_length=1, max_length=120)
+    email: str = Field(min_length=3, max_length=254, pattern=r"^\s*[^@\s]+@[^@\s]+\.[^@\s]+\s*$")
+    password: str = Field(min_length=1, max_length=200)
+    note: str | None = Field(default=None, max_length=300)
+    requested_doctor_id: str | None = Field(default=None, max_length=20)
+    enrollment_code: str | None = Field(default=None, max_length=20)
+
+
+class ResetIn(BaseModel):
+    email: str = Field(max_length=254)
+    code: str = Field(max_length=20)
+    new_password: str = Field(min_length=1, max_length=200)
+
+
+class ChangePasswordIn(BaseModel):
+    current_password: str = Field(max_length=200)
+    new_password: str = Field(min_length=1, max_length=200)
+
+
+def _invalid_code(db: Session, ip: str) -> ApiError:
+    audit(db, None, "code_failed", "access_code", "", ip=ip)
+    db.commit()
+    return ApiError(400, "invalid_code", "this code is not valid or has expired")
+
+
+@router.post("/auth/register", status_code=202)
+def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)) -> dict:
+    enforce(request, "register", CODE_LIMITS)
+    ip, email, name = client_ip(request), body.email.strip().lower(), body.name.strip()
+    check_password(body.password, email=email, name=name)
+    if db.scalar(select(User.id).where(User.email == email)):
+        audit(db, None, "register_duplicate", "user", "", ip=ip)  # same answer: emails are not enumerable
+        db.commit()
+        return RECEIVED
+    if body.enrollment_code:
+        row = codes.find_valid(db, "enrollment", body.enrollment_code)
+        if row is None:
+            raise _invalid_code(db, ip)
+        if db.scalar(select(User.id).where(User.patient_id == row.patient_id, User.status != "disabled")):
+            raise ApiError(409, "already_enrolled", "this patient already has an account")
+        u = User(id=new_id(db, "u"), email=email, name=name, role="patient", status="active",
+                 patient_id=row.patient_id, password_hash=hash_password(body.password))
+        db.add(u)
+        db.flush()
+        codes.mark_used(row, used_by=u.id)
+        audit(db, u, "register", "user", u.id, patient_id=row.patient_id, ip=ip)
+        audit(db, u, "code_used", "access_code", row.id, patient_id=row.patient_id, ip=ip)
+        db.commit()
+        return RECEIVED
+    doctor = db.get(User, body.requested_doctor_id) if body.requested_doctor_id else None
+    if doctor is not None and (doctor.role != "doctor" or doctor.status != "active"):
+        doctor = None
+    u = User(id=new_id(db, "u"), email=email, name=name, role=None, status="pending",
+             password_hash=hash_password(body.password), requested_note=(body.note or "").strip() or None,
+             requested_doctor_id=doctor.id if doctor else None)
+    db.add(u)
+    db.flush()
+    audit(db, u, "register", "user", u.id, ip=ip)
+    db.commit()
+    return RECEIVED
+
+
+@router.post("/auth/reset", status_code=204)
+def reset_password(body: ResetIn, request: Request, db: Session = Depends(get_db)) -> Response:
+    enforce(request, "reset", CODE_LIMITS)
+    ip, email = client_ip(request), body.email.strip().lower()
+    user = db.scalar(select(User).where(User.email == email))
+    check_password(body.new_password, email=email, name=user.name if user else "")  # before the code is spent
+    row = codes.find_valid(db, "reset", body.code, user_id=user.id) if user else None
+    if row is None:
+        raise _invalid_code(db, ip)
+    codes.mark_used(row, used_by=user.id)
+    user.password_hash = hash_password(body.new_password)
+    user.failed_logins, user.locked_until = 0, None
+    audit(db, user, "code_used", "access_code", row.id, ip=ip)
+    audit(db, user, "update", "password", user.id, ip=ip)
+    db.commit()
+    return Response(status_code=204)
+
+
+@router.post("/auth/change-password", status_code=204)
+def change_password(body: ChangePasswordIn, request: Request, user: User = Depends(get_current_user),
+                    db: Session = Depends(get_db)) -> Response:
+    if not verify_password(body.current_password, user.password_hash):
+        raise ApiError(401, "bad_credentials", "wrong current password")
+    check_password(body.new_password, email=user.email, name=user.name)
+    user.password_hash = hash_password(body.new_password)
+    audit(db, user, "update", "password", user.id, ip=client_ip(request))
+    db.commit()
+    return Response(status_code=204)
+
+
+@router.get("/doctors/directory")
+def doctor_directory(request: Request, db: Session = Depends(get_db)) -> list[dict]:
+    """Names for the sign-up "I work with" picker: no emails, no wards."""
+    enforce(request, "directory", DIRECTORY_LIMITS)
+    rows = db.scalars(select(User).where(User.role == "doctor", User.status == "active").order_by(User.name))
+    return [{"id": u.id, "name": u.name} for u in rows]
