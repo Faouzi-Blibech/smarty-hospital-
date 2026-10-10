@@ -3,7 +3,7 @@
 // Real-mode ward names for the admin screens. Devices carry no ward, so the ward comes
 // from the patients' `ward` (GET /patients). Mock mode keeps the design's "Ward C".
 import { useEffect, useState } from "react";
-import type { TFn } from "@/i18n/messages";
+import type { Key, TFn } from "@/i18n/messages";
 import { getMyPatients } from "@/lib/api";
 import { USE_MOCKS } from "@/lib/time";
 
@@ -34,3 +34,10 @@ export function wardsOf(patientIds: (string | null | undefined)[], wards: Record
   const names = [...new Set(patientIds.map((id) => (id ? wards[id] : undefined)).filter((w): w is string => !!w))];
   return names.length ? names.join(" · ") : null;
 }
+
+/** Wards an admin can assign on approval (same list as the Staff panel). */
+export const WARD_OPTIONS: { ward: string; label: Key }[] = [
+  { ward: "Cardiology", label: "admin.wardCardiology" },
+  { ward: "Pediatrics", label: "admin.wardPediatrics" },
+  { ward: "Pulmonology", label: "admin.wardPulmonology" },
+];

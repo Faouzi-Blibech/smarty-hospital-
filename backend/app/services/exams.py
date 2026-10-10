@@ -7,9 +7,10 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth.deps import can_access, staff_ward
+from app.auth.deps import can_access, has_grant, staff_ward
 from app.models import Appointment, ExamResult, Patient, Staff, User
 from app.schemas import iso
+from app.services import accounts
 
 ALLOWED_TYPES = ("application/pdf", "image/jpeg", "image/png")
 MAX_BYTES = 15 * 1024 * 1024
@@ -51,12 +52,26 @@ def counts(orders: list) -> dict:
             "exams_suggested": s.count("suggested")}
 
 
-def can_read(db: Session, user: User, o) -> bool:
+def can_read_results(db: Session, user: User, o) -> bool:
+    """Exam RESULTS (report text, files). Doctors: the orderer, the attending doctor or the appointment's booked
+    doctor, never the pending-request pool. Nurses: their department or ward. Patients and admin: never."""
     if user.role == "doctor":
         p = db.get(Patient, o.patient_id)
         a = db.get(Appointment, o.appointment_id) if o.appointment_id else None
-        return (p is not None and p.attending_doctor_id == user.id) or o.human_confirmed_by == user.id or (
-            a is not None and (a.doctor_id == user.id or a.status == "requested"))
+        return (p is not None and (p.attending_doctor_id == user.id or has_grant(db, user.id, p.id))) or (
+            o.human_confirmed_by == user.id) or (
+            a is not None and a.doctor_id == user.id)
+    if user.role == "nurse":
+        p = db.get(Patient, o.patient_id)
+        return o.department == staff_ward(db, user) or (p is not None and can_access(db, user, p))
+    return False
+
+
+def can_read(db: Session, user: User, o) -> bool:
+    """Exam STATUS and suggestions. Doctors additionally see every exam of a pending request (the pool)."""
+    if user.role == "doctor":
+        a = db.get(Appointment, o.appointment_id) if o.appointment_id else None
+        return can_read_results(db, user, o) or (a is not None and a.status == "requested")
     if user.role == "nurse":
         p = db.get(Patient, o.patient_id)
         return o.department == staff_ward(db, user) or (p is not None and can_access(db, user, p))
@@ -82,7 +97,7 @@ def to_out(db: Session, o, viewer: User) -> dict:
            "label": o.label, "department": o.department, "status": o.status, "ai_suggested": o.ai_suggested,
            "human_confirmed_by": o.human_confirmed_by, "ordered_at": iso(o.ordered_at), "done_at": iso(o.done_at),
            "created_at": iso(o.created_at), "patient_name": f"{p.first_name} {p.last_name}" if p else None}
-    if viewer.role in ("doctor", "nurse"):
+    if viewer.role in ("doctor", "nurse") and can_read_results(db, viewer, o):
         rows = db.scalars(select(ExamResult).where(ExamResult.exam_order_id == o.id)
                           .order_by(ExamResult.created_at)).all()
         out["results"] = [{"id": r.id, "file_name": r.file_name, "content_type": r.content_type,
@@ -102,8 +117,8 @@ def ordered_event(patient, appointment_id: str | None, orders: list) -> dict:
 
 
 def results_ready_event(db: Session, appointment_id: str, patient, doctor_id: str | None) -> dict:
-    doctor = db.get(User, doctor_id) if doctor_id else None
-    staff = db.get(Staff, doctor_id) if doctor_id else None
+    doctor = accounts.active_doctor(db, doctor_id)  # a disabled doctor gets no patient data
+    staff = db.get(Staff, doctor_id) if doctor else None
     return {"appointment_id": appointment_id, "patient_first_name": patient.first_name, "doctor_id": doctor_id,
             "doctor_name": doctor.name if doctor else None, "doctor_email": doctor.email if doctor else None,
             "doctor_chat_id": staff.telegram_chat_id if staff else None}

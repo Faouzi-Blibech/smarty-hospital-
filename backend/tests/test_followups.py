@@ -95,7 +95,7 @@ def test_staff_list(client):
     rows = client.get("/staff", headers=h).json()
     assert {r["id"] for r in rows} == {"u-0001", "u-0002", "u-0003", "u-0004", "u-0006", "u-0007"}
     ines = next(r for r in rows if r["id"] == "u-0002")
-    assert ines == {"id": "u-0002", "name": "Nurse Ines", "email": "nurse@ward.tn", "role": "nurse",
+    assert ines == {"id": "u-0002", "name": "Nurse Ines", "email": "nurse@ward.tn", "role": "nurse", "status": "active",
                     "ward": "Cardiology", "scope": "Cardiology", "last_login_at": None}
     admin = next(r for r in rows if r["id"] == "u-0004")
     assert admin["last_login_at"] is not None and admin["scope"] == "All wards"

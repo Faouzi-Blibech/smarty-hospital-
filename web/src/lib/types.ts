@@ -303,7 +303,7 @@ export interface Device {
   admission_id?: string | null;
 }
 
-/** GET /staff — NOT in api.md 1.4 (admin "Staff" screen). */
+/** GET /staff — NOT in api.md 1.4 (admin "Staff" screen). `status` arrives with api.md 1.9. */
 export interface StaffMember {
   id: string; // u-0001
   name: string;
@@ -312,6 +312,89 @@ export interface StaffMember {
   ward: string | null; // data-model staff.ward
   scope: string; // "Cardiology · Ward C"
   last_login_at: string | null;
+  status: AccountStatus;
+}
+
+// ── Accounts and access (api.md 1.9) ────────────────────────────────────────
+
+export type AccountStatus = "pending" | "active" | "disabled" | "rejected";
+
+/** The roles a person can ask for on /register (`admin` is never a sign-up choice). */
+export type SignupRole = "patient" | "nurse" | "doctor";
+/** The roles an approver can grant (only an admin may grant `admin`). */
+export type GrantRole = SignupRole | "admin";
+
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+  role: SignupRole;
+  note?: string;
+  /** Patients and nurses only; sending it with `role: "doctor"` is a 422. */
+  requested_doctor_id?: string;
+}
+/** GET /hospital (public): this install's hospital. */
+export interface Hospital {
+  name: string;
+}
+export interface RegisterResponse {
+  status: "received";
+  detail: string;
+}
+export interface ResetRequest {
+  email: string;
+  code: string;
+  new_password: string;
+}
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+export interface DoctorRef {
+  id: string;
+  name: string;
+}
+/** GET /users?status=pending|rejected */
+export interface PendingUser {
+  id: string;
+  name: string;
+  email: string;
+  note: string | null;
+  requested_role: SignupRole | null;
+  requested_doctor_id: string | null;
+  /** UI extension: resolved from the doctor directory when the server doesn't send it. */
+  requested_doctor_name?: string | null;
+  status: "pending" | "rejected";
+  created_at: string;
+}
+export interface ApproveRequest {
+  role: GrantRole;
+  ward?: string | null;
+  /** Patient role only: link to this existing record; omit to create a new record from the request's name. */
+  patient_id?: string | null;
+}
+export interface UserAdmin {
+  id: string;
+  name: string;
+  email: string;
+  role: Exclude<Role, "patient"> | null;
+  status: AccountStatus;
+  ward: string | null;
+  supervisor_id: string | null;
+  /** Set on pending and rejected requests. */
+  requested_role: SignupRole | null;
+  requested_doctor_id: string | null;
+}
+/** Shown once to the issuer; never stored by the UI. */
+export interface OneTimeCode {
+  code: string; // "K7M2Q-9XR4T"
+  expires_at: string;
+}
+export interface PatientAccessGrant {
+  patient_id: string;
+  doctor_id: string;
+  doctor_name: string;
+  expires_at: string;
 }
 
 // ── Composed views (built client-side from several contract calls) ──────────

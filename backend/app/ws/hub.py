@@ -14,6 +14,7 @@ class Client:
     user_id: str
     role: str
     ward: str | None
+    supervisor_id: str | None = None
 
 
 def wants(c: Client, frame: dict) -> bool:
@@ -21,9 +22,10 @@ def wants(c: Client, frame: dict) -> bool:
     if c.role == "admin":
         return frame.get("type") == "device_status"
     if c.role == "nurse":
-        return c.ward is not None and scope.get("ward") == c.ward
+        return (c.ward is not None and scope.get("ward") == c.ward) or (
+            c.supervisor_id is not None and scope.get("doctor_id") == c.supervisor_id)
     if c.role == "doctor":
-        return scope.get("doctor_id") == c.user_id
+        return scope.get("doctor_id") == c.user_id or c.user_id in (scope.get("shared_with") or ())
     return False
 
 
@@ -40,19 +42,36 @@ class Hub:
             except Exception:  # a dead socket must not stop the others
                 self.clients.discard(c)
 
-    def broadcast(self, frame: dict) -> None:
-        """Safe from any thread (the MQTT relay runs on paho's network thread)."""
+    async def _close_user(self, user_id: str, code: int, reason: str) -> None:
+        for c in [c for c in self.clients if c.user_id == user_id]:
+            self.clients.discard(c)
+            try:
+                await c.ws.close(code=code, reason=reason)
+            except Exception:  # already gone
+                pass
+
+    def _run(self, coro) -> None:
+        """Run `coro` on the server loop, from any thread."""
         loop = self.loop
         if loop is None or loop.is_closed():
+            coro.close()
             return
         try:
             running = asyncio.get_running_loop()
         except RuntimeError:
             running = None
         if running is loop:
-            loop.create_task(self._send(frame))
+            loop.create_task(coro)
         else:
-            asyncio.run_coroutine_threadsafe(self._send(frame), loop)
+            asyncio.run_coroutine_threadsafe(coro, loop)
+
+    def broadcast(self, frame: dict) -> None:
+        """Safe from any thread (the MQTT relay runs on paho's network thread)."""
+        self._run(self._send(frame))
+
+    def close_user(self, user_id: str, code: int = 4401, reason: str = "account disabled") -> None:
+        """Drop every open socket of this user (account disabled): no more patient data after the click."""
+        self._run(self._close_user(user_id, code, reason))
 
 
 hub = Hub()

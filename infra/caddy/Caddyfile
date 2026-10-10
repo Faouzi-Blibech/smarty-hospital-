@@ -1,0 +1,27 @@
+# Ward reverse proxy (compose profile "internet"). TLS + security headers; /api/* → FastAPI, the rest → Next.js.
+{
+	# Browsers send no SNI for a bare IP (LAN test) and Docker NAT hides the dest IP, so fall back to the site cert.
+	default_sni {$WARD_DOMAIN:localhost}
+}
+
+{$WARD_DOMAIN:localhost} {
+	tls {$WARD_TLS:internal}
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Frame-Options "DENY"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' wss://{$WARD_DOMAIN:localhost}; frame-src 'self' blob:; object-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		-Server
+	}
+
+	# /api/ws is the WebSocket; reverse_proxy upgrades it automatically
+	handle_path /api/* {
+		reverse_proxy api:8000
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}

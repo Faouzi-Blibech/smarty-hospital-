@@ -9,6 +9,7 @@ import { LiveBanner } from "@/components/LiveBanner";
 import { DosesTimeline } from "@/components/shared/DosesTimeline";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { NotesPanel } from "@/components/shared/NotesPanel";
+import { AccessPanel } from "@/components/shared/AccessPanel";
 import { ExamsPanel } from "@/components/shared/ExamsPanel";
 import { LIVE_JITTER, useLiveTick } from "@/components/shared/useLiveTick";
 import { Toast, useToast } from "@/components/Toast";
@@ -82,6 +83,8 @@ export function PatientDetail({ id }: { id: string }) {
   );
 
   const state = flags.state === "error" || failed ? "error" : flags.state === "loading" || !data ? "loading" : null;
+  // Shared doctor: signed in as a doctor who is not the attending one. Mock mode is always the attending doctor.
+  const shared = !USE_MOCKS && !!me && !!data && me.role === "doctor" && data.patient.attending_doctor_id !== me.id;
   const name = data ? `${data.patient.first_name} ${data.patient.last_name}` : "";
   const jitter = flags.live && USE_MOCKS ? LIVE_JITTER[reading % LIVE_JITTER.length] : 0;
 
@@ -101,6 +104,11 @@ export function PatientDetail({ id }: { id: string }) {
           {t("doctor.auditLine", { viewer, time: openedAt })}
         </span>
       </div>
+      {shared ? (
+        <div className={styles.sharedBanner} role="status">
+          {t("doctor.sharedReadOnly")}
+        </div>
+      ) : null}
       {!flags.live ? <LiveBanner>{t("doctor.chartFrozen", { time: pausedAt() })}</LiveBanner> : null}
 
       {state === "error" ? (
@@ -124,6 +132,7 @@ export function PatientDetail({ id }: { id: string }) {
             <div className={styles.col}>
               <VitalsCard vitals={data.vitals} live={flags.live} sec={sec} hrJitter={jitter} now={now()} />
               <Prescriptions
+                readOnly={shared}
                 patient={data.patient}
                 prescriptions={data.prescriptions}
                 actorId={DOCTOR_ID}
@@ -131,10 +140,17 @@ export function PatientDetail({ id }: { id: string }) {
               />
             </div>
             <div className={styles.col}>
+              {me && data.patient.attending_doctor_id === me.id ? (
+                <AccessPanel
+                  patientId={id}
+                  patientName={`${data.patient.first_name} ${data.patient.last_name}`}
+                  excludeIds={[me.id]}
+                />
+              ) : null}
               <ExamsPanel patientId={id} />
-              <DailySummary patientId={id} aiFallback={flags.aiFallback} actorId={DOCTOR_ID} />
+              <DailySummary readOnly={shared} patientId={id} aiFallback={flags.aiFallback} actorId={DOCTOR_ID} />
               <DosesTimeline doses={data.doses} now={now()} />
-              <NotesPanel notes={data.notes} onAdd={onAddNote} now={now()} />
+              <NotesPanel readOnly={shared} notes={data.notes} onAdd={onAddNote} now={now()} />
             </div>
           </div>
         </>

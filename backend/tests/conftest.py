@@ -99,3 +99,13 @@ def no_llm(monkeypatch):
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+def fresh_rate_limits():
+    """Rate-limit counters are process-wide; every test starts from zero."""
+    from app.auth.ratelimit import limiter
+
+    limiter.reset()
+    yield
+    limiter.reset()

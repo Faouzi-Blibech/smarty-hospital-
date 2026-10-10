@@ -20,6 +20,6 @@ def list_staff(user: User = Depends(require_roles("admin")), db: Session = Depen
     for u in db.scalars(select(User).where(User.role != "patient").order_by(User.id)):
         st = db.get(Staff, u.id)
         ward = st.ward if st else None
-        out.append({"id": u.id, "name": u.name, "email": u.email, "role": u.role, "ward": ward,
+        out.append({"id": u.id, "name": u.name, "email": u.email, "role": u.role, "status": u.status, "ward": ward,
                     "scope": ward or "All wards", "last_login_at": iso(last_login.get(u.id))})
     return out

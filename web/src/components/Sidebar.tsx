@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useT } from "@/i18n/I18nProvider";
 import type { Key } from "@/i18n/messages";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { LogoutButton } from "./LogoutButton";
 import { USE_MOCKS } from "@/lib/time";
 import { initialsOf, useMe } from "@/lib/useMe";
 import { NAV_COUNTS } from "@/mocks";
@@ -39,6 +40,8 @@ export const NAV: Record<StaffRole, NavItem[]> = {
   doctor: [
     { key: "patients", label: "shared.navMyPatients", href: "/doctor", count: NAV_COUNTS.doctor.patients },
     { key: "requests", label: "shared.navRequests", href: "/doctor/requests", count: NAV_COUNTS.doctor.requests },
+    { key: "team", label: "accounts.navTeam", href: "/doctor/team" },
+    { key: "password", label: "auth.navPassword", href: "/doctor/password" },
   ],
   nurse: [
     { key: "board", label: "shared.navWardBoard", href: "/nurse", count: NAV_COUNTS.nurse.board },
@@ -46,12 +49,16 @@ export const NAV: Record<StaffRole, NavItem[]> = {
     { key: "meds", label: "shared.navMedRound", href: "/nurse/meds", count: NAV_COUNTS.nurse.meds },
     { key: "exams", label: "shared.navExams", href: "/nurse/exams" },
     { key: "patients", label: "shared.navPatients", href: "/nurse/patients", count: NAV_COUNTS.nurse.patients },
+    { key: "password", label: "auth.navPassword", href: "/nurse/password" },
   ],
   admin: [
     { key: "dashboard", label: "shared.navDashboard", href: "/admin", count: NAV_COUNTS.admin.dashboard },
     { key: "waitlist", label: "shared.navWaitlist", href: "/admin/waitlist", count: NAV_COUNTS.admin.waitlist },
     { key: "devices", label: "shared.navDevices", href: "/admin/devices", count: NAV_COUNTS.admin.devices },
     { key: "staff", label: "shared.navStaff", href: "/admin/staff", count: NAV_COUNTS.admin.staff },
+    { key: "pending", label: "accounts.navPending", href: "/admin/pending" },
+    { key: "patients", label: "accounts.navPatientAccess", href: "/admin/patients" },
+    { key: "password", label: "auth.navPassword", href: "/admin/password" },
   ],
 };
 
@@ -136,6 +143,7 @@ export function Sidebar({ role, active, live = true, counts }: SidebarProps) {
           </span>
         )}
         <LanguageSwitcher tone="dark" compact />
+        <LogoutButton className={styles.logout} />
         <div className={styles.user}>
           <span className={styles.avatar}>{u.ini}</span>
           <div className={styles.who}>

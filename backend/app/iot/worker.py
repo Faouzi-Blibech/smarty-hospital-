@@ -14,7 +14,7 @@ from sqlalchemy import inspect
 
 from app.config import get_settings
 from app.db import SessionLocal, engine
-from app.iot import ingest, publisher
+from app.iot import ingest, mqtt_auth, publisher
 
 log = logging.getLogger("ward.worker")
 TOPICS = [("hospital/device/+/vitals", 1), ("hospital/device/+/events", 1), ("hospital/device/+/status", 1)]
@@ -56,6 +56,8 @@ def process(device_id: str, kind: str, raw: bytes) -> list[dict]:
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
+    if not mqtt_auth.connack_ok(reason_code, "ward-worker"):
+        return  # paho retries; the error is already logged
     log.info("connected to broker (%s); subscribing", reason_code)
     client.subscribe(TOPICS)
 
@@ -73,6 +75,7 @@ def main() -> None:
         log.info("waiting for the database schema (api runs the migrations)")
         time.sleep(2)
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="ward-worker")
+    mqtt_auth.apply_credentials(client, s)
     client.on_connect = on_connect
     client.on_message = on_message
     publisher.use(client)

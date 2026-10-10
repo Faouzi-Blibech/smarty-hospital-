@@ -9,10 +9,10 @@ from sqlalchemy import text
 
 from app import errors
 from app.ai import laya_intent
-from app.config import get_settings
+from app.config import check_secrets, get_settings
 from app.db import engine
 from app.iot import publisher
-from app.routers import ai, alerts, appointments, auth, devices, doses, exams, integrations, patients, prescriptions, staff
+from app.routers import access, ai, alerts, appointments, auth, devices, doses, exams, integrations, patients, prescriptions, staff, users
 from app.ws import relay
 from app.ws import router as ws_router
 from app.ws.hub import hub
@@ -21,6 +21,7 @@ from app.ws.hub import hub
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    check_secrets(get_settings())
     hub.loop = asyncio.get_running_loop()
     client = relay.start()
     publisher.use(client)  # publish on the client that connected at startup
@@ -35,19 +36,21 @@ app = FastAPI(title="Ward API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[o.strip() for o in get_settings().web_origin.split(",") if o.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 errors.install(app)
 app.include_router(auth.router)
+app.include_router(access.router)
 app.include_router(patients.router)
 app.include_router(alerts.router)
 app.include_router(prescriptions.router)
 app.include_router(devices.router)
 app.include_router(doses.router)
 app.include_router(staff.router)
+app.include_router(users.router)
 app.include_router(appointments.router)
 app.include_router(integrations.router)
 app.include_router(ai.router)

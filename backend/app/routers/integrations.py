@@ -101,7 +101,7 @@ def _summary_text(db: Session, p: Patient) -> str:
 
 @router.get("/daily-digest")
 def daily_digest(doctor_id: str | None = None, db: Session = Depends(get_db)) -> list[dict]:
-    doctors = select(User).where(User.role == "doctor").order_by(User.id)
+    doctors = select(User).where(User.role == "doctor", User.status == "active").order_by(User.id)
     if doctor_id:
         doctors = doctors.where(User.id == doctor_id)
     doctors = db.scalars(doctors).all()

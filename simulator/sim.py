@@ -8,6 +8,7 @@ Events, schedule subscription and scenarios are added per plans/HEDI.md.
 
 import argparse
 import json
+import os
 import random
 import time
 
@@ -23,10 +24,20 @@ def main() -> None:
     ap.add_argument("--host", default="localhost")
     ap.add_argument("--port", type=int, default=1883)
     ap.add_argument("--interval", type=float, default=5.0)
+    # broker login (mqtt-topics.md "Broker"): username = device id; the demo password is change-me-<device id>
+    ap.add_argument("--username", default=os.environ.get("MQTT_USERNAME"), help="default: the device id")
+    ap.add_argument("--password", default=os.environ.get("MQTT_PASSWORD"), help="default: change-me-<device id>")
     args = ap.parse_args()
 
     base = f"hospital/device/{args.device}"
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=f"ward-sim-{args.device}")
+    client.username_pw_set(args.username or args.device, args.password or f"change-me-{args.device}")
+
+    def on_connect(c, userdata, flags, reason_code, properties):
+        if reason_code.is_failure:
+            print(f"broker refused the login ({reason_code}); check --username/--password", flush=True)
+
+    client.on_connect = on_connect
     client.will_set(f"{base}/status", json.dumps({"online": False, "fw_version": FW_VERSION}), qos=1, retain=True)
     client.connect(args.host, args.port)
     client.loop_start()

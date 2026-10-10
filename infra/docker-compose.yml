@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ward}
       POSTGRES_DB: ${POSTGRES_DB:-ward}
       TZ: UTC
-    ports: ["5432:5432"]
+    ports: ["127.0.0.1:5432:5432"]
     volumes:
       - db-data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
@@ -22,9 +22,16 @@ services:
 
   mqtt:
     image: eclipse-mosquitto:2
-    ports: ["1883:1883"]
+    ports: ["${MQTT_BIND:-0.0.0.0}:1883:1883"]
+    # entrypoint.sh builds the password file from these accounts, then starts mosquitto (acl + conf from ./mosquitto)
+    entrypoint: ["sh", "/ward-mosquitto/entrypoint.sh"]
+    environment:
+      MQTT_BACKEND_USERNAME: ${MQTT_BACKEND_USERNAME:-ward-backend}
+      MQTT_BACKEND_PASSWORD: ${MQTT_BACKEND_PASSWORD:-change-me-mqtt}
+      MQTT_DEVICE_CREDENTIALS: ${MQTT_DEVICE_CREDENTIALS:-bsu-001:change-me-bsu-001,bsu-002:change-me-bsu-002}
+      WARD_ENV: ${WARD_ENV:-demo}
     volumes:
-      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto:/ward-mosquitto:ro
       - mqtt-data:/mosquitto/data
 
   minio:
@@ -33,7 +40,7 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-ward}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-wardminio123}
-    ports: ["9000:9000", "9001:9001"]
+    ports: ["127.0.0.1:9000:9000", "127.0.0.1:9001:9001"]
     volumes:
       - minio-data:/data
 
@@ -54,7 +61,7 @@ services:
       WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}  # the sender's phone number ID (not the number)
       WARD_WHATSAPP_STAFF: ${WARD_WHATSAPP_STAFF:-}            # demo: staff numbers, comma-separated, e.g. 21612345678
       WARD_WHATSAPP_PATIENT: ${WARD_WHATSAPP_PATIENT:-}        # demo: the patient's number
-    ports: ["5678:5678"]
+    ports: ["${N8N_BIND:-0.0.0.0}:5678:5678"]
     volumes:
       - n8n-data:/home/node/.n8n
       - ../n8n/workflows:/ward-workflows:ro
@@ -62,28 +69,34 @@ services:
   api:
     build: ../backend
     env_file:
-      - path: ../.env
+      - path: ../${WARD_ENV_FILE:-.env}
         required: false
     environment:
+      WARD_ENV: ${WARD_ENV:-demo}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-ward}:${POSTGRES_PASSWORD:-ward}@db:5432/${POSTGRES_DB:-ward}
       MQTT_HOST: mqtt
+      MQTT_USERNAME: ${MQTT_BACKEND_USERNAME:-ward-backend}
+      MQTT_PASSWORD: ${MQTT_BACKEND_PASSWORD:-change-me-mqtt}
       MINIO_ENDPOINT: minio:9000
       N8N_WEBHOOK_URL: http://n8n:5678/webhook/ward-events
-    ports: ["${API_PORT:-8000}:8000"]
+    ports: ["${API_BIND:-0.0.0.0}:${API_PORT:-8000}:8000"]
     depends_on:
       db: { condition: service_healthy }
       mqtt: { condition: service_started }
       minio: { condition: service_started }
-    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips \"${FORWARDED_ALLOW_IPS:-127.0.0.1}\""]
 
   worker:
     build: ../backend
     env_file:
-      - path: ../.env
+      - path: ../${WARD_ENV_FILE:-.env}
         required: false
     environment:
+      WARD_ENV: ${WARD_ENV:-demo}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-ward}:${POSTGRES_PASSWORD:-ward}@db:5432/${POSTGRES_DB:-ward}
       MQTT_HOST: mqtt
+      MQTT_USERNAME: ${MQTT_BACKEND_USERNAME:-ward-backend}
+      MQTT_PASSWORD: ${MQTT_BACKEND_PASSWORD:-change-me-mqtt}
       N8N_WEBHOOK_URL: http://n8n:5678/webhook/ward-events
     depends_on:
       db: { condition: service_healthy }
@@ -96,11 +109,24 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
         NEXT_PUBLIC_USE_MOCKS: ${NEXT_PUBLIC_USE_MOCKS:-1}
-    ports: ["${WEB_PORT:-3000}:3000"]
+    ports: ["${WEB_BIND:-0.0.0.0}:${WEB_PORT:-3000}:3000"]
     depends_on: [api]
+
+  proxy:
+    image: caddy:2.8
+    profiles: ["internet"]
+    environment:
+      WARD_DOMAIN: ${WARD_DOMAIN:-localhost}
+      WARD_TLS: ${WARD_TLS:-internal}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on: [api, web]
 
 volumes:
   db-data:
   mqtt-data:
   minio-data:
   n8n-data:
+  caddy-data:

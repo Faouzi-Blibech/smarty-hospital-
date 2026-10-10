@@ -5,31 +5,43 @@
 // store, so a later read reflects them (until a full page reload).
 // Real mode: calls NEXT_PUBLIC_API_URL with the paths of docs/contracts/api.md.
 // Paths marked NOT IN CONTRACT have no api.md 1.4 endpoint yet (see the Task 1 report).
-import { createStore, EXAM_CATALOGUE, mockAssistant, USERS, userName, type AssistantContext, type MockStore } from "@/mocks";
+import { createStore, generateCode, MOCK_CODES, EXAM_CATALOGUE, mockAssistant, USERS, userName, type AssistantContext, type MockStore } from "@/mocks";
 import { now, tunisDate, USE_MOCKS } from "./time";
 import type {
+  AccountStatus,
   Alert,
   AiSummary,
   Appointment,
   AssistantResponse,
   CatalogueItem,
+  ApproveRequest,
+  ChangePasswordRequest,
   ConfirmAppointmentRequest,
   CreatePrescriptionRequest,
   Device,
+  DoctorRef,
   Dose,
   ExamOrder,
   HomeCarePlan,
+  Hospital,
   LoginResponse,
   Me,
   MedRoundGroup,
   Note,
+  OneTimeCode,
   Patient,
+  PatientAccessGrant,
   PatientSummary,
+  PendingUser,
   Prescription,
+  RegisterRequest,
+  RegisterResponse,
+  ResetRequest,
   Role,
   SlotOffer,
   StaffMember,
   Urgency,
+  UserAdmin,
   Vital,
   WardBed,
 } from "./types";
@@ -78,6 +90,30 @@ function getToken(): string | null {
   }
 }
 
+/** Forget everything this tab holds about the session: the token and the remembered /me. */
+function clearSession(): void {
+  setToken(null);
+  meCache.clear();
+}
+
+/** A 401 outside /auth/* means the token is dead (expired, or the account was disabled): drop it and go to sign-in. */
+function expireSession(): void {
+  clearSession();
+  if (typeof window !== "undefined" && window.location.pathname !== "/") window.location.assign("/?expired=1");
+}
+
+/**
+ * Shared 401 rule for every authenticated call. /auth/* is skipped (login errors are form errors), except
+ * /auth/change-password: there `bad_credentials` is a wrong current password (form error), any other 401 is a dead token.
+ */
+function handleUnauthorized(path: string, hadToken: boolean, code?: string): void {
+  const authForm = path.startsWith("/auth/") && !(path === "/auth/change-password" && code !== "bad_credentials");
+  if (authForm) return;
+  // No token at all (e.g. Back after logging out): plain sign-in, no "session ended" notice.
+  if (hadToken) expireSession();
+  else if (typeof window !== "undefined" && window.location.pathname !== "/") window.location.assign("/");
+}
+
 async function http<T>(method: string, path: string, body?: unknown): Promise<T> {
   const token = getToken();
   const res = await fetch(`${BASE}${path}`, {
@@ -87,6 +123,7 @@ async function http<T>(method: string, path: string, body?: unknown): Promise<T>
   });
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { detail?: string; code?: string };
+    if (res.status === 401) handleUnauthorized(path, !!token, err.code);
     throw new ApiError(res.status, err.code ?? "http_error", err.detail ?? res.statusText);
   }
   // Some endpoints (assign, discharge) have no response body in api.md.
@@ -99,6 +136,7 @@ async function upload<T>(path: string, form: FormData): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form });
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { detail?: string; code?: string };
+    if (res.status === 401) handleUnauthorized(path, !!token, err.code);
     throw new ApiError(res.status, err.code ?? "http_error", err.detail ?? res.statusText);
   }
   return (await res.json()) as T;
@@ -143,6 +181,27 @@ export async function login(email: string, password: string): Promise<LoginRespo
   return res;
 }
 
+/** POST /auth/logout (Bearer → 204), best effort, then forget the session on this device. Mock mode skips the network. */
+export async function logout(): Promise<void> {
+  const token = getToken();
+  clearSession(); // local first: a slow or unreachable API must never keep the session alive
+  if (USE_MOCKS || !token) return;
+  try {
+    await fetch(`${BASE}/auth/logout`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch {
+    /* best effort: only the server's audit row is lost */
+  }
+}
+
+/** True while this tab holds a session (always true in mock mode, which has no sign-in). */
+export function hasSession(): boolean {
+  return USE_MOCKS || getToken() !== null;
+}
+
 /** GET /me. In mock mode, `role` picks which demo user you are (default doctor). */
 export function getMe(role: Role = "doctor"): Promise<Me> {
   if (USE_MOCKS) return mock(() => USERS[role]);
@@ -163,6 +222,235 @@ export function getMeCached(role: Role = "doctor"): Promise<Me> {
   return p;
 }
 
+// ── Accounts and access (api.md 1.9) ────────────────────────────────────────
+
+/** Mock mode only: whose view a call is made from. The real API reads the JWT. */
+export interface ViewerOpts {
+  as?: "admin" | "doctor";
+}
+
+const enc = encodeURIComponent;
+const mockCode = (): OneTimeCode => ({ code: generateCode(), expires_at: iso(new Date(now().getTime() + 48 * 3_600_000)) });
+
+function userAdmin(s: MockStore, id: string): UserAdmin {
+  const t = s.team.find((u) => u.id === id);
+  if (t) return t;
+  const m = s.staff.find((u) => u.id === id) ?? notFound(`User ${id}`);
+  return { id: m.id, name: m.name, email: m.email, role: m.role, status: m.status, ward: m.ward, supervisor_id: null, requested_role: null, requested_doctor_id: null };
+}
+
+function setStatus(s: MockStore, id: string, status: AccountStatus, as: "admin" | "doctor"): UserAdmin {
+  const member = s.team.find((u) => u.id === id);
+  if (as === "doctor" && !member) throw new ApiError(403, "forbidden", "Not on your team");
+  const row = s.staff.find((u) => u.id === id);
+  if (!member && !row) notFound(`User ${id}`);
+  if (member) member.status = status;
+  if (row) row.status = status;
+  return userAdmin(s, id);
+}
+
+/** POST /auth/register → always the same generic 202. Mock: weak password → 422; `doctor` role with a requested doctor → 422. */
+export function registerAccount(req: RegisterRequest): Promise<RegisterResponse> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      if (req.password.length < 10) throw new ApiError(422, "weak_password", "Password must be at least 10 characters.");
+      if (req.role === "doctor" && req.requested_doctor_id) throw new ApiError(422, "validation_error", "A doctor can't pick a doctor.");
+      if (!s.pending.some((p) => p.email === req.email)) {
+        s.seq.user += 1;
+        s.pending.push({
+          id: `u-${String(s.seq.user).padStart(4, "0")}`,
+          name: req.name,
+          email: req.email,
+          note: req.note ?? null,
+          requested_role: req.role,
+          requested_doctor_id: req.requested_doctor_id ?? null,
+          requested_doctor_name: s.directory.find((d) => d.id === req.requested_doctor_id)?.name ?? null,
+          status: "pending",
+          created_at: iso(now()),
+        });
+      }
+      return { status: "received" as const, detail: "If the details are valid, your account was created or is waiting for approval." };
+    });
+  return http<RegisterResponse>("POST", "/auth/register", req);
+}
+
+/** POST /auth/reset → 204. */
+export function resetPassword(req: ResetRequest): Promise<void> {
+  if (USE_MOCKS)
+    return mock(() => {
+      if (req.code.toUpperCase() !== MOCK_CODES.reset) throw new ApiError(400, "invalid_code", "Invalid or expired code.");
+      if (req.new_password.length < 10) throw new ApiError(422, "weak_password", "Password must be at least 10 characters.");
+    });
+  return http<void>("POST", "/auth/reset", req);
+}
+
+/** POST /auth/change-password (Bearer) → 204. */
+export function changePassword(req: ChangePasswordRequest): Promise<void> {
+  if (USE_MOCKS)
+    return mock(() => {
+      if (req.current_password === MOCK_CODES.wrongPassword) throw new ApiError(401, "bad_credentials", "Wrong password");
+      if (req.new_password.length < 10) throw new ApiError(422, "weak_password", "Password must be at least 10 characters.");
+    });
+  return http<void>("POST", "/auth/change-password", req);
+}
+
+/** GET /hospital (no auth): this install's hospital name. */
+export function getHospital(): Promise<Hospital> {
+  if (USE_MOCKS) return mock(() => ({ name: "Ward Hospital" }));
+  return http<Hospital>("GET", "/hospital");
+}
+
+/** GET /doctors/directory (no auth): ids and names only. */
+export function getDoctorDirectory(): Promise<DoctorRef[]> {
+  if (USE_MOCKS) return mock((s) => s.directory);
+  return http<DoctorRef[]>("GET", "/doctors/directory");
+}
+
+/** GET /users?status= (admin: all; doctor: requests naming him). Mock doctor = Dr Trabelsi. */
+export function listUsers(status: "pending" | "rejected", opts: ViewerOpts = {}): Promise<PendingUser[]> {
+  if (USE_MOCKS)
+    return mock((s) =>
+      s.pending.filter((u) => u.status === status && (opts.as !== "doctor" || u.requested_doctor_id === USERS.doctor.id)),
+    );
+  return http<PendingUser[]>("GET", `/users?status=${status}`);
+}
+
+/**
+ * POST /users/{id}/approve `{role, ward?, patient_id?}`. A doctor may only grant patient or nurse (ward ignored).
+ * Patient role: `patient_id` links an existing record (404 unknown, 409 already has an account); omitted = new record.
+ */
+export function approveUser(id: string, req: ApproveRequest, opts: ViewerOpts = {}): Promise<UserAdmin> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      const as = opts.as ?? "admin";
+      const p = s.pending.find((u) => u.id === id) ?? notFound(`User ${id}`);
+      if (as === "doctor" && req.role !== "nurse" && req.role !== "patient") throw new ApiError(403, "forbidden", "A doctor can only approve patients and nurses.");
+      if (req.role === "patient" && req.patient_id) {
+        const rec = s.patients.find((x) => x.id === req.patient_id) ?? notFound(`Patient ${req.patient_id}`);
+        if (as === "doctor" && rec.attending_doctor_id !== USERS.doctor.id) throw new ApiError(403, "forbidden", "Not your patient");
+        if (s.linkedPatients.includes(rec.id)) throw new ApiError(409, "conflict", "This patient already has an account.");
+        s.linkedPatients.push(rec.id);
+      }
+      const ward = as === "doctor" || req.role !== "nurse" ? null : (req.ward ?? null);
+      s.pending = s.pending.filter((u) => u.id !== id);
+      if (req.role !== "patient") s.staff.push({ id: p.id, name: p.name, email: p.email, role: req.role, ward, scope: ward ?? "—", last_login_at: null, status: "active" });
+      const out: UserAdmin = {
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        role: req.role === "patient" ? null : req.role,
+        status: "active",
+        ward,
+        supervisor_id: as === "doctor" && req.role === "nurse" ? USERS.doctor.id : null,
+        requested_role: p.requested_role,
+        requested_doctor_id: p.requested_doctor_id,
+      };
+      if (as === "doctor" && req.role === "nurse") s.team.push(out);
+      return out;
+    });
+  return http<UserAdmin>("POST", `/users/${enc(id)}/approve`, req);
+}
+
+/** POST /users/{id}/reject */
+export function rejectUser(id: string, opts: ViewerOpts = {}): Promise<UserAdmin> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      const p = s.pending.find((u) => u.id === id) ?? notFound(`User ${id}`);
+      if ((opts.as ?? "admin") === "doctor" && p.requested_doctor_id !== USERS.doctor.id) throw new ApiError(403, "forbidden", "Not your request");
+      p.status = "rejected";
+      return { id: p.id, name: p.name, email: p.email, role: null, status: "rejected" as const, ward: null, supervisor_id: null, requested_role: p.requested_role, requested_doctor_id: p.requested_doctor_id };
+    });
+  return http<UserAdmin>("POST", `/users/${enc(id)}/reject`, {});
+}
+
+/** POST /users/{id}/disable (admin: anyone; doctor: his team). */
+export function disableUser(id: string, opts: ViewerOpts = {}): Promise<UserAdmin> {
+  if (USE_MOCKS) return mock((s) => setStatus(s, id, "disabled", opts.as ?? "admin"));
+  return http<UserAdmin>("POST", `/users/${enc(id)}/disable`, {});
+}
+
+/** POST /users/{id}/enable */
+export function enableUser(id: string, opts: ViewerOpts = {}): Promise<UserAdmin> {
+  if (USE_MOCKS) return mock((s) => setStatus(s, id, "active", opts.as ?? "admin"));
+  return http<UserAdmin>("POST", `/users/${enc(id)}/enable`, {});
+}
+
+/** POST /users/{id}/reset-code (admin) → shown once. */
+export function issueResetCode(userId: string): Promise<OneTimeCode> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      userAdmin(s, userId);
+      return mockCode();
+    });
+  return http<OneTimeCode>("POST", `/users/${enc(userId)}/reset-code`, {});
+}
+
+/** GET /doctors/me/team (doctor). */
+export function getMyTeam(): Promise<UserAdmin[]> {
+  if (USE_MOCKS) return mock((s) => s.team);
+  return http<UserAdmin[]>("GET", "/doctors/me/team");
+}
+
+/** GET /patients/{id}/access */
+export function getPatientAccess(patientId: string): Promise<PatientAccessGrant[]> {
+  if (USE_MOCKS) return mock((s) => s.grants[patientId] ?? []);
+  return http<PatientAccessGrant[]>("GET", `/patients/${enc(patientId)}/access`);
+}
+
+/** POST /patients/{id}/access `{doctor_id, expires_at?}` (default 30 days). */
+export function grantPatientAccess(patientId: string, req: { doctor_id: string; expires_at?: string }): Promise<PatientAccessGrant> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      const doctor = s.directory.find((d) => d.id === req.doctor_id) ?? notFound(`Doctor ${req.doctor_id}`);
+      const grant: PatientAccessGrant = {
+        patient_id: patientId,
+        doctor_id: doctor.id,
+        doctor_name: doctor.name,
+        expires_at: req.expires_at ?? iso(new Date(now().getTime() + 30 * 86_400_000)),
+      };
+      s.grants[patientId] = [...(s.grants[patientId] ?? []).filter((g) => g.doctor_id !== doctor.id), grant];
+      return grant;
+    });
+  return http<PatientAccessGrant>("POST", `/patients/${enc(patientId)}/access`, req);
+}
+
+/** DELETE /patients/{id}/access/{doctor_id} → 204. */
+export function revokePatientAccess(patientId: string, doctorId: string): Promise<void> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      s.grants[patientId] = (s.grants[patientId] ?? []).filter((g) => g.doctor_id !== doctorId);
+    });
+  return http<void>("DELETE", `/patients/${enc(patientId)}/access/${enc(doctorId)}`);
+}
+
+/** PATCH /users/{id} `{ward}` (admin) — ward editor on the Staff page. */
+export function setUserWard(userId: string, ward: string | null): Promise<UserAdmin> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      userAdmin(s, userId);
+      const t = s.team.find((u) => u.id === userId);
+      const row = s.staff.find((u) => u.id === userId);
+      if (t) t.ward = ward;
+      if (row) {
+        row.ward = ward;
+        row.scope = ward ?? "—";
+      }
+      return userAdmin(s, userId);
+    });
+  return http<UserAdmin>("PATCH", `/users/${enc(userId)}`, { ward });
+}
+
+/** POST /patients/{id}/reset-code (admin or attending doctor) → shown once. 404 when the patient has no active account. Mock: only p-0001 has one. */
+export function issuePatientResetCode(patientId: string): Promise<OneTimeCode> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      s.patients.find((p) => p.id === patientId) ?? notFound(`Patient ${patientId}`);
+      if (patientId !== USERS.patient.patient_id) throw new ApiError(404, "not_found", "This patient has no active account.");
+      return mockCode();
+    });
+  return http<OneTimeCode>("POST", `/patients/${enc(patientId)}/reset-code`, {});
+}
+
 // ── Patients and records ────────────────────────────────────────────────────
 
 /** GET /patients (the doctor's own), highest NEWS2 first. */
@@ -177,6 +465,34 @@ export async function getMyPatients(): Promise<PatientSummary[]> {
 export function getPatient(id: string): Promise<Patient> {
   if (USE_MOCKS) return mock((s) => s.patients.find((p) => p.id === id) ?? notFound(`Patient ${id}`));
   return http<Patient>("GET", `/patients/${encodeURIComponent(id)}`);
+}
+
+/** GET /patients?q= as admin: name, bed and device only (no attending doctor, no vitals). */
+export interface PatientListItem {
+  id: string;
+  first_name: string;
+  last_name: string;
+  ward: string | null;
+  bed: string | null;
+  device_id: string | null;
+}
+
+/**
+ * GET /patients?q= (admin: every record by name or ID; doctor: his normal scope). `unlinked` adds `unlinked=true`
+ * (records with no account). Mock: `as: "doctor"` keeps only Dr Trabelsi's patients.
+ */
+export function searchPatients(q: string, opts: ViewerOpts & { unlinked?: boolean } = {}): Promise<PatientListItem[]> {
+  const needle = q.trim().toLowerCase();
+  const pick = (p: PatientListItem) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name, ward: p.ward, bed: p.bed, device_id: p.device_id });
+  if (USE_MOCKS)
+    return mock((s) =>
+      s.patients
+        .filter((p) => opts.as !== "doctor" || p.attending_doctor_id === USERS.doctor.id)
+        .filter((p) => !opts.unlinked || !s.linkedPatients.includes(p.id))
+        .filter((p) => !needle || p.id.toLowerCase().includes(needle) || `${p.first_name} ${p.last_name}`.toLowerCase().includes(needle))
+        .map(pick),
+    );
+  return http<PatientListItem[]>("GET", `/patients?q=${encodeURIComponent(q.trim())}${opts.unlinked ? "&unlinked=true" : ""}`);
 }
 
 /** GET /patients/{id}/vitals?from=&to= — oldest first, default last 24 h. */
@@ -538,7 +854,10 @@ export async function examFileUrl(resultId: string): Promise<string> {
   const res = await fetch(`${BASE}/exam-results/${encodeURIComponent(resultId)}/file`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (!res.ok) throw new ApiError(res.status, "http_error", res.statusText);
+  if (!res.ok) {
+    if (res.status === 401) handleUnauthorized("/exam-results/file", !!token);
+    throw new ApiError(res.status, "http_error", res.statusText);
+  }
   return URL.createObjectURL(await res.blob());
 }
 
