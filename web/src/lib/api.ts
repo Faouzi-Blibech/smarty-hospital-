@@ -7,6 +7,7 @@
 // Paths marked NOT IN CONTRACT have no api.md 1.4 endpoint yet (see the Task 1 report).
 import { createStore, generateCode, MOCK_CODES, EXAM_CATALOGUE, mockAssistant, USERS, userName, type AssistantContext, type MockStore } from "@/mocks";
 import { now, tunisDate, USE_MOCKS } from "./time";
+import { HEALTH_CATEGORIES } from "./types";
 import type {
   AccountStatus,
   Alert,
@@ -28,6 +29,11 @@ import type {
   Dose,
   ExamOrder,
   HomeCarePlan,
+  HealthAudience,
+  HealthCategory,
+  HealthEvent,
+  HealthEventInput,
+  HealthPrefs,
   Hospital,
   LoginResponse,
   Me,
@@ -1108,4 +1114,126 @@ export async function getMedRound(ward: string = DEFAULT_WARD): Promise<MedRound
     })),
   );
   return groups.filter((g) => g.doses.length > 0);
+}
+
+// ── Health calendar (api.md 1.12) ──────────────────────────────────────────
+
+/** The mock profile per role: Amira (F, 1972) is the patient; staff ignore sex/age limits. */
+function mockMatches(s: MockStore, role: Role, ev: Omit<HealthEvent, "matches_me" | "following">): boolean {
+  const a = ev.audience;
+  if (!a.roles.includes(role)) return false;
+  if (role !== "patient") return true; // staff ignore sex/age limits
+  if (a.sex === null && a.min_age === null && a.max_age === null) return true;
+  const p = s.patients.find((x) => x.id === USERS.patient.patient_id);
+  if (!p) return false;
+  if (a.sex !== null && p.sex !== a.sex) return false; // unknown sex never matches a sex-limited event
+  return ageOk(p.date_of_birth ?? null, ev.starts_on, a);
+}
+
+function ageOk(dob: string | null, on: string, a: HealthAudience): boolean {
+  if (a.min_age === null && a.max_age === null) return true;
+  if (!dob) return false;
+  const [y, m, d] = dob.split("-").map(Number);
+  const [oy, om, od] = on.split("-").map(Number);
+  const age = oy - y - (om < m || (om === m && od < d) ? 1 : 0);
+  return (a.min_age === null || age >= a.min_age) && (a.max_age === null || age <= a.max_age);
+}
+
+function mockPrefs(s: MockStore, role: Role): HealthPrefs {
+  const mine = s.healthPrefs[role] ?? {};
+  return { following: Object.fromEntries(HEALTH_CATEGORIES.map((c) => [c, mine[c] ?? true])) as HealthPrefs["following"] };
+}
+
+function withFlags(s: MockStore, role: Role, ev: Omit<HealthEvent, "matches_me" | "following">): HealthEvent {
+  return { ...ev, matches_me: mockMatches(s, role, ev), following: mockPrefs(s, role).following[ev.category as HealthCategory] };
+}
+
+function mockEvent(s: MockStore, id: string) {
+  return s.healthEvents.find((e) => e.id === id) ?? notFound(`Health event ${id}`);
+}
+
+function checkDates(starts: string, ends: string): void {
+  if (ends < starts) throw new ApiError(422, "bad_dates", "ends_on is before starts_on");
+}
+
+/** GET /health-events?from&to — every role; `role` picks the mock user. */
+export function getHealthEvents(opts: { from?: string; to?: string; role?: Role } = {}): Promise<HealthEvent[]> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      const from = opts.from ?? "0000-01-01";
+      const to = opts.to ?? "9999-12-31";
+      return s.healthEvents
+        .filter((e) => e.starts_on <= to && e.ends_on >= from)
+        .sort((a, b) => a.starts_on.localeCompare(b.starts_on) || a.id.localeCompare(b.id))
+        .map((e) => withFlags(s, opts.role ?? "patient", e));
+    });
+  const q = new URLSearchParams();
+  if (opts.from) q.set("from", opts.from);
+  if (opts.to) q.set("to", opts.to);
+  return http<HealthEvent[]>("GET", `/health-events${q.size ? `?${q}` : ""}`);
+}
+
+/** POST /health-events (admin). */
+export function createHealthEvent(input: HealthEventInput): Promise<HealthEvent> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      checkDates(input.starts_on, input.ends_on);
+      s.seq.he += 1;
+      const ev = { ...input, id: `he-${String(s.seq.he).padStart(4, "0")}`, announced_at: null };
+      s.healthEvents.push(ev);
+      return withFlags(s, "admin", ev);
+    });
+  return http<HealthEvent>("POST", "/health-events", input);
+}
+
+/** PATCH /health-events/{id} (admin); a new start date clears announced_at. */
+export function updateHealthEvent(id: string, patch: Partial<HealthEventInput>): Promise<HealthEvent> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      const ev = mockEvent(s, id);
+      checkDates(patch.starts_on ?? ev.starts_on, patch.ends_on ?? ev.ends_on);
+      if (patch.starts_on && patch.starts_on !== ev.starts_on) ev.announced_at = null;
+      Object.assign(ev, patch);
+      return withFlags(s, "admin", ev);
+    });
+  return http<HealthEvent>("PATCH", `/health-events/${enc(id)}`, patch);
+}
+
+/** DELETE /health-events/{id} (admin) → 204. */
+export function deleteHealthEvent(id: string): Promise<void> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      mockEvent(s, id);
+      s.healthEvents = s.healthEvents.filter((e) => e.id !== id);
+    });
+  return http<void>("DELETE", `/health-events/${enc(id)}`);
+}
+
+/** POST /health-events/{id}/notify (admin) → how many people the push targets. */
+export function notifyHealthEvent(id: string): Promise<{ recipients: number }> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      const ev = mockEvent(s, id);
+      ev.announced_at = now().toISOString().replace(/\.\d{3}Z$/, "Z");
+      const roles: Role[] = ["patient", "nurse", "doctor", "admin"];
+      const people = roles.filter((r) => mockMatches(s, r, ev) && mockPrefs(s, r).following[ev.category as HealthCategory]);
+      return { recipients: people.length };
+    });
+  return http<{ recipients: number }>("POST", `/health-events/${enc(id)}/notify`);
+}
+
+/** GET /me/health-prefs. */
+export function getHealthPrefs(role: Role = "patient"): Promise<HealthPrefs> {
+  if (USE_MOCKS) return mock((s) => mockPrefs(s, role));
+  return http<HealthPrefs>("GET", "/me/health-prefs");
+}
+
+/** PUT /me/health-prefs (partial). */
+export function setHealthPrefs(following: Partial<Record<HealthCategory, boolean>>, role: Role = "patient"): Promise<HealthPrefs> {
+  if (USE_MOCKS)
+    return mock((s) => {
+      s.healthPrefs[role] = { ...(s.healthPrefs[role] ?? {}), ...following };
+      return mockPrefs(s, role);
+    });
+  return http<HealthPrefs>("PUT", "/me/health-prefs", { following });
 }

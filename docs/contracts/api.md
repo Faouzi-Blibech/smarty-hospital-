@@ -1,6 +1,6 @@
 # REST + WebSocket contract — v1.0
 
-> **Version:** 1.12 (2026-10-10) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations, exams, notebook)
+> **Version:** 1.13 (2026-10-10) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations, exams, notebook)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Conventions
@@ -8,7 +8,7 @@
 - Base URL: `http://localhost:8000` (backend container `api`). The web app reads it from `NEXT_PUBLIC_API_URL`.
 - JSON everywhere.
 - Auth: `Authorization: Bearer <jwt>`. JWT claims: `sub` (user id), `role` (`doctor|nurse|admin|patient`), `patient_id` (only for the patient role), `exp` (8 h).
-- IDs are prefixed strings: `u-0001` user, `p-0001` patient, `a-0001` appointment, `rx-0001` prescription, `d-000001` dose, `al-0001` alert, `adm-0001` admission, `ex-0001` exam order, `er-0001` exam result, `nb-0001` notebook entry, `bsu-001` device.
+- IDs are prefixed strings: `u-0001` user, `p-0001` patient, `a-0001` appointment, `rx-0001` prescription, `d-000001` dose, `al-0001` alert, `adm-0001` admission, `ex-0001` exam order, `er-0001` exam result, `nb-0001` notebook entry, `he-0001` health event, `bsu-001` device.
 - Timestamps are ISO-8601 UTC strings (`2026-10-08T09:30:00Z`). (MQTT uses epoch seconds; the backend converts.)
 - Errors: `{"detail": "human readable", "code": "snake_case_code"}` with the right HTTP status (400, 401, 403, 404, 409, 422, 423, 429).
 - **Every read of a patient record** (`GET /patients/{id}` and every `GET /patients/{id}/*`) writes an `audit_log` row.
@@ -218,6 +218,33 @@ All are authenticated with the header `X-N8N-Secret: ${N8N_CALLBACK_SECRET}` (no
 | `POST /integrations/n8n/backfill-accept` | `{"appointment_id","slot_at"}` → `{"status":"confirmed"}` · 409 `slot_taken` / `not_waiting` |
 | `GET /integrations/n8n/daily-digest[?doctor_id=]` | → `[{"doctor":{"id","name","email"},"patients":[{"name","bed","news2","summary"}]}]` |
 | `POST /integrations/n8n/follow-up` | `{"patient_id","days"}` → `{"appointment_id","status":"requested"}` |
+| `GET /integrations/n8n/health-events/due` | events with `announced_at IS NULL` and `starts_on - notify_days_before <= today <= ends_on` → list of the `health_event.upcoming` payloads (see `n8n-webhooks.md`) |
+| `POST /integrations/n8n/health-events/{id}/announced` | sets `announced_at` (idempotent) → `{"status":"announced"}` |
+
+## Health calendar (1.12 — Wali)
+
+Dated public-health events in Tunisia (Octobre Rose, flu campaign, HPV vaccination, world health days). Everyone sees every event; push goes only to active users who match the event `audience` and follow its category. Categories: `screening`, `vaccination`, `chronic_disease`, `infectious_disease`, `lifestyle`, `mental_health`, `blood_donation`. Event ids are `he-0001`.
+
+`HealthEvent` (out):
+```json
+{"id":"he-0001","title":{"en":"…","fr":"…","ar":"…"},"description":{"en":"…","fr":"…","ar":"…"},
+ "category":"screening","starts_on":"2026-09-30","ends_on":"2026-10-30",
+ "audience":{"roles":["patient","doctor","nurse","admin"],"sex":"F","min_age":40,"max_age":null},
+ "notify_days_before":3,"organizer":"ONFP","source_url":"https://…","announced_at":null,
+ "matches_me":true,"following":true}
+```
+
+| Endpoint | Who | Notes |
+|---|---|---|
+| `GET /health-events?from=YYYY-MM-DD&to=YYYY-MM-DD` | any active user | events overlapping `[from,to]`, sorted by `starts_on`; default window today → today+365. `matches_me`/`following` for the caller |
+| `POST /health-events` | admin | body = HealthEvent without `id`, `announced_at`, `matches_me`, `following` → 201 HealthEvent. 422 `bad_dates` if `ends_on < starts_on` |
+| `PATCH /health-events/{id}` | admin | partial; changing `starts_on` clears `announced_at` |
+| `DELETE /health-events/{id}` | admin | 204; prefs are per category so nothing cascades |
+| `POST /health-events/{id}/notify` | admin | emits `health_event.upcoming` now (after commit), sets `announced_at`, → `{"recipients": n}` |
+| `GET /me/health-prefs` | any active user | `{"following": {"screening":true, …all 7}}` |
+| `PUT /me/health-prefs` | any active user | same body (partial allowed) → same shape |
+
+Unknown id → 404 `not_found`; non-admin writes → 403. No patient data is read by these endpoints except the caller's own sex/date of birth for `matches_me`, so no `audit_log` row (the rule covers reads of a patient record). The admin "Notify now" writes `audit_log` (`action: "notify"`, `resource: "health_event"`).
 
 ## Health
 
@@ -368,6 +395,7 @@ Still proposed: `GET /offers/{id}`, `POST /offers/{id}/accept` and `GET /patient
 
 ## Changelog
 
+- **1.13** (2026-10-10): health calendar — `GET/POST /health-events`, `PATCH/DELETE /health-events/{id}`, `POST /health-events/{id}/notify`, `GET/PUT /me/health-prefs`, n8n callbacks `GET /integrations/n8n/health-events/due` and `POST /integrations/n8n/health-events/{id}/announced`.
 - **1.12** (2026-10-10): health watch (`/health-watch`, `/health-watch/me`, `/integrations/n8n/health-watch`). Owner: Faouzi.
 - **1.11** (2026-10-10): staff AI assistant conversations (`/ai/conversations*`), stored server-side. Owner: Faouzi.
 - **1.10** (2026-10-10): `POST /ai/chat` (role assistants over one patient's record, any language, cited) and `POST /patients/{id}/reports` (doctor attaches a report). Owner: Faouzi.

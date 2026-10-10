@@ -2,7 +2,6 @@
 
 // Patient / Home (/patient): greeting, today's medicines, yesterday's missed dose,
 // the next appointment and "Ask a question". Plain words only: no NEWS2.
-import { HealthBanner } from "./HealthBanner";
 import { examLabel, deptLabel } from "@/lib/labels";
 import Link from "next/link";
 import { getDoses, getMyAppointments, getPatient, getPatientExams } from "@/lib/api";
@@ -11,6 +10,7 @@ import { useT } from "@/i18n/I18nProvider";
 import type { Appointment, ExamOrder } from "@/lib/types";
 import { now, tunisDate, tunisTime } from "@/lib/time";
 import { ErrorCard } from "@/components/shared/ErrorCard";
+import { UpcomingBanner } from "@/components/calendar/UpcomingBanner";
 import {
   bedLine,
   daysBetween,
@@ -89,7 +89,7 @@ export function Home() {
           <span className={styles.subline}>{[place, longDay(todayIso, lang)].filter(Boolean).join(" · ")}</span>
         </div>
 
-        <HealthBanner />
+        <UpcomingBanner role="patient" href="/patient/calendar" />
 
         {failed ? (
           <ErrorCard

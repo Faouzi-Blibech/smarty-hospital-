@@ -14,6 +14,7 @@ from app.auth.security import hash_password
 from app.config import check_secrets, get_settings
 from app.ai.exams import suggest_exams
 from app.db import SessionLocal
+from app.health_seed import seed_health_events
 from app.ids import new_id, reserve_upto
 from app.models import (
     Admission,
@@ -92,6 +93,7 @@ def seed(db: Session) -> bool:
     pw = hash_password(get_settings().seed_password)
     if db.scalar(select(User).where(User.email == "doctor@ward.tn")):
         _upsert_missing_staff(db, pw)
+        seed_health_events(db)
         return False
     now = datetime.now(UTC).replace(second=0, microsecond=0)
 
@@ -149,6 +151,7 @@ def seed(db: Session) -> bool:
             db.add(ExamOrder(id=new_id(db, "ex"), **ex))
     db.flush()
 
+    seed_health_events(db)
     for prefix, n in [("u", 7), ("p", len(PATIENTS)), ("adm", 1), ("rx", 1), ("a", len(REQUESTS))]:
         reserve_upto(db, prefix, n)
     return True

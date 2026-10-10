@@ -503,3 +503,37 @@ export interface ApiErrorBody {
   detail: string;
   code: string;
 }
+
+// ── Health calendar (api.md 1.12) ──
+export const HEALTH_CATEGORIES = ["screening", "vaccination", "chronic_disease", "infectious_disease", "lifestyle", "mental_health", "blood_donation"] as const;
+export type HealthCategory = (typeof HEALTH_CATEGORIES)[number];
+/** Calendar entries also include the weather-health alerts (GET /health-watch), shown as one-day "weather" events. */
+export type CalendarCategory = HealthCategory | "weather";
+export interface WeatherInfo {
+  severity: "high" | "moderate";
+  groups: string[];
+  /** Staff: the patients they can access in a risk group (admin: count only). */
+  at_risk?: { id: string; name: string; groups: string[] }[];
+  at_risk_count?: number;
+}
+export interface HealthText { en: string; fr: string; ar: string; }
+export interface HealthAudience { roles: Role[]; sex: "F" | "M" | null; min_age: number | null; max_age: number | null; }
+export interface HealthEvent {
+  id: string;
+  title: HealthText;
+  description: HealthText;
+  category: CalendarCategory;
+  starts_on: string; // YYYY-MM-DD
+  ends_on: string;
+  audience: HealthAudience;
+  notify_days_before: number;
+  organizer: string | null;
+  source_url: string | null;
+  announced_at: string | null;
+  matches_me: boolean;
+  following: boolean;
+  /** Present on weather-health entries only (built in the web app, never stored as a health event). */
+  weather?: WeatherInfo;
+}
+export type HealthEventInput = Omit<HealthEvent, "id" | "announced_at" | "matches_me" | "following">;
+export interface HealthPrefs { following: Record<HealthCategory, boolean>; }

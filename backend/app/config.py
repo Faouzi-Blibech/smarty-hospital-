@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     health_watch_demo: str = ""  # heatwave | dust | cold: inject a labelled demo scenario into the forecast
     # comma-separated; the proxy domain in the internet profile
     web_origin: str = "http://localhost:3000"
+    web_url: str = "http://localhost:3000"  # links in pushes (WEB_URL)
     bcrypt_rounds: int = 12
     # demo password of the synthetic seed accounts (api.md); set SEED_PASSWORD for any other deployment
     seed_password: str = DEFAULT_SEED_PASSWORD  # overridable via SEED_PASSWORD
