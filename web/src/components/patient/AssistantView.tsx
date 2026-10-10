@@ -1,16 +1,15 @@
 "use client";
 
-// Patient / Assistant (/patient/assistant). Each question → POST /ai/assistant (api.md 1.4):
-// `{answer, sources[], intent, source}`. Red flags come back as intent "urgent" (source "rules")
-// and show the red "This could be urgent" block. The patient never sees a score or an AI badge.
+// Patient / Assistant (/patient/assistant). Each question → POST /ai/chat with the conversation so far:
+// the answer comes only from the patient's own record, in the language of the question, with the record
+// entries it used. Red flags come back with `urgent` (never sent to a model) and show the red block.
 // Nothing pages staff from here (no endpoint, and the bedside unit has no call button):
 // "How to reach a nurse" shows a hint to ask any member of staff, without claiming anyone was told.
 import { useEffect, useRef, useState } from "react";
-import { askAssistant } from "@/lib/api";
+import { askChat } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
 import { useT } from "@/i18n/I18nProvider";
-import type { Key } from "@/i18n/messages";
-import type { AssistantIntent } from "@/lib/types";
+import type { ChatTurn } from "@/lib/types";
 import { Toast, useToast } from "@/components/Toast";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { CALL_NURSE_HINT } from "./patient";
@@ -22,42 +21,19 @@ const AR = /[؀-ۿ]/;
 
 type Msg =
   | { kind: "me"; id: number; text: string; ar: boolean }
-  | { kind: "bot"; id: number; text: string; ar: boolean; intent: AssistantIntent; sources: string[] }
+  | { kind: "bot"; id: number; text: string; ar: boolean; urgent: boolean; sources: string[] }
   | { kind: "error"; id: number; question: string };
 
-/** Record names → the design's plain source line. Unknown keys are shown as they are. */
-const SOURCE_LABEL: Record<string, [string, string]> = {
-  med_doses: ["Source: your medication schedule", "المصدر: جدول أدويتك"],
-  appointments: ["Source: your appointments", "المصدر: مواعيدك"],
-  vitals: ["Source: your vitals", "المصدر: قياساتك"],
-};
-
-function sourceLine(sources: string[], ar: boolean): string | null {
-  const keys = sources.filter((s) => s !== "safety_rules");
-  if (keys.length === 0) return null;
-  return keys.map((k) => (SOURCE_LABEL[k] ? SOURCE_LABEL[k][ar ? 1 : 0] : k)).join(" · ");
-}
-
-/** The design's opening conversation (START_CHAT). */
-const START: Msg[] = [
-  { kind: "me", id: 1, text: "When is my next pill?", ar: false },
-  { kind: "bot", id: 2, text: "Your next dose is at 14:00: Amoxicillin 1g.", ar: false, intent: "next_dose", sources: ["med_doses"] },
-  { kind: "me", id: 3, text: "وقتاش الدواء الجاي؟", ar: true },
-  { kind: "bot", id: 4, text: "الدواء الجاي على الساعة 14:00: أموكسيسيلين 1 غ.", ar: true, intent: "next_dose", sources: ["med_doses"] },
-  { kind: "me", id: 5, text: "Is my heart rate dangerous?", ar: false },
-  { kind: "bot", id: 6, text: "I can’t answer medical questions. Please ask your nurse or doctor.", ar: false, intent: "ask_staff", sources: [] },
-];
-
-const CHIPS: Key[] = ["patient.chipPill", "patient.chipAppt", "patient.chipChest"];
+const MAX_TURNS = 6;
 
 export function AssistantView() {
-  const { t } = useT();
+  const { t, lang } = useT();
   const flags = useDemoFlags();
-  const [chat, setChat] = useState<Msg[]>(START);
+  const [chat, setChat] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [hint, showHint] = useToast<string>(6000);
-  const seq = useRef(START.length);
+  const seq = useRef(0);
   const listRef = useRef<HTMLDivElement>(null);
   const first = useRef(true);
 
@@ -83,10 +59,15 @@ export function AssistantView() {
     setPending(true);
     try {
       if (flags.state === "error") throw new Error("Demo: assistant unavailable");
-      const r = await askAssistant(q);
+      const history: ChatTurn[] = chat
+        .filter((m): m is Exclude<Msg, { kind: "error" }> => m.kind !== "error")
+        .slice(-MAX_TURNS)
+        .map((m) => ({ role: m.kind === "me" ? "user" : "assistant", text: m.text }));
+      const r = await askChat(q, { history, lang });
       setChat((c) => [
         ...c,
-        { kind: "bot", id: ++seq.current, text: r.answer, ar: AR.test(r.answer), intent: r.intent, sources: r.sources },
+        { kind: "bot", id: ++seq.current, text: r.answer, ar: AR.test(r.answer), urgent: !!r.urgent,
+          sources: [...new Set(r.citations.map((x) => x.title))] },
       ]);
     } catch {
       setChat((c) => [...c, { kind: "error", id: ++seq.current, question: q }]);
@@ -110,6 +91,11 @@ export function AssistantView() {
       </div>
 
       <div ref={listRef} className={styles.list} aria-live="polite">
+        {chat.length === 0 ? (
+          <div className={`${styles.item} ${styles.itemBot}`}>
+            <div dir="auto" className={`${styles.bubble} ${styles.bubbleBot}`}>{t("patient.chatIntro")}</div>
+          </div>
+        ) : null}
         {chat.map((m) => {
           if (m.kind === "error") {
             return (
@@ -126,10 +112,10 @@ export function AssistantView() {
           }
           const me = m.kind === "me";
           const dir = m.ar ? "rtl" : "ltr";
-          const src = m.kind === "bot" ? sourceLine(m.sources, m.ar) : null;
+          const src = m.kind === "bot" && m.sources.length ? m.sources.join(" · ") : null;
           return (
             <div key={m.id} className={`${styles.item} ${me ? styles.itemMe : styles.itemBot}`}>
-              {m.kind === "bot" && m.intent === "urgent" ? (
+              {m.kind === "bot" && m.urgent ? (
                 <div role="alert" className={styles.urgent}>
                   <span className={styles.urgentTitle}>{t("patient.urgentTitle")}</span>
                   <button type="button" className={styles.urgentBtn} onClick={callNurse}>
@@ -147,11 +133,6 @@ export function AssistantView() {
                   {src}
                 </span>
               ) : null}
-              {m.kind === "bot" && m.intent === "ask_staff" ? (
-                <button type="button" className={styles.askNurse} onClick={callNurse}>
-                  {t("patient.reachNurse")}
-                </button>
-              ) : null}
             </div>
           );
         })}
@@ -164,13 +145,6 @@ export function AssistantView() {
         ) : null}
       </div>
 
-      <div className={styles.chips}>
-        {CHIPS.map((c) => (
-          <button key={c} type="button" dir="auto" className={styles.chip} disabled={pending} onClick={() => ask(t(c))}>
-            {t(c)}
-          </button>
-        ))}
-      </div>
       <form
         className={styles.composer}
         onSubmit={(e) => {

@@ -14,6 +14,8 @@ import type {
   Appointment,
   AssistantResponse,
   CatalogueItem,
+  ChatResponse,
+  ChatTurn,
   ApproveRequest,
   ChangePasswordRequest,
   ConfirmAppointmentRequest,
@@ -691,6 +693,25 @@ function assistantContext(s: MockStore, patientId: string): AssistantContext {
 export function askAssistant(question: string): Promise<AssistantResponse> {
   if (USE_MOCKS) return mock((s) => mockAssistant(question, assistantContext(s, USERS.patient.patient_id)));
   return http<AssistantResponse>("POST", "/ai/assistant", { question });
+}
+
+/**
+ * POST /ai/chat: doctor and nurse ask about `patientId`; a patient asks about their own record (no id).
+ * Answers come only from that record, in the language of the question. Needs the real backend.
+ */
+export function askChat(question: string, opts: { patientId?: string; history?: ChatTurn[]; lang?: string } = {}): Promise<ChatResponse> {
+  if (USE_MOCKS) return Promise.reject(new ApiError(503, "needs_backend", "The AI assistant needs the real backend (NEXT_PUBLIC_USE_MOCKS=0)."));
+  return http<ChatResponse>("POST", "/ai/chat", { question, patient_id: opts.patientId, history: opts.history ?? [], lang: opts.lang });
+}
+
+/** POST /patients/{id}/reports (doctor): attach a report (PDF, image or text) to the patient's case. */
+export async function uploadReport(patientId: string, file: File, title: string, reportText = ""): Promise<ExamOrder> {
+  if (USE_MOCKS) return Promise.reject(new ApiError(503, "needs_backend", "Uploading a report needs the real backend."));
+  const form = new FormData();
+  form.append("file", file);
+  form.append("title", title);
+  form.append("report_text", reportText);
+  return upload<ExamOrder>(`/patients/${encodeURIComponent(patientId)}/reports`, form);
 }
 
 // ── Appointments and waitlist ───────────────────────────────────────────────

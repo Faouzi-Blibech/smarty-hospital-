@@ -3,6 +3,7 @@ import { messages } from "../define";
 // Patient app (phone): plain words only, no NEWS2 and no AI badges.
 export const patient = messages({
   en: {
+    chatIntro: "Ask me about your medicines, appointments, exams or latest readings. I answer only from your hospital record, in your language.",
     metaHome: "Home · Ward",
     metaAppt: "Your appointment · Ward",
     metaOffer: "Earlier appointment · Ward",
@@ -134,6 +135,7 @@ export const patient = messages({
     send: "Send",
   },
   fr: {
+    chatIntro: "Posez-moi vos questions sur vos médicaments, rendez-vous, examens ou dernières mesures. Je réponds uniquement à partir de votre dossier, dans votre langue.",
     metaHome: "Accueil · Ward",
     metaAppt: "Votre rendez-vous · Ward",
     metaOffer: "Rendez-vous plus tôt · Ward",
@@ -265,6 +267,7 @@ export const patient = messages({
     send: "Envoyer",
   },
   ar: {
+    chatIntro: "اسألني عن أدويتك أو مواعيدك أو فحوصاتك أو آخر قياساتك. أجيب فقط من ملفك في المستشفى، وبلغتك.",
     metaHome: "الرئيسية · وَرد",
     metaAppt: "موعدك · وَرد",
     metaOffer: "موعد أبكر · وَرد",
