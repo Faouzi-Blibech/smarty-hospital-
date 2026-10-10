@@ -110,7 +110,11 @@ async function http<T>(method: string, path: string, body?: unknown): Promise<T>
   });
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { detail?: string; code?: string };
-    if (res.status === 401 && token && !path.startsWith("/auth/")) expireSession();
+    if (res.status === 401 && !path.startsWith("/auth/")) {
+      // No token at all (e.g. Back after logging out): plain sign-in, no "session ended" notice.
+      if (token) expireSession();
+      else if (typeof window !== "undefined" && window.location.pathname !== "/") window.location.assign("/");
+    }
     throw new ApiError(res.status, err.code ?? "http_error", err.detail ?? res.statusText);
   }
   // Some endpoints (assign, discharge) have no response body in api.md.
