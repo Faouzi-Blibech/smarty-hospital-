@@ -1,5 +1,8 @@
 // Demo clock and Africa/Tunis time formatting. Server-safe (no hooks): import
-// from server or client components alike.
+// from server or client components alike. Word helpers take an optional `lang`.
+
+import { DEFAULT_LANG, localeOf, type Lang } from "@/i18n/config";
+import { translate } from "@/i18n/messages";
 
 /** Mocks are on unless NEXT_PUBLIC_USE_MOCKS is explicitly set to something other than "1". */
 export const USE_MOCKS = (process.env.NEXT_PUBLIC_USE_MOCKS ?? "1") === "1";
@@ -24,7 +27,15 @@ const hms = new Intl.DateTimeFormat("en-GB", {
   second: "2-digit",
   hour12: false,
 });
-const dayParts = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, weekday: "short", day: "numeric", month: "short" });
+const dayPartsBy = new Map<Lang, Intl.DateTimeFormat>();
+function dayParts(lang: Lang): Intl.DateTimeFormat {
+  let f = dayPartsBy.get(lang);
+  if (!f) {
+    f = new Intl.DateTimeFormat(localeOf(lang), { timeZone: TZ, weekday: "short", day: "numeric", month: "short" });
+    dayPartsBy.set(lang, f);
+  }
+  return f;
+}
 const ymd = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" });
 
 /** "09:12" */
@@ -37,9 +48,9 @@ export function tunisTimeSeconds(iso: string): string {
   return hms.format(new Date(iso));
 }
 
-/** "Mon 5 Oct" */
-export function tunisDay(iso: string): string {
-  const p = dayParts.formatToParts(new Date(iso));
+/** "Mon 5 Oct" · "lun. 5 oct." · "الاثنين 5 أكتوبر" */
+export function tunisDay(iso: string, lang: Lang = DEFAULT_LANG): string {
+  const p = dayParts(lang).formatToParts(new Date(iso));
   const get = (t: string) => p.find((x) => x.type === t)?.value ?? "";
   return `${get("weekday")} ${get("day")} ${get("month")}`;
 }
@@ -50,9 +61,9 @@ export function tunisDate(iso: string): string {
 }
 
 /** "Today" when the date is today, else the short weekday ("Sun"). */
-export function dayLabel(iso: string, ref: Date = now()): string {
-  if (tunisDate(iso) === tunisDate(ref.toISOString())) return "Today";
-  return tunisDay(iso).split(" ")[0];
+export function dayLabel(iso: string, ref: Date = now(), lang: Lang = DEFAULT_LANG): string {
+  if (tunisDate(iso) === tunisDate(ref.toISOString())) return translate(lang, "common.today");
+  return tunisDay(iso, lang).split(" ")[0];
 }
 
 /** Whole calendar days from `iso` to `ref` (Tunis dates). */
@@ -63,18 +74,18 @@ export function daysSince(iso: string, ref: Date = now()): number {
 }
 
 /** "Good morning" before 12:00, "Good afternoon" before 18:00, else "Good evening" (Tunis time). */
-export function greeting(ref: Date = now()): string {
+export function greeting(ref: Date = now(), lang: Lang = DEFAULT_LANG): string {
   const h = Number(tunisTime(ref.toISOString()).slice(0, 2));
-  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  return translate(lang, h < 12 ? "common.goodMorning" : h < 18 ? "common.goodAfternoon" : "common.goodEvening");
 }
 
 /** "8 s ago", "6 min ago", "2 h ago". */
-export function ago(iso: string, ref: Date = now()): string {
+export function ago(iso: string, ref: Date = now(), lang: Lang = DEFAULT_LANG): string {
   const s = Math.max(0, Math.round((ref.getTime() - Date.parse(iso)) / 1000));
-  if (s < 60) return `${s} s ago`;
+  if (s < 60) return translate(lang, "common.secondsAgo", { n: s });
   const m = Math.round(s / 60);
-  if (m < 60) return `${m} min ago`;
-  return `${Math.round(m / 60)} h ago`;
+  if (m < 60) return translate(lang, "common.minutesAgo", { n: m });
+  return translate(lang, "common.hoursAgo", { n: Math.round(m / 60) });
 }
 
 /** Time of the last reading shown while live data is paused (design: 09:11:48). */

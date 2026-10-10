@@ -1,3 +1,4 @@
+import { tEn } from "@/i18n/messages";
 import { aiSourceLabel } from "@/lib/labels";
 import type { AiSource } from "@/lib/types";
 import styles from "./AiBadge.module.css";
@@ -30,7 +31,7 @@ const DEFAULT_LABEL: Record<AiReviewState, string> = {
 /** "AI suggestion · {Model|Rules fallback}" plus the review state. */
 export function AiBadge({ source, state, stateLabel, detail, variant = "joined", className }: AiBadgeProps) {
   const fallback = source === "rules";
-  const text = `AI suggestion · ${detail && !fallback ? `${detail} · ` : ""}${aiSourceLabel(source)}`;
+  const text = `AI suggestion · ${detail && !fallback ? `${detail} · ` : ""}${aiSourceLabel(source, tEn)}`;
   const label = stateLabel ?? DEFAULT_LABEL[state];
   return (
     <span className={`${styles.root} ${styles[variant]} ${className ?? ""}`}>

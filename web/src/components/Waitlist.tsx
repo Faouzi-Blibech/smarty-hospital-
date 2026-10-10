@@ -1,5 +1,6 @@
 "use client";
 
+import { tEn } from "@/i18n/messages";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { confirmAppointment, getStaff, getWaitlist, overrideUrgency } from "@/lib/api";
 import { doctorForSpecialty, LANG_LABELS, noShowWord, redFlagLabel, URGENCY, type ClinicDoctor } from "@/lib/labels";
@@ -209,7 +210,7 @@ export function Waitlist({
                 </div>
                 <div className={styles.flags}>
                   {a.triage.red_flags.map((fl) => (
-                    <span key={fl} className={styles.flag}><span className={styles.flagDot} />{redFlagLabel(fl)}</span>
+                    <span key={fl} className={styles.flag}><span className={styles.flagDot} />{redFlagLabel(fl, tEn)}</span>
                   ))}
                 </div>
                 {caller === "doctor" ? <ExamSuggestions
@@ -265,7 +266,7 @@ export function Waitlist({
               <div className={cls(styles.col, styles.when)}>
                 <span className={styles.date}>{tunisDay(a.created_at)}</span>
                 <span className={styles.small}>waiting {days} d</span>
-                <span className={cls(styles.small, styles.ns)}>No-show <b>{ns}%</b> · {noShowWord(a.no_show_prob)}</span>
+                <span className={cls(styles.small, styles.ns)}>No-show <b>{ns}%</b> · {noShowWord(a.no_show_prob, tEn)}</span>
               </div>
               <div className={cls(styles.col, styles.actions)}>
                 {conf ? (

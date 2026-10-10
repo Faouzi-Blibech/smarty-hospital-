@@ -2,6 +2,7 @@
 
 // The nurse alerts list (board side panel and /nurse/alerts): open first, newest first,
 // each with "Acknowledge" or "✓ Acknowledged by …". Trend alerts carry the AI chip.
+import { tEn } from "@/i18n/messages";
 import { aiSourceLabel } from "@/lib/labels";
 import { tunisTime } from "@/lib/time";
 import type { Alert } from "@/lib/types";
@@ -58,7 +59,7 @@ export function AlertCard({ alert: a, aiFallback, note, busy, onAck }: AlertCard
         <span className={styles.ai}>
           <span className={styles.aiChip}>
             <span className={styles.aiDot} style={{ background: aiFallback ? "transparent" : "var(--ai)" }} />
-            AI suggestion · {aiSourceLabel(aiFallback ? "rules" : "model")}
+            AI suggestion · {aiSourceLabel(aiFallback ? "rules" : "model", tEn)}
           </span>
           <span className={styles.review}>Needs review</span>
         </span>
