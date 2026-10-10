@@ -3,17 +3,27 @@
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { useT } from "@/i18n/I18nProvider";
-import { describeError, normalizeCode, looksLikeEmail, PASSWORD_ERROR_KEYS, passwordProblem, type ErrorInfo } from "@/lib/accountsUi";
-import { getDoctorDirectory, registerAccount } from "@/lib/api";
-import type { DoctorRef } from "@/lib/types";
+import type { Key } from "@/i18n/messages";
+import { describeError, looksLikeEmail, PASSWORD_ERROR_KEYS, passwordProblem, type ErrorInfo } from "@/lib/accountsUi";
+import { getDoctorDirectory, getHospital, registerAccount } from "@/lib/api";
+import type { DoctorRef, Hospital, SignupRole } from "@/lib/types";
 import { AuthFrame } from "./AuthFrame";
 import auth from "./Auth.module.css";
 import styles from "@/app/page.module.css";
 
+/** Exactly the three sign-up roles; `admin` is never a sign-up choice. */
+const ROLES: { value: SignupRole; label: Key }[] = [
+  { value: "patient", label: "shared.rolePatient" },
+  { value: "nurse", label: "admin.roleNurse" },
+  { value: "doctor", label: "admin.roleDoctor" },
+];
+
 export function RegisterForm() {
   const { t } = useT();
-  const [f, setF] = useState({ name: "", email: "", password: "", confirm: "", note: "", doctor: "", code: "" });
+  const [f, setF] = useState({ name: "", email: "", password: "", confirm: "", note: "", doctor: "" });
+  const [role, setRole] = useState<SignupRole>("patient");
   const [doctors, setDoctors] = useState<DoctorRef[]>([]);
+  const [hospital, setHospital] = useState<Hospital | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ErrorInfo | null>(null);
   const [done, setDone] = useState(false);
@@ -21,8 +31,9 @@ export function RegisterForm() {
 
   useEffect(() => {
     let alive = true;
-    // The picker is optional: if the directory fails the form still works without it.
+    // Both pickers are best effort: if a call fails the form still works without it.
     getDoctorDirectory().then((d) => alive && setDoctors(d), () => undefined);
+    getHospital().then((h) => alive && setHospital(h), () => undefined);
     return () => {
       alive = false;
     };
@@ -51,9 +62,10 @@ export function RegisterForm() {
         name: f.name.trim(),
         email: f.email.trim(),
         password: f.password,
+        role,
         ...(f.note.trim() ? { note: f.note.trim() } : {}),
-        ...(f.doctor ? { requested_doctor_id: f.doctor } : {}),
-        ...(f.code.trim() ? { enrollment_code: normalizeCode(f.code) } : {}),
+        // Doctors don't pick a doctor; the server rejects the combination.
+        ...(role !== "doctor" && f.doctor ? { requested_doctor_id: f.doctor } : {}),
       });
       setF((s) => ({ ...s, password: "", confirm: "" }));
       setDone(true);
@@ -99,10 +111,28 @@ export function RegisterForm() {
           <input type="password" dir="ltr" required autoComplete="new-password" className={styles.input} value={f.confirm} onChange={(e) => set("confirm")(e.target.value)} />
         </label>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>{t("auth.fieldNote")}</span>
-          <input dir="auto" className={styles.input} value={f.note} placeholder={t("auth.fieldNoteHint")} onChange={(e) => set("note")(e.target.value)} />
+          <span className={styles.fieldLabel}>{t("auth.fieldRole")}</span>
+          <select className={auth.select} value={role} onChange={(e) => setRole(e.target.value as SignupRole)}>
+            {ROLES.map((r) => (
+              <option key={r.value} value={r.value}>
+                {t(r.label)}
+              </option>
+            ))}
+          </select>
         </label>
-        {doctors.length ? (
+        <label className={styles.field}>
+          <span className={styles.fieldLabel}>{t("auth.fieldHospital")}</span>
+          <select className={auth.select} value={hospital?.name ?? ""} disabled={!hospital} onChange={() => undefined}>
+            {hospital ? (
+              <option value={hospital.name} dir="auto">
+                {hospital.name}
+              </option>
+            ) : (
+              <option value="">…</option>
+            )}
+          </select>
+        </label>
+        {role !== "doctor" && doctors.length ? (
           <label className={styles.field}>
             <span className={styles.fieldLabel}>{t("auth.fieldDoctor")}</span>
             <select className={auth.select} value={f.doctor} onChange={(e) => set("doctor")(e.target.value)}>
@@ -116,9 +146,8 @@ export function RegisterForm() {
           </label>
         ) : null}
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>{t("auth.fieldEnrollCode")}</span>
-          <input dir="ltr" autoComplete="off" autoCapitalize="characters" spellCheck={false} className={styles.input} value={f.code} placeholder="XXXXX-XXXXX" onChange={(e) => set("code")(e.target.value)} />
-          <span className={auth.hint}>{t("auth.fieldEnrollHint")}</span>
+          <span className={styles.fieldLabel}>{t("auth.fieldNote")}</span>
+          <input dir="auto" className={styles.input} value={f.note} placeholder={t("auth.fieldNoteHint")} onChange={(e) => set("note")(e.target.value)} />
         </label>
         {error ? (
           <span role="alert" className={styles.loginError}>

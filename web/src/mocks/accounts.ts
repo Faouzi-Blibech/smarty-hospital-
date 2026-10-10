@@ -4,8 +4,6 @@ import { at, TODAY } from "./time";
 
 /** Codes the mock API understands (anything else is "invalid_code"). */
 export const MOCK_CODES = {
-  enroll: "K7M2Q-9XR4T", // valid patient enrollment code
-  enrollTaken: "HHHHH-HHHHH", // 409 already_enrolled
   reset: "R3SET-7PW2X", // valid reset code
   wrongPassword: "wrong", // changePassword: this current password → 401 bad_credentials
 } as const;
@@ -26,16 +24,16 @@ export const DOCTOR_DIRECTORY: DoctorRef[] = [
 ];
 
 export const PENDING: PendingUser[] = [
-  { id: "u-0020", name: "Amel Cherif", email: "a.cherif@example.tn", note: "nurse, Cardiology", requested_doctor_id: "u-0001", requested_doctor_name: "Dr Trabelsi", status: "pending", created_at: at(TODAY, "08:20") },
-  { id: "u-0021", name: "Karim Zouari", email: "k.zouari@example.tn", note: "doctor, Pulmonology", requested_doctor_id: null, requested_doctor_name: null, status: "pending", created_at: at(TODAY, "07:55") },
-  { id: "u-0022", name: "Salma Hadded", email: "s.hadded@example.tn", note: null, requested_doctor_id: "u-0010", requested_doctor_name: "Dr Ben Romdhane", status: "pending", created_at: at(TODAY, "07:10") },
-  { id: "u-0023", name: "Test Person", email: "t.person@example.tn", note: "assistant", requested_doctor_id: "u-0001", requested_doctor_name: "Dr Trabelsi", status: "rejected", created_at: at("2026-10-03", "16:00") },
+  { id: "u-0020", name: "Amel Cherif", email: "a.cherif@example.tn", note: "Cardiology", requested_role: "nurse", requested_doctor_id: "u-0001", requested_doctor_name: "Dr Trabelsi", status: "pending", created_at: at(TODAY, "08:20") },
+  { id: "u-0021", name: "Karim Zouari", email: "k.zouari@example.tn", note: "Pulmonology", requested_role: "doctor", requested_doctor_id: null, requested_doctor_name: null, status: "pending", created_at: at(TODAY, "07:55") },
+  { id: "u-0022", name: "Salma Hadded", email: "s.hadded@example.tn", note: null, requested_role: "patient", requested_doctor_id: "u-0010", requested_doctor_name: "Dr Ben Romdhane", status: "pending", created_at: at(TODAY, "07:10") },
+  { id: "u-0023", name: "Test Person", email: "t.person@example.tn", note: "assistant", requested_role: "nurse", requested_doctor_id: "u-0001", requested_doctor_name: "Dr Trabelsi", status: "rejected", created_at: at("2026-10-03", "16:00") },
 ];
 
 /** Dr Trabelsi's team (consistent with STAFF: Ines active, Sami disabled). */
 export const TEAM: UserAdmin[] = [
-  { id: "u-0002", name: "Nurse Ines", email: "i.mejri@hr-ward.tn", role: "nurse", status: "active", ward: "Cardiology", supervisor_id: "u-0001" },
-  { id: "u-0004", name: "Nurse Sami", email: "s.dridi@hr-ward.tn", role: "nurse", status: "disabled", ward: "Cardiology", supervisor_id: "u-0001" },
+  { id: "u-0002", name: "Nurse Ines", email: "i.mejri@hr-ward.tn", role: "nurse", status: "active", ward: "Cardiology", supervisor_id: "u-0001", requested_role: null, requested_doctor_id: null },
+  { id: "u-0004", name: "Nurse Sami", email: "s.dridi@hr-ward.tn", role: "nurse", status: "disabled", ward: "Cardiology", supervisor_id: "u-0001", requested_role: null, requested_doctor_id: null },
 ];
 
 export const GRANTS: Record<string, PatientAccessGrant[]> = {

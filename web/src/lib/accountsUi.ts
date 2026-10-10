@@ -24,7 +24,6 @@ const BY_CODE: Partial<Record<string, Key>> = {
   rate_limited: "auth.errRateLimited",
   weak_password: "auth.errWeak",
   invalid_code: "auth.errInvalidCode",
-  already_enrolled: "auth.errAlreadyEnrolled",
 };
 
 const BY_STATUS: Partial<Record<number, Key>> = {

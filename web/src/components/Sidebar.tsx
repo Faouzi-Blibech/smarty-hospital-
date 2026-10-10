@@ -57,7 +57,7 @@ export const NAV: Record<StaffRole, NavItem[]> = {
     { key: "devices", label: "shared.navDevices", href: "/admin/devices", count: NAV_COUNTS.admin.devices },
     { key: "staff", label: "shared.navStaff", href: "/admin/staff", count: NAV_COUNTS.admin.staff },
     { key: "pending", label: "accounts.navPending", href: "/admin/pending" },
-    { key: "patients", label: "accounts.navEnroll", href: "/admin/patients" },
+    { key: "patients", label: "accounts.navPatientAccess", href: "/admin/patients" },
     { key: "password", label: "auth.navPassword", href: "/admin/password" },
   ],
 };
