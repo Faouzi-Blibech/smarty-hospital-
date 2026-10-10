@@ -38,9 +38,11 @@ export interface DailySummaryProps {
   aiFallback: boolean;
   /** Reviewer user id (mock mode). */
   actorId: string;
+  /** Shared doctor: the summary is shown, "Mark as reviewed" is not. */
+  readOnly?: boolean;
 }
 
-export function DailySummary({ patientId, aiFallback, actorId }: DailySummaryProps) {
+export function DailySummary({ patientId, aiFallback, actorId, readOnly = false }: DailySummaryProps) {
   const { t } = useT();
   const [summary, setSummary] = useState<AiSummary | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "none" | "error">("loading");
@@ -152,7 +154,7 @@ export function DailySummary({ patientId, aiFallback, actorId }: DailySummaryPro
                 </button>
               ) : null}
             </div>
-          ) : (
+          ) : readOnly ? null : (
             <>
               <button type="button" onClick={review} disabled={busy} className={styles.review}>
                 {t("doctor.markReviewed")}

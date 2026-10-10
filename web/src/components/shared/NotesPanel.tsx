@@ -41,6 +41,8 @@ export interface NotesPanelProps {
   /** Time label per note. Default "Today 09:05"; the nurse design shows "09:05" for today. */
   timeLabel?: (iso: string) => string;
   className?: string;
+  /** Hides the compose box (shared doctor). */
+  readOnly?: boolean;
 }
 
 export function NotesPanel({
@@ -54,6 +56,7 @@ export function NotesPanel({
   variant = "doctor",
   timeLabel,
   className,
+  readOnly = false,
 }: NotesPanelProps) {
   const { t, lang } = useT();
   const [draft, setDraft] = useState("");
@@ -76,6 +79,7 @@ export function NotesPanel({
   return (
     <section className={`${styles.card} ${className ?? ""}`}>
       <h3 className={styles.title}>{title ?? t("shared.notesTitle")}</h3>
+      {readOnly ? null : (
       <div className={`${styles.compose} ${variant === "nurse" ? styles.composeNurse : ""}`}>
         <textarea
           value={draft}
@@ -98,6 +102,7 @@ export function NotesPanel({
           </button>
         </div>
       </div>
+      )}
       {notes.map((n) => {
         const [bg, fg] = ROLE_CHIP[n.author_role] ?? ROLE_CHIP.admin!;
         return (

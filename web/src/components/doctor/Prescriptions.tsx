@@ -26,9 +26,11 @@ export interface PrescriptionsProps {
   actorId: string;
   /** Called after a successful save so the page can refetch prescriptions and doses. */
   onSaved?: (rx: Prescription) => void;
+  /** Shared doctor: the list stays, the edit buttons and the new-prescription form go. */
+  readOnly?: boolean;
 }
 
-export function Prescriptions({ patient, prescriptions, actorId, onSaved }: PrescriptionsProps) {
+export function Prescriptions({ patient, prescriptions, actorId, onSaved, readOnly = false }: PrescriptionsProps) {
   const { t } = useT();
   const rows = useMemo(
     () => prescriptions.flatMap((rx) => rx.items.map((item, i) => ({ key: `${rx.id}-${i}`, rx, item }))),
@@ -175,13 +177,18 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
               <span className={styles.slotLabel}>{item.slot != null ? t("doctor.slotN", { n: item.slot }) : t("doctor.reminderOnly")}</span>
             </div>
             <span className={styles.days}>{left}</span>
-            <button type="button" className={styles.edit}>
-              {t("doctor.edit")}
-            </button>
+            {readOnly ? (
+              <span />
+            ) : (
+              <button type="button" className={styles.edit}>
+                {t("doctor.edit")}
+              </button>
+            )}
           </div>
         );
       })}
 
+      {readOnly ? null : (
       <div className={styles.form}>
         <span className={styles.formTitle}>{t("doctor.newRx")}</span>
         <div className={styles.formRow}>
@@ -288,6 +295,7 @@ export function Prescriptions({ patient, prescriptions, actorId, onSaved }: Pres
           </button>
         </div>
       </div>
+      )}
       {toast ? (
         <Toast tone={toast.tone} className={styles.toast}>
           {toast.body}
