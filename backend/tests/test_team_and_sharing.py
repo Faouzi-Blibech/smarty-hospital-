@@ -176,11 +176,14 @@ def test_shared_doctor_reads_exams_and_appointments_until_revoked(client, db):
     assert client.get(f"/appointments/{appt.id}/exams", headers=h2).status_code == 403
     assert client.get("/appointments?patient_id=p-0001", headers=h2).json() == []
     _share(client, doc2)
+    # the work queue (no patient_id) is attending-only; one shared patient's list and single reads work
+    assert appt.id not in {a["id"] for a in client.get("/appointments", headers=h2).json()}
     assert client.get("/appointments?patient_id=p-0001", headers=h2).json()[0]["id"] == appt.id
     r = client.get(f"/appointments/{appt.id}/exams", headers=h2)
     assert r.status_code == 200 and [e["id"] for e in r.json()] == ["ex-9001"]
     assert [e["id"] for e in client.get("/patients/p-0001/exams", headers=h2).json()] == ["ex-9001"]
     client.delete(f"/patients/p-0001/access/{doc2.id}", headers=h1)
+    assert client.get("/appointments?patient_id=p-0001", headers=h2).json() == []
     assert client.get(f"/appointments/{appt.id}/exams", headers=h2).status_code == 403
     assert client.get("/patients/p-0001/exams", headers=h2).status_code == 403
 
