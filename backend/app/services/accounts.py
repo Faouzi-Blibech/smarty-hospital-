@@ -82,5 +82,6 @@ def admin_out(db: Session, u: User) -> dict:
 def pending_out(db: Session, u: User) -> dict:
     doc = db.get(User, u.requested_doctor_id) if u.requested_doctor_id else None
     return {"id": u.id, "name": u.name, "email": u.email, "note": u.requested_note,
+            "requested_role": u.requested_role,
             "requested_doctor_id": u.requested_doctor_id, "requested_doctor_name": doc.name if doc else None,
             "status": u.status, "created_at": iso(u.created_at)}

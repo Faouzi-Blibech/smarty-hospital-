@@ -36,6 +36,7 @@ class Settings(BaseSettings):
 
     jwt_secret: str = DEFAULT_JWT_SECRET
     jwt_expire_hours: int = 8
+    hospital_name: str = "Ward Hospital"  # GET /hospital: this install's hospital (one install per hospital)
     # comma-separated; the proxy domain in the internet profile
     web_origin: str = "http://localhost:3000"
     bcrypt_rounds: int = 12

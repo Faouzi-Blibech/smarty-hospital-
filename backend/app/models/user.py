@@ -20,6 +20,7 @@ class User(Base):
     approved_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     requested_note: Mapped[str | None] = mapped_column(String)
+    requested_role: Mapped[str | None] = mapped_column(String)  # patient | nurse | doctor, picked at sign-up
     requested_doctor_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
     # users <-> patients reference each other; use_alter breaks the cycle at CREATE time
     patient_id: Mapped[str | None] = mapped_column(
