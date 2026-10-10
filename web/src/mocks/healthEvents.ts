@@ -211,9 +211,9 @@ export const HEALTH_EVENTS: Omit<HealthEvent, "matches_me" | "following">[] = [
       "ar": "اليوم العالمي لمكافحة السرطان"
     },
     "description": {
-      "en": "Early detection saves lives. Ask which screening fits your age.",
-      "fr": "Le dépistage précoce sauve des vies. Demandez quel dépistage correspond à votre âge.",
-      "ar": "الكشف المبكر ينقذ الأرواح. اسأل عن الفحص المناسب لعمرك."
+      "en": "Ask your doctor which screening fits your age.",
+      "fr": "Demandez à votre médecin quel dépistage correspond à votre âge.",
+      "ar": "اسأل طبيبك عن الفحص المناسب لعمرك."
     },
     "notify_days_before": 3,
     "announced_at": null

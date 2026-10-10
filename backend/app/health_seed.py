@@ -138,9 +138,9 @@ EVENTS: list[dict] = [
         source_url="https://www.worldcancerday.org",
         title=_t("World Cancer Day", "Journée mondiale contre le cancer", "اليوم العالمي لمكافحة السرطان"),
         description=_t(
-            "Early detection saves lives. Ask which screening fits your age.",
-            "Le dépistage précoce sauve des vies. Demandez quel dépistage correspond à votre âge.",
-            "الكشف المبكر ينقذ الأرواح. اسأل عن الفحص المناسب لعمرك.",
+            "Ask your doctor which screening fits your age.",
+            "Demandez à votre médecin quel dépistage correspond à votre âge.",
+            "اسأل طبيبك عن الفحص المناسب لعمرك.",
         ),
     ),
     dict(
