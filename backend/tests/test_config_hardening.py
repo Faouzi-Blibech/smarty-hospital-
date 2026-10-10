@@ -76,3 +76,10 @@ def test_default_mqtt_password_is_flagged_and_a_custom_one_is_not():
 def test_invalid_ward_env_rejected():
     with pytest.raises(ValueError):
         make(ward_env="staging")
+
+
+def test_session_and_cors_defaults():
+    from app.config import Settings
+
+    s = Settings(_env_file=None)
+    assert s.jwt_expire_hours == 8 and s.web_origin == "http://localhost:3000"
