@@ -56,9 +56,11 @@ def detail(db: Session, p: Patient) -> dict:
     return out
 
 
-def search(db: Session, *, doctor_id: str | None = None, ward: str | None = None,
+def search(db: Session, *, where=None, doctor_id: str | None = None, ward: str | None = None,
            q: str | None = None) -> list[Patient]:
     stmt = select(Patient)
+    if where is not None:
+        stmt = stmt.where(where)
     if doctor_id is not None:
         stmt = stmt.where(Patient.attending_doctor_id == doctor_id)
     if ward:

@@ -1,15 +1,17 @@
 """Auth dependencies and the patient-access check (role matrix in data-model.md)."""
 
 from collections.abc import Callable
+from datetime import UTC, datetime
 
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy import false, or_, select
 from sqlalchemy.orm import Session
 
 from app.auth.security import decode_token
 from app.db import get_db
 from app.errors import ApiError, forbidden, not_found
-from app.models import Appointment, Patient, Staff, User
+from app.models import Appointment, Patient, PatientAccess, Staff, User
 from app.services.audit import audit
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
@@ -43,12 +45,39 @@ def staff_ward(db: Session, user: User) -> str | None:
     return staff.ward if staff else None
 
 
+def has_grant(db: Session, user_id: str, patient_id: str, now: datetime | None = None) -> bool:
+    now = now or datetime.now(UTC)
+    return db.scalar(select(PatientAccess.id).where(
+        PatientAccess.patient_id == patient_id, PatientAccess.user_id == user_id,
+        PatientAccess.revoked_at.is_(None), PatientAccess.expires_at > now).limit(1)) is not None
+
+
+def nurse_scope(db: Session, user: User) -> tuple[str | None, str | None]:
+    """(ward, supervisor doctor id) of a nurse; a doctor's team nurse may have no ward."""
+    st = db.get(Staff, user.id)
+    return (st.ward, st.supervisor_id) if st else (None, None)
+
+
+def nurse_patient_filter(db: Session, user: User):
+    ward, sup = nurse_scope(db, user)
+    conds = ([Patient.ward == ward] if ward else []) + ([Patient.attending_doctor_id == sup] if sup else [])
+    return or_(*conds) if conds else false()
+
+
+def doctor_patient_filter(db: Session, user: User):
+    granted = select(PatientAccess.patient_id).where(
+        PatientAccess.user_id == user.id, PatientAccess.revoked_at.is_(None),
+        PatientAccess.expires_at > datetime.now(UTC))
+    return or_(Patient.attending_doctor_id == user.id, Patient.id.in_(granted))
+
+
 def can_access(db: Session, user: User, patient: Patient) -> bool:
     if user.role == "doctor":
-        return patient.attending_doctor_id == user.id
+        return patient.attending_doctor_id == user.id or has_grant(db, user.id, patient.id)
     if user.role == "nurse":
-        ward = staff_ward(db, user)
-        return ward is not None and patient.ward == ward
+        ward, sup = nurse_scope(db, user)
+        return (ward is not None and patient.ward == ward) or (
+            sup is not None and patient.attending_doctor_id == sup)
     if user.role == "patient":
         return user.patient_id == patient.id
     return False  # admin: summary fields only, through GET /patients
