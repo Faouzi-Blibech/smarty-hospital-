@@ -89,6 +89,18 @@ function getToken(): string | null {
   }
 }
 
+/** Forget everything this tab holds about the session: the token and the remembered /me. */
+function clearSession(): void {
+  setToken(null);
+  meCache.clear();
+}
+
+/** A 401 outside /auth/* means the token is dead (expired, or the account was disabled): drop it and go to sign-in. */
+function expireSession(): void {
+  clearSession();
+  if (typeof window !== "undefined" && window.location.pathname !== "/") window.location.assign("/?expired=1");
+}
+
 async function http<T>(method: string, path: string, body?: unknown): Promise<T> {
   const token = getToken();
   const res = await fetch(`${BASE}${path}`, {
@@ -98,6 +110,7 @@ async function http<T>(method: string, path: string, body?: unknown): Promise<T>
   });
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { detail?: string; code?: string };
+    if (res.status === 401 && token && !path.startsWith("/auth/")) expireSession();
     throw new ApiError(res.status, err.code ?? "http_error", err.detail ?? res.statusText);
   }
   // Some endpoints (assign, discharge) have no response body in api.md.

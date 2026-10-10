@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { LoginForm } from "@/components/LoginForm";
 import type { Key } from "@/i18n/messages";
@@ -59,7 +60,9 @@ export default async function Home() {
               <h1 className={styles.title}>{t("shared.signIn")}</h1>
               <p className={styles.lead}>{t("shared.signInLead")}</p>
             </div>
-            <LoginForm />
+            <Suspense fallback={null}>
+              <LoginForm />
+            </Suspense>
           </>
         )}
         <nav className={authStyles.links} aria-label={t("auth.accountLinks")}>
