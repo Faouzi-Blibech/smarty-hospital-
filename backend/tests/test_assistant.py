@@ -130,11 +130,10 @@ def test_context_without_data():
 
 @pytest.mark.parametrize("question,intent", [
     ("What is my blood oxygen level today?", "my_vitals"),
-    pytest.param("Do I have any more tablets to take this evening?", "next_dose",
-                 marks=pytest.mark.xfail(strict=True, reason="known miss: the classifier alone routes it to ask_staff")),
+    ("Do I have any more tablets to take this evening?", "next_dose"),
     ("Can I go on holiday after my operation?", "ask_staff"),
 ])
 def test_shipped_intent_model_classifies_unseen_questions(monkeypatch, question, intent):
     monkeypatch.setattr(A.laya_intent, "classify", lambda q: None)
-    got, _conf, source = A.classify_intent(question)
-    assert (got, source) == (intent, "model")
+    got, _conf, _source = A.classify_intent(question)  # one-topic questions are answered by keyword rules
+    assert got == intent

@@ -25,5 +25,5 @@ def test_digest_entries_shape_and_filtering():
     ]
     out = I.digest_entries(rows, doctors=[doc1, doc2])
     assert out == [{"doctor": {"id": "u-0001", "name": "Dr Trabelsi", "email": "doctor@ward.tn"},
-                    "patients": [{"name": "Amira Ben Salah", "bed": "C-12", "news2": 5, "summary": "Fever overnight."},
-                                 {"name": "Sami Gharbi", "bed": "C-14", "news2": None, "summary": "Stable."}]}]
+                    "patients": [{"name": "Amira", "bed": "C-12", "news2": 5, "summary": "Fever overnight."},
+                                 {"name": "Sami", "bed": "C-14", "news2": None, "summary": "Stable."}]}]

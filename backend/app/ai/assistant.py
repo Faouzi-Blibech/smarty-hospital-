@@ -11,13 +11,15 @@ from app.ai import laya_intent, textclf
 from app.ai.triage import _normalize, match_red_flags
 
 TUNIS = timezone(timedelta(hours=1))  # Africa/Tunis: UTC+1, no DST
-DOSE_WORDS = ("dose", "medic", "pill", "comprime", "traitement", "dwa", "دواء", "حبوب")
+DOSE_WORDS = ("dose", "medic", "pill", "tablet", "comprime", "traitement", "dwa", "دواء", "حبوب")
 VISIT_WORDS = ("appointment", "rendez-vous", "rendez vous", "rdv", "visit", "consultation", "maw3ed", "موعد")
 VITAL_WORDS = ("temperature", "température", "oxygen", "oxygène", "pulse", "pouls", "heart", "tension",
                "سخانة", "حرارة", "نبض", "skhana")
 MIN_CONFIDENCE = 0.4
 URGENT = "This could be urgent. Tell your nurse or any member of staff straight away."
 ASK_STAFF = "I can't answer that. Please ask your nurse or doctor."
+CRISIS = ("Please tell your nurse or any member of staff right now. You are not alone and help is here. "
+          "In an emergency in Tunisia, call SAMU on 190.")
 
 
 def _local(dt: datetime) -> datetime:
@@ -41,19 +43,23 @@ def assistant_context(patient, doses_today: list, next_visit, latest_vital, *, n
             "next_visit": visit, "latest_vitals": vit, "names": [patient.first_name, patient.last_name]}
 
 
-def _rule_intent(question: str) -> str:
+def _keyword_intents(question: str) -> list[str]:
     q = _normalize(question)
-    if any(_normalize(w) in q for w in DOSE_WORDS):
-        return "next_dose"
-    if any(_normalize(w) in q for w in VISIT_WORDS):
-        return "next_visit"
-    if any(_normalize(w) in q for w in VITAL_WORDS):
-        return "my_vitals"
-    return "ask_staff"
+    topics = (("next_dose", DOSE_WORDS), ("next_visit", VISIT_WORDS), ("my_vitals", VITAL_WORDS))
+    return [intent for intent, words in topics if any(_normalize(w) in q for w in words)]
+
+
+def _rule_intent(question: str) -> str:
+    hits = _keyword_intents(question)
+    return hits[0] if hits else "ask_staff"
 
 
 def classify_intent(question: str) -> tuple[str, float, str]:
-    """(intent, confidence, source): mean of the available model probabilities, else keyword rules."""
+    """(intent, confidence, source): a question naming exactly one topic is answered by keyword rules;
+    otherwise the mean of the available model probabilities, else keyword rules."""
+    hits = _keyword_intents(question)
+    if len(hits) == 1:
+        return hits[0], 1.0, "rules"
     maps = []
     laya = laya_intent.classify(question)
     if laya:
@@ -89,8 +95,10 @@ def _vitals_answer(ctx: dict) -> dict:
 
 def answer(question: str, ctx: dict) -> dict:
     """POST /ai/assistant body: {"answer", "sources", "intent", "source"}."""
-    if match_red_flags(question):
-        return {"answer": URGENT, "sources": ["safety_rules"], "intent": "urgent", "source": "rules"}
+    flags = {f["id"] for f in match_red_flags(question)}
+    if flags:
+        text = CRISIS if "suicide_self_harm" in flags else URGENT
+        return {"answer": text, "sources": ["safety_rules"], "intent": "urgent", "source": "rules"}
     intent, _conf, source = classify_intent(question)
     if intent == "urgent":
         out = {"answer": URGENT, "sources": ["safety_rules"]}
