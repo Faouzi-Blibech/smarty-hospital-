@@ -21,7 +21,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 110px 170px 120px;
+  grid-template-columns: minmax(0, 1fr) 100px 150px 100px 130px 230px;
   gap: 16px;
 }
 
@@ -158,4 +158,26 @@
     border-top: 1px solid var(--line);
     align-self: stretch;
   }
+}
+
+.status {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--news-normal-fg);
+}
+
+.statusOff {
+  color: var(--danger-ink);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wardEdit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }

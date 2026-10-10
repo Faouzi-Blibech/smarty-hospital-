@@ -11,10 +11,13 @@ import type { Key, TFn } from "@/i18n/messages";
 import type { Lang } from "@/i18n/config";
 import { Toast, useToast } from "@/components/Toast";
 import { ErrorCard } from "@/components/shared/ErrorCard";
-import { getStaff } from "@/lib/api";
+import { CodeDialog } from "@/components/shared/CodeDialog";
+import { disableUser, enableUser, getStaff, issueResetCode, setUserWard } from "@/lib/api";
+import { useMe } from "@/lib/useMe";
 import { useDemoFlags } from "@/lib/demo";
 import { dayLabel, now, tunisTime, USE_MOCKS } from "@/lib/time";
 import type { StaffMember } from "@/lib/types";
+import { WardEditor } from "./WardEditor";
 import page from "./AdminPage.module.css";
 import styles from "./StaffView.module.css";
 
@@ -25,6 +28,12 @@ const ROLE_COLORS: Record<StaffRole, [string, string]> = {
   doctor: ["var(--doctor-bg)", "var(--doctor-fg)"],
   nurse: ["var(--ai-bg)", "var(--news-normal-fg)"],
   admin: ["var(--segment)", "var(--text)"],
+};
+const STATUS_LABEL: Record<StaffMember["status"], Key> = {
+  active: "accounts.statusActive",
+  pending: "accounts.statusPending",
+  disabled: "accounts.statusDisabled",
+  rejected: "accounts.statusRejected",
 };
 const WARDS: { value: string; ward: string | null; label: Key }[] = [
   { value: "Cardiology · Ward C", ward: "Cardiology", label: "admin.wardCardiology" },
@@ -51,6 +60,10 @@ export function StaffView() {
   const [draft, setDraft] = useState(startOpen ? DESIGN_DRAFT : EMPTY_DRAFT);
   const [invalid, setInvalid] = useState(false);
   const [toast, showToast] = useToast<string>(5000);
+  const me = useMe("admin");
+  const [code, setCode] = useState<{ name: string; code: string; expires_at: string } | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const addBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -106,6 +119,44 @@ export function StaffView() {
     showToast(t("admin.staffInviteSent", { email }));
   };
 
+  async function toggle(s: StaffMember) {
+    setBusyId(s.id);
+    try {
+      const next = s.status === "active" ? await disableUser(s.id) : await enableUser(s.id);
+      setStaff((list) => (list ?? []).map((x) => (x.id === s.id ? { ...x, status: next.status } : x)));
+      showToast(t(next.status === "active" ? "accounts.enabledToast" : "accounts.disabledToast", { name: s.name }));
+    } catch {
+      showToast(t("accounts.actionError"));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function issueCode(s: StaffMember) {
+    setBusyId(s.id);
+    try {
+      setCode({ name: s.name, ...(await issueResetCode(s.id)) });
+    } catch {
+      showToast(t("accounts.actionError"));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function saveWard(s: StaffMember, ward: string | null) {
+    setBusyId(s.id);
+    try {
+      const next = await setUserWard(s.id, ward);
+      setStaff((list) => (list ?? []).map((x) => (x.id === s.id ? { ...x, ward: next.ward, scope: next.ward ?? "—" } : x)));
+      setEditingId(null);
+      showToast(t("accounts.wardSavedToast", { name: s.name }));
+    } catch {
+      showToast(t("accounts.actionError"));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   const help = ROLE_HELP[draft.role];
 
   return (
@@ -137,6 +188,8 @@ export function StaffView() {
               <span>{t("admin.staffColRole")}</span>
               <span>{t("admin.staffColWard")}</span>
               <span>{t("admin.staffColLogin")}</span>
+              <span>{t("accounts.staffColStatus")}</span>
+              <span>{t("accounts.staffColActions")}</span>
             </div>
             {state === "loading"
               ? [1, 2, 3, 4, 5, 6].map((k) => (
@@ -145,6 +198,8 @@ export function StaffView() {
                     <span className="ward-skeleton" style={{ height: 22, width: 60, borderRadius: 6 }} />
                     <span className="ward-skeleton" style={{ height: 14, width: 120 }} />
                     <span className="ward-skeleton" style={{ height: 14, width: 90 }} />
+                    <span className="ward-skeleton" style={{ height: 14, width: 70 }} />
+                    <span className="ward-skeleton" style={{ height: 14, width: 70 }} />
                   </div>
                 ))
               : (staff ?? []).map((s) => (
@@ -158,8 +213,30 @@ export function StaffView() {
                     <span className={styles.role} style={{ background: ROLE_COLORS[s.role][0], color: ROLE_COLORS[s.role][1] }}>
                       {t(ROLE_LABEL[s.role])}
                     </span>
-                    <span className={styles.cell}>{s.scope}</span>
+                    {editingId === s.id ? (
+                      <WardEditor current={s.ward} busy={busyId === s.id} onSave={(w) => void saveWard(s, w)} onCancel={() => setEditingId(null)} />
+                    ) : (
+                      <span className={styles.cell}>{s.scope}</span>
+                    )}
                     <span className={styles.cell}>{lastLogin(s.last_login_at, t, lang)}</span>
+                    <span className={`${styles.status} ${s.status === "active" ? "" : styles.statusOff}`}>{t(STATUS_LABEL[s.status])}</span>
+                    <span className={styles.actions}>
+                      {(s.status === "active" || s.status === "disabled") && s.id !== me?.id ? (
+                        <button type="button" className={page.btn} disabled={busyId === s.id} onClick={() => void toggle(s)}>
+                          {s.status === "active" ? t("accounts.disable") : t("accounts.enable")}
+                        </button>
+                      ) : null}
+                      {s.status === "active" ? (
+                        <button type="button" className={page.btn} disabled={busyId === s.id} onClick={() => void issueCode(s)}>
+                          {t("accounts.issueResetCode")}
+                        </button>
+                      ) : null}
+                      {s.status === "active" && (s.role === "doctor" || s.role === "nurse") && editingId !== s.id ? (
+                        <button type="button" className={page.btn} disabled={busyId === s.id} onClick={() => setEditingId(s.id)}>
+                          {t("accounts.wardEdit")}
+                        </button>
+                      ) : null}
+                    </span>
                   </div>
                 ))}
           </div>
@@ -243,6 +320,10 @@ export function StaffView() {
             {t("admin.staffSend")}
           </button>
         </aside>
+      ) : null}
+
+      {code ? (
+        <CodeDialog subject={t("accounts.codeFor", { name: code.name })} code={code.code} expiresAt={code.expires_at} onClose={() => setCode(null)} />
       ) : null}
 
       {toast ? <Toast>{toast}</Toast> : null}
