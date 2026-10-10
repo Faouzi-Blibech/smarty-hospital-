@@ -486,3 +486,26 @@ export interface ApiErrorBody {
   detail: string;
   code: string;
 }
+
+// ── Health calendar (api.md 1.10) ──
+export const HEALTH_CATEGORIES = ["screening", "vaccination", "chronic_disease", "infectious_disease", "lifestyle", "mental_health", "blood_donation"] as const;
+export type HealthCategory = (typeof HEALTH_CATEGORIES)[number];
+export interface HealthText { en: string; fr: string; ar: string; }
+export interface HealthAudience { roles: Role[]; sex: "F" | "M" | null; min_age: number | null; max_age: number | null; }
+export interface HealthEvent {
+  id: string;
+  title: HealthText;
+  description: HealthText;
+  category: HealthCategory;
+  starts_on: string; // YYYY-MM-DD
+  ends_on: string;
+  audience: HealthAudience;
+  notify_days_before: number;
+  organizer: string | null;
+  source_url: string | null;
+  announced_at: string | null;
+  matches_me: boolean;
+  following: boolean;
+}
+export type HealthEventInput = Omit<HealthEvent, "id" | "announced_at" | "matches_me" | "following">;
+export interface HealthPrefs { following: Record<HealthCategory, boolean>; }
