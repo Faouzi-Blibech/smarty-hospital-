@@ -328,7 +328,7 @@ export const shared = messages({
     deptPediatrics: "طب الأطفال",
     deptPulmonology: "أمراض الرئة",
     deptInternalMedicine: "الطب الباطني",
-    exam_ecg: "تخطيط القلب (12 اتجاهًا)",
+    exam_ecg: "تخطيط القلب (12 اشتقاقًا)",
     exam_echo: "تصوير القلب بالصدى",
     exam_troponin: "التروبونين",
     exam_cbc: "تعداد الدم الكامل",

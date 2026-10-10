@@ -48,7 +48,7 @@ function Row({ exam, onDone }: { exam: ExamOrder; onDone: (id: string) => void }
         <span>{examLabel(exam, t)}</span>
         <span className={styles.meta}>{t("nurse.examOrdered", { time: exam.ordered_at ? tunisTime(exam.ordered_at) : "—" })}</span>
       </div>
-      <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label={t("nurse.examResultFor", { label: exam.label })} />
+      <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label={t("nurse.examResultFor", { label: examLabel(exam, t) })} />
       <input className={styles.report} placeholder={t("nurse.examReportPlaceholder")} value={report} maxLength={2000} onChange={(e) => setReport(e.target.value)} />
       <button className={styles.send} disabled={!file || busy} onClick={() => void send()}>{busy ? t("nurse.examUploading") : t("nurse.examUpload")}</button>
       {error ? <p className={styles.error} role="alert">{error}</p> : null}

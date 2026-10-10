@@ -320,7 +320,7 @@ export function Dashboard() {
                     <span className={styles.todoSub}>{item.sub}</span>
                   </span>
                   <span className={styles.todoCta}>
-                    {item.cta} <span className="flip">›</span>
+                    {item.cta} <span>›</span>
                   </span>
                 </Link>
               ))

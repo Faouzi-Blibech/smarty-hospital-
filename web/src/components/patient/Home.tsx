@@ -160,7 +160,7 @@ export function Home() {
             </span>
             <span className={styles.nextWho}>{[next.doctor_name, next.room].filter(Boolean).join(" · ")}</span>
             {next.patient_confirmed_at ? null : <span className={styles.nextCta}>
-                {t("patient.pleaseConfirm")} <span className="flip">›</span>
+                {t("patient.pleaseConfirm")} <span>›</span>
               </span>}
           </Link>
         ) : null}

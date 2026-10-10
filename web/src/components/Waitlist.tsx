@@ -102,7 +102,7 @@ export function Waitlist({
     if (USE_MOCKS || doctorFor(a)) return null;
     if (caller === "doctor") return meFailed ? t("admin.wlNoAccount") : null;
     if (staffFailed) return t("admin.wlNoDoctorList");
-    return staff != null ? t("admin.wlNoDoctorFor", { spec: a.specialty ?? t("admin.wlThisSpecialty") }) : null;
+    return staff != null ? t("admin.wlNoDoctorFor", { spec: a.specialty ? deptLabel(a.specialty, t) : t("admin.wlThisSpecialty") }) : null;
   };
 
   const load = useCallback(() => {
@@ -162,7 +162,7 @@ export function Waitlist({
   const dlgDoctor = dlgRow ? doctorFor(dlgRow.a) : null;
   const dlgNote = dlgRow ? noDoctorNote(dlgRow.a) : null;
   const filters = specialty
-    ? [{ label: specialty, on: true }, { label: t("admin.wlAllSpecialties"), on: false }]
+    ? [{ label: deptLabel(specialty, t), on: true }, { label: t("admin.wlAllSpecialties"), on: false }]
     : [{ label: t("admin.wlAllSpecialties"), on: true }, { label: t("admin.wlCardiology"), on: false }, { label: t("admin.wlPediatrics"), on: false }];
 
   return (
@@ -302,7 +302,7 @@ export function Waitlist({
             <div className={styles.dlgHead}>
               <span className={styles.dlgKicker}>{t("admin.wlConfirmAppt")}</span>
               <span className={styles.dlgName}>{dlgRow.a.patient_name}</span>
-              <span className={styles.dlgSub}>{t("admin.wlDlgSub", { n: fin(dlgRow.a), word: urgencyWord(fin(dlgRow.a), t), spec: dlgRow.a.specialty ?? "", days: dlgRow.days })}</span>
+              <span className={styles.dlgSub}>{t("admin.wlDlgSub", { n: fin(dlgRow.a), word: urgencyWord(fin(dlgRow.a), t), spec: deptLabel(dlgRow.a.specialty, t), days: dlgRow.days })}</span>
             </div>
             <div className={styles.dlgBody}>
               <div className={styles.field}>
