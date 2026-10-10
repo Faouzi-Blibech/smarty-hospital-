@@ -6,6 +6,7 @@ import page from "@/components/admin/AdminPage.module.css";
 import { Toast, useToast } from "@/components/Toast";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { useT } from "@/i18n/I18nProvider";
+import { describeError } from "@/lib/accountsUi";
 import { disableUser, enableUser, getMyTeam } from "@/lib/api";
 import type { UserAdmin } from "@/lib/types";
 import styles from "./TeamView.module.css";
@@ -29,8 +30,8 @@ export function TeamView() {
       const next = u.status === "active" ? await disableUser(u.id, { as: "doctor" }) : await enableUser(u.id, { as: "doctor" });
       setTeam((list) => (list ?? []).map((x) => (x.id === u.id ? { ...x, status: next.status } : x)));
       showToast(t(next.status === "active" ? "accounts.enabledToast" : "accounts.disabledToast", { name: u.name }));
-    } catch {
-      showToast(t("accounts.actionError"));
+    } catch (err) {
+      showToast(t(describeError(err).key));
     } finally {
       setBusyId(null);
     }
@@ -44,7 +45,7 @@ export function TeamView() {
       </div>
 
       <h3 className={styles.section}>{t("accounts.teamRequests")}</h3>
-      <PendingList viewer="doctor" />
+      <PendingList viewer="doctor" onChanged={load} />
 
       <h3 className={styles.section}>{t("accounts.teamMembers")}</h3>
       {failed ? (

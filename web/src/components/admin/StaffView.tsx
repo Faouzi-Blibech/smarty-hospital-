@@ -13,6 +13,7 @@ import { Toast, useToast } from "@/components/Toast";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { CodeDialog } from "@/components/shared/CodeDialog";
 import { disableUser, enableUser, getStaff, issueResetCode, setUserWard } from "@/lib/api";
+import { describeError } from "@/lib/accountsUi";
 import { useMe } from "@/lib/useMe";
 import { useDemoFlags } from "@/lib/demo";
 import { dayLabel, now, tunisTime, USE_MOCKS } from "@/lib/time";
@@ -41,6 +42,8 @@ const WARDS: { value: string; ward: string | null; label: Key }[] = [
   { value: "Pulmonology", ward: "Pulmonology", label: "admin.wardPulmonology" },
   { value: "Administration", ward: null, label: "admin.wardAdministration" },
 ];
+// What GET /staff puts in `scope`: the ward name, or this when the account has none.
+const ALL_WARDS = "All wards";
 const ROLE_HELP: Partial<Record<StaffRole, Key>> = {
   nurse: "admin.roleHelpNurse",
 };
@@ -124,9 +127,10 @@ export function StaffView() {
     try {
       const next = s.status === "active" ? await disableUser(s.id) : await enableUser(s.id);
       setStaff((list) => (list ?? []).map((x) => (x.id === s.id ? { ...x, status: next.status } : x)));
+      setEditingId((id) => (id === s.id ? null : id));
       showToast(t(next.status === "active" ? "accounts.enabledToast" : "accounts.disabledToast", { name: s.name }));
-    } catch {
-      showToast(t("accounts.actionError"));
+    } catch (err) {
+      showToast(t(describeError(err).key));
     } finally {
       setBusyId(null);
     }
@@ -136,8 +140,8 @@ export function StaffView() {
     setBusyId(s.id);
     try {
       setCode({ name: s.name, ...(await issueResetCode(s.id)) });
-    } catch {
-      showToast(t("accounts.actionError"));
+    } catch (err) {
+      showToast(t(describeError(err).key));
     } finally {
       setBusyId(null);
     }
@@ -147,11 +151,11 @@ export function StaffView() {
     setBusyId(s.id);
     try {
       const next = await setUserWard(s.id, ward);
-      setStaff((list) => (list ?? []).map((x) => (x.id === s.id ? { ...x, ward: next.ward, scope: next.ward ?? "—" } : x)));
+      setStaff((list) => (list ?? []).map((x) => (x.id === s.id ? { ...x, ward: next.ward, scope: next.ward ?? ALL_WARDS } : x)));
       setEditingId(null);
       showToast(t("accounts.wardSavedToast", { name: s.name }));
-    } catch {
-      showToast(t("accounts.actionError"));
+    } catch (err) {
+      showToast(t(describeError(err).key));
     } finally {
       setBusyId(null);
     }

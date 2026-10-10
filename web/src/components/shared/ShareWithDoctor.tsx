@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Toast, useToast } from "@/components/Toast";
 import { useT } from "@/i18n/I18nProvider";
-import { fmtWhen } from "@/lib/accountsUi";
+import { describeError, fmtWhen } from "@/lib/accountsUi";
 import { getDoctorDirectory, getPatientAccess, grantPatientAccess, revokePatientAccess } from "@/lib/api";
 import { now } from "@/lib/time";
 import type { DoctorRef, PatientAccessGrant } from "@/lib/types";
@@ -49,8 +49,8 @@ export function ShareWithDoctor({ patientId, excludeIds }: { patientId: string; 
       setPick("");
       setUntil("");
       showToast(t("accounts.shareAdded", { name: g.doctor_name }));
-    } catch {
-      showToast(t("accounts.actionError"));
+    } catch (err) {
+      showToast(t(describeError(err).key));
     } finally {
       setBusy(false);
     }
@@ -62,8 +62,8 @@ export function ShareWithDoctor({ patientId, excludeIds }: { patientId: string; 
       await revokePatientAccess(patientId, g.doctor_id);
       setGrants((list) => (list ?? []).filter((x) => x.doctor_id !== g.doctor_id));
       showToast(t("accounts.shareRevoked", { name: g.doctor_name }));
-    } catch {
-      showToast(t("accounts.actionError"));
+    } catch (err) {
+      showToast(t(describeError(err).key));
     } finally {
       setBusy(false);
     }

@@ -5,8 +5,8 @@ import { useT } from "@/i18n/I18nProvider";
 import type { Key } from "@/i18n/messages";
 import { Toast, useToast } from "@/components/Toast";
 import { ErrorCard } from "@/components/shared/ErrorCard";
-import { fmtWhen } from "@/lib/accountsUi";
-import { ApiError, approveUser, listUsers, rejectUser } from "@/lib/api";
+import { describeError, fmtWhen } from "@/lib/accountsUi";
+import { approveUser, listUsers, rejectUser } from "@/lib/api";
 import type { ApproveRequest, PendingUser } from "@/lib/types";
 import { WARD_OPTIONS } from "./wards";
 import page from "./AdminPage.module.css";
@@ -87,7 +87,7 @@ function Row({ u, viewer, busy, onApprove, onReject }: RowProps) {
   );
 }
 
-export function PendingList({ viewer }: { viewer: Viewer }) {
+export function PendingList({ viewer, onChanged }: { viewer: Viewer; onChanged?: () => void }) {
   const { t } = useT();
   const [pending, setPending] = useState<PendingUser[] | null>(null);
   const [rejected, setRejected] = useState<PendingUser[]>([]);
@@ -112,9 +112,9 @@ export function PendingList({ viewer }: { viewer: Viewer }) {
       await run();
       showToast({ text: t(done, { name: u.name }), tone: "ok" });
       load();
+      onChanged?.();
     } catch (err) {
-      const forbidden = err instanceof ApiError && err.status === 403;
-      showToast({ text: t(forbidden ? "accounts.actionForbidden" : "accounts.actionError"), tone: "warn" });
+      showToast({ text: t(describeError(err).key), tone: "warn" });
     } finally {
       setBusyId(null);
     }

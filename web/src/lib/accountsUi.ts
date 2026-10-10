@@ -27,11 +27,19 @@ const BY_CODE: Partial<Record<string, Key>> = {
   already_enrolled: "auth.errAlreadyEnrolled",
 };
 
+const BY_STATUS: Partial<Record<number, Key>> = {
+  403: "accounts.actionForbidden",
+  404: "accounts.errNotFound",
+  409: "accounts.errConflict",
+  422: "accounts.errUnprocessable",
+  429: "auth.errRateLimited",
+};
+
 /** Maps any thrown value to a localized message key. Non-ApiError (fetch failed) = server unreachable. */
 export function describeError(err: unknown, ctx: ErrorCtx = "form"): ErrorInfo {
   if (!(err instanceof ApiError)) return { key: "shared.loginUnreachable", detail: null };
   if (err.code === "bad_credentials") return { key: ctx === "password" ? "auth.errBadCurrent" : "shared.loginWrong", detail: null };
-  const key = BY_CODE[err.code] ?? (err.status === 429 ? "auth.errRateLimited" : "auth.errGeneric");
+  const key = BY_CODE[err.code] ?? BY_STATUS[err.status] ?? "auth.errGeneric";
   return { key, detail: err.code === "weak_password" && err.message ? err.message : null };
 }
 
