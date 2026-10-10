@@ -45,7 +45,7 @@ export default async function Home() {
                     <span className={styles.person}>{r.name}</span>
                     <span className={styles.sub}>{t(r.sub)}</span>
                   </span>
-                  <span className={`${styles.chev} flip`} aria-hidden="true">
+                  <span className={styles.chev} aria-hidden="true">
                     ›
                   </span>
                 </Link>

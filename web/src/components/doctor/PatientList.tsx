@@ -1,6 +1,7 @@
 "use client";
 
 // Doctor / My patients (/doctor): the doctor's patients, highest NEWS2 first.
+import { deptLabel } from "@/lib/labels";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useT } from "@/i18n/I18nProvider";
@@ -64,8 +65,8 @@ export function PatientList() {
           <h2 className={styles.h2}>{t("doctor.myPatients")}</h2>
           <span className={styles.sub}>
             {(USE_MOCKS
-              ? [ward, t("doctor.wardLabel", { letter: wardLetter }), state === "loading" ? null : t("doctor.patientsCount", { n: list.length }), t("doctor.highestFirst")]
-              : [realWard, state === "loading" ? null : t("doctor.patientsCount", { n: list.length }), t("doctor.highestFirst")]
+              ? [deptLabel(ward, t), t("doctor.wardLabel", { letter: wardLetter }), state === "loading" ? null : t("doctor.patientsCount", { n: list.length }), t("doctor.highestFirst")]
+              : [realWard && deptLabel(realWard, t), state === "loading" ? null : t("doctor.patientsCount", { n: list.length }), t("doctor.highestFirst")]
             )
               .filter(Boolean)
               .join(" · ")}
@@ -179,7 +180,7 @@ export function PatientList() {
                     t("doctor.noUnit")
                   )}
                 </span>
-                <span className={`${styles.chev} flip`}>›</span>
+                <span className={styles.chev}>›</span>
               </Link>
             );
           })}
