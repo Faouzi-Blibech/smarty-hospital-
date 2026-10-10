@@ -1,4 +1,4 @@
-# n8n contract
+# n8n contract — v1.0
 
 > **Version:** 1.4 (2026-10-10) · **Owners:** Faouzi (workflows + callbacks), Wali (event emitter in the backend)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
@@ -9,7 +9,7 @@
 - The backend → n8n direction carries **events**. The n8n → backend direction carries **callbacks** to `/integrations/n8n/*` with the header `X-N8N-Secret`.
 - On-device medication reminders never go through n8n.
 - Event posting is fire-and-forget: 3 s timeout, failures are logged, and the API never fails because n8n is down.
-- Demo channels: **Telegram** (bot token in n8n credentials), **WhatsApp** (WhatsApp Cloud API, used by W9 and the current workflows) and **email** (SMTP, e.g. a Gmail app password). SMS is out of scope.
+- Demo channels: **Telegram** (bot token in n8n credentials), **WhatsApp** (self-hosted WAHA gateway, `waha` service; see `n8n/README.md`) and **email** (SMTP, e.g. a Gmail app password). SMS is out of scope.
 - Payloads carry **first names only**, never national IDs or full records.
 - Every workflow is exported as JSON to `n8n/workflows/W<n>-<slug>.json` (credentials are NOT exported; recreate them from `n8n/README.md`).
 

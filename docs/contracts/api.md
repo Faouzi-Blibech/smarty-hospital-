@@ -213,7 +213,7 @@ All are authenticated with the header `X-N8N-Secret: ${N8N_CALLBACK_SECRET}` (no
 | `GET /integrations/n8n/health-events/due` | events with `announced_at IS NULL` and `starts_on - notify_days_before <= today <= ends_on` → list of the `health_event.upcoming` payloads (see `n8n-webhooks.md`) |
 | `POST /integrations/n8n/health-events/{id}/announced` | sets `announced_at` (idempotent) → `{"status":"announced"}` |
 
-## Health calendar (1.10 — Wali)
+## Health calendar (1.12 — Wali)
 
 Dated public-health events in Tunisia (Octobre Rose, flu campaign, HPV vaccination, world health days). Everyone sees every event; push goes only to active users who match the event `audience` and follow its category. Categories: `screening`, `vaccination`, `chronic_disease`, `infectious_disease`, `lifestyle`, `mental_health`, `blood_donation`. Event ids are `he-0001`.
 

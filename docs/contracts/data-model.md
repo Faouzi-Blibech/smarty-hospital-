@@ -253,7 +253,7 @@ Index `(patient_id, ts DESC)`.
 
 Append-only: the app DB role has `INSERT, SELECT` only on this table.
 
-### `health_events` (1.6)
+### `health_events` (1.7)
 
 | Column | Type | Notes |
 |---|---|---|
@@ -272,7 +272,7 @@ Append-only: the app DB role has `INSERT, SELECT` only on this table.
 
 Index on `starts_on`. Seed: 17 events `he-0001` ... `he-0017` (Oct 2026 to Sep 2027), inserted only if the id is missing so an admin edit is never overwritten.
 
-### `health_event_prefs` (1.6)
+### `health_event_prefs` (1.7)
 
 | Column | Type | Notes |
 |---|---|---|
