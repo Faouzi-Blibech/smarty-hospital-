@@ -212,3 +212,38 @@ def test_chat_ids_include_team_nurses_once(client, db):
     nurses, _doc = chat_ids(db, mine)
     assert "T1" in nurses and "W1" in nurses and len(nurses) == len(set(nurses))
     assert nurses.count("W1") == 1
+
+
+# ---- read-only sharing ----
+def test_shared_doctor_is_read_only(client, db):
+    _, doc2, _, _ = _setup(db)
+    h2, h1 = login(client, "doc2.t@ward.tn"), login(client, "doctor@ward.tn")
+    appt = Appointment(id="ap-9002", patient_id="p-0001", status="confirmed", urgency_ai=2, doctor_id=None)
+    db.add(appt)
+    db.flush()
+    assert _share(client, doc2).status_code == 200
+
+    # reads stay open
+    assert client.get("/patients/p-0001", headers=h2).status_code == 200
+    assert client.get("/patients/p-0001/notes", headers=h2).status_code == 200
+    assert client.get("/patients/p-0001/exams", headers=h2).status_code == 200
+    assert client.get("/appointments?patient_id=p-0001", headers=h2).status_code == 200
+
+    # every write is refused
+    rx = {"patient_id": "p-0001", "items": [{"med": "Aspirin", "times": ["08:00"]}]}
+    exam = {"patient_id": "p-0001", "appointment_id": appt.id, "code": "ecg"}
+    confirm = {"slot_at": (datetime.now(UTC) + timedelta(days=1)).isoformat(), "doctor_id": doc2.id}
+    for r in (client.post("/patients/p-0001/notes", headers=h2, json={"text": "hi"}),
+              client.post("/prescriptions", headers=h2, json=rx),
+              client.patch("/patients/p-0001", headers=h2, json={"allergies": ["x"]}),
+              client.patch(f"/appointments/{appt.id}", headers=h2, json={"urgency_final": 3}),
+              client.post(f"/appointments/{appt.id}/confirm", headers=h2, json=confirm),
+              client.post("/exams", headers=h2, json=exam),
+              client.post("/exams", headers=h2, json={"patient_id": "p-0001", "code": "ecg"}),
+              client.post(f"/appointments/{appt.id}/exams/order", headers=h2, json={"exam_ids": []})):
+        assert r.status_code == 403, r.request.url
+
+    # the attending doctor still writes
+    assert client.post("/patients/p-0001/notes", headers=h1, json={"text": "hi"}).status_code in (200, 201)
+    assert client.patch("/patients/p-0001", headers=h1, json={"allergies": ["x"]}).status_code == 200
+    assert client.patch(f"/appointments/{appt.id}", headers=h1, json={"urgency_final": 3}).status_code == 200

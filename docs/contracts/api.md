@@ -44,7 +44,7 @@ Added in 1.9 (spec `docs/superpowers/specs/2026-10-10-accounts-and-access-design
 | `POST /users/{id}/reset-code` | admin | → `{code, expires_at}`, shown once |
 | `POST /patients/{id}/enrollment-code` | admin, attending doctor | → `{code, expires_at}`, shown once; 409 `already_enrolled` |
 | `GET /patients/{id}/access` | attending doctor, admin | active grants → list of `_grant_out` |
-| `POST /patients/{id}/access` | attending doctor, admin | `{doctor_id, expires_at?}` (default 30 days, at most 365; 422 otherwise) → `_grant_out`. A new grant replaces the doctor's live one. |
+| `POST /patients/{id}/access` | attending doctor, admin | `{doctor_id, expires_at?}` (default 30 days, at most 365; 422 otherwise) → `_grant_out`. A new grant replaces the doctor's live one. **Sharing is read-only:** a grant lets the doctor read the patient (detail, list, vitals, exams, appointments, alerts, notes, WebSocket frames) but every write on that patient returns 403 `forbidden`. |
 | `DELETE /patients/{id}/access/{doctor_id}` | attending doctor, admin | → 204; 404 if no live grant |
 | `GET /staff` | admin | gains `status` |
 
