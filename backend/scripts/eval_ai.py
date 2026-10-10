@@ -1,6 +1,6 @@
 """Evaluate the shipped triage and patient-assistant intent models on the v2 (independent) and v1 eval sets.
 
-    python scripts/eval_ai.py [--out report.json] [--no-laya] [--no-v1]
+    python scripts/eval_ai.py [--out report.json] [--no-v1]
 
 Prints one JSON report. Triage is scored on the final urgency (red-flag rules + model). Intent is scored on the
 shipped path: red flags first (-> urgent), else classify_intent. Rows are `{"text", "age", "expected", ...}` (v2)
@@ -128,13 +128,10 @@ def run(include_v1: bool = True, split: str = "all") -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", help="also write the JSON report to this file")
-    ap.add_argument("--no-laya", action="store_true", help="skip the optional Laya classifier")
     ap.add_argument("--no-v1", action="store_true", help="only the v2 sets")
     ap.add_argument("--split", choices=SPLITS, default="all",
                     help="v2 half: dev (tune against it), test (sealed: final scores only) or all")
     args = ap.parse_args()
-    if args.no_laya:
-        assistant.laya_intent.classify = lambda q: None
     text = json.dumps(run(include_v1=not args.no_v1, split=args.split), ensure_ascii=False, indent=2)
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8")

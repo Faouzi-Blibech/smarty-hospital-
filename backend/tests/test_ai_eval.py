@@ -9,7 +9,7 @@ from app.ai import assistant as A
 from scripts import eval_ai
 from tests.test_eval_leakage import _jsonl, leaks
 
-# Measured baselines on the shipped models (LAYA off). Lower URGENT_MISSED_BASELINE / raise
+# Measured baselines on the shipped models. Lower URGENT_MISSED_BASELINE / raise
 # INTENT_ACCURACY_BASELINE when the models improve; never loosen.
 URGENT_MISSED_BASELINE = 12
 INTENT_ACCURACY_BASELINE = 0.727
@@ -37,7 +37,6 @@ def test_v2_triage_urgent_missed_does_not_regress(triage_rows):
 
 
 def test_v2_intent_accuracy_does_not_regress(intent_rows, monkeypatch):
-    monkeypatch.setattr(A.laya_intent, "classify", lambda q: None)  # deterministic: no optional Laya model
     report = eval_ai.eval_intent(intent_rows)
     assert report["accuracy"] >= INTENT_ACCURACY_BASELINE - INTENT_TOLERANCE, report["confusion_pairs"]
 
