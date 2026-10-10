@@ -3,6 +3,7 @@
 Callers catch LLMUnavailable and return their deterministic fallback.
 """
 
+import base64
 import json
 import re
 import unicodedata
@@ -96,3 +97,22 @@ def _ollama(s: Settings, system: str, text: str, schema: type[T]) -> T:
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": text}]})
     r.raise_for_status()
     return schema.model_validate(json.loads(r.json()["message"]["content"]))
+
+
+def complete_vision_json(prompt_name: str, image_png: bytes, user_text: str, schema: type[T]) -> T:
+    """One image + text -> JSON, local Ollama only: an image can carry burned-in names that strip_pii cannot reach,
+    so images never go to a hosted provider. Any failure (off, timeout, bad JSON, schema) -> LLMUnavailable."""
+    s = get_settings()
+    if s.vision_provider != "local":
+        raise LLMUnavailable(f"vision_provider={s.vision_provider}")
+    try:
+        r = httpx.post(f"{s.llm_local_base_url}/api/chat", timeout=s.llm_vision_timeout_s, json={
+            "model": s.llm_vision_model, "stream": False, "format": schema.model_json_schema(),
+            "options": {"temperature": 0},
+            "messages": [{"role": "system", "content": _prompt(prompt_name)},
+                         {"role": "user", "content": strip_pii(user_text),
+                          "images": [base64.b64encode(image_png).decode("ascii")]}]})
+        r.raise_for_status()
+        return schema.model_validate(json.loads(r.json()["message"]["content"]))
+    except Exception as e:
+        raise LLMUnavailable(str(e)) from e
