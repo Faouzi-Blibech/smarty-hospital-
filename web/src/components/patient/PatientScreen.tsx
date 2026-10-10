@@ -57,6 +57,7 @@ export function Brand() {
       </Link>
       <span className={styles.flex} />
       <span className={styles.protoTag}>{t("patient.protoTag")}</span>
+      <Link href="/patient/password" className={styles.protoTag}>{t("auth.navPassword")}</Link>
       <LanguageSwitcher compact tone="light" />
     </div>
   );
