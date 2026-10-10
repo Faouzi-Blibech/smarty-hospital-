@@ -149,6 +149,10 @@ still receives her doctor's patients' alerts.
 - The attending doctor calls `POST /patients/{id}/access` with `{doctor_id, expires_at}`, and
   `DELETE /patients/{id}/access/{doctor_id}` to revoke.
 - `can_access` (`app/auth/deps.py`) gains one rule: doctor = attending **or** holds an unexpired, unrevoked grant.
+- **Sharing is read-only** (decided 2026-10-10): the shared doctor reads everything the attending doctor reads
+  (record, vitals, exams, appointments, alerts, live updates) but writes nothing on that patient: no notes,
+  prescriptions, urgency changes, exam orders or device commands (403). Only the attending doctor or the admin can
+  share, revoke or issue codes.
 - Every check, grant and revoke goes through the existing audit.
 
 ## 7. Security controls (internet-facing)
@@ -279,3 +283,21 @@ Items 1, 3 and 4 can be built in parallel once the contract is agreed.
 
 - Code lifetime: 48 h for enrollment and reset codes. Should reception be able to choose a shorter time?
 - The domain name, and who operates the server and its backups at each site (an operational question, not code).
+
+## Addendum (2026-10-10): sign-up v2, decided by the user
+
+This overrides the sections above where they differ.
+
+- **Sign-up form:** name, email, own password (never shared), a **role** from `patient | nurse | doctor`, and the
+  **hospital**. One install is one hospital (the database stays local), so the list shows this install's
+  hospital (`GET /hospital`). Patients and nurses may also pick a doctor (cabinet).
+- **Approval:** the hospital admin's dashboard lists every pending request. A doctor sees the patients and nurses who
+  picked him and can approve them. Doctors are approved by the admin only. The approver may change the requested role,
+  and `admin` can't be requested.
+- **Patient record link:** the approver links the account to an existing record (search) or creates a new one.
+  A human checks the identity, so **enrollment codes are removed**.
+- **Codes that stay:** the password-reset code (no email server offline) and the first-admin bootstrap code.
+- **Hardening from the final review:**
+  - a doctor can't undo an admin's disable or reject;
+  - a disabled account loses its live connections, Telegram alerts and the digest at once.
+- **Patient sharing between doctors is read-only** (see 6.6).
