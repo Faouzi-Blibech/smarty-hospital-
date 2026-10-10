@@ -48,6 +48,11 @@ If the upload fails: hold **BOOT**, tap **RESET**, release **BOOT**, then upload
 
 Bluetooth must be **on** in Windows settings. Don't pair the device in Windows; the script connects by itself.
 
+**Easiest:** double-click **`pc/start_alert.bat`**. It installs `bleak` if missing, links to `Ward-C3`, and waits for
+Space. If the link drops, press **R** to reconnect.
+
+Or by hand:
+
 ```bash
 cd pc
 pip install -r requirements.txt

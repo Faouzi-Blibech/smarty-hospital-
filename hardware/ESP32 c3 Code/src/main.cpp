@@ -95,15 +95,42 @@ void showMessage() {
   display.display();
 }
 
-// ---- Buzzer ----
+// ---- Buzzer (LEDC PWM, 50 % duty = square wave at BUZZER_HZ) ----
+
+constexpr uint8_t BUZZER_CH = 0;
+bool buzzerOn = false;
+
+void setupBuzzer() {
+  ledcSetup(BUZZER_CH, BUZZER_HZ, 8);
+  ledcAttachPin(PIN_BUZZER, BUZZER_CH);
+  ledcWrite(BUZZER_CH, 0);
+}
 
 void buzzer(bool on) {
-  if (on) {
-    tone(PIN_BUZZER, BUZZER_HZ);
-  } else {
-    noTone(PIN_BUZZER);
-    digitalWrite(PIN_BUZZER, LOW);
+  if (on == buzzerOn) return;  // only touch the hardware on a change
+  buzzerOn = on;
+  ledcWrite(BUZZER_CH, on ? 128 : 0);
+#ifdef PIN_LED
+  digitalWrite(PIN_LED, on ? HIGH : LOW);  // on-board LED blinks with the buzzer
+#endif
+}
+
+// ---- I2C scan: prints every device found, so a wiring problem shows in the serial log ----
+
+bool scanI2c() {
+  bool oledFound = false;
+  Serial.printf("I2C scan on SDA=%d SCL=%d:\n", PIN_SDA, PIN_SCL);
+  for (uint8_t addr = 1; addr < 127; addr++) {
+    Wire.beginTransmission(addr);
+    if (Wire.endTransmission() == 0) {
+      Serial.printf("  found device at 0x%02X\n", addr);
+      if (addr == OLED_ADDR) oledFound = true;
+    }
   }
+  if (!oledFound) {
+    Serial.printf("  no OLED at 0x%02X: check VCC/GND and swap SDA/SCL\n", OLED_ADDR);
+  }
+  return oledFound;
 }
 
 // ---- BLE callbacks ----
@@ -160,10 +187,14 @@ void notifyPc(const char* text) {
 
 void setup() {
   Serial.begin(115200);
-  pinMode(PIN_BUZZER, OUTPUT);
-  digitalWrite(PIN_BUZZER, LOW);
+  setupBuzzer();
+#ifdef PIN_LED
+  pinMode(PIN_LED, OUTPUT);
+  digitalWrite(PIN_LED, LOW);
+#endif
 
   Wire.begin(PIN_SDA, PIN_SCL);
+  scanI2c();
   if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
     Serial.println("SSD1306 not found: check wiring and OLED_ADDR (0x3C / 0x3D)");
   }
