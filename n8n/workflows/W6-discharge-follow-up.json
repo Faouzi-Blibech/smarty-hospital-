@@ -79,7 +79,7 @@
     },
     {
       "id": "e6d0f1a2-0000-4000-8000-000000000605",
-      "name": "Has Telegram",
+      "name": "Has WhatsApp",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -87,32 +87,44 @@
         -120
       ],
       "parameters": {
-        "jsCode": "return $input.all().filter(i => i.json.chat_id);"
+        "jsCode": "// Demo routing: patient messages go to WARD_WHATSAPP_PATIENT (digits only, country code first).\nconst to = ($env.WARD_WHATSAPP_PATIENT || '').replace(/\\D/g, '');\nreturn to ? $input.all().map(i => ({ json: { ...i.json, to } })) : [];"
       }
     },
     {
       "id": "e6d0f1a2-0000-4000-8000-000000000606",
-      "name": "Telegram",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
+      "name": "WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         1200,
         -120
       ],
       "parameters": {
-        "chatId": "={{ $json.chat_id }}",
-        "text": "={{ $json.text }}",
-        "additionalFields": {
-          "appendAttribution": false
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.to, type: 'text', text: { preview_url: false, body: $json.text } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "timeout": 15000
         }
       },
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "telegramApi": {
-          "id": "wardTelegramCred",
-          "name": "ward-telegram"
-        }
-      }
+      "onError": "continueRegularOutput"
     },
     {
       "id": "e6d0f1a2-0000-4000-8000-000000000607",
@@ -193,7 +205,7 @@
       "main": [
         [
           {
-            "node": "Has Telegram",
+            "node": "Has WhatsApp",
             "type": "main",
             "index": 0
           },
@@ -205,22 +217,22 @@
         ]
       ]
     },
-    "Has Telegram": {
+    "Has email": {
       "main": [
         [
           {
-            "node": "Telegram",
+            "node": "Email",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Has email": {
+    "Has WhatsApp": {
       "main": [
         [
           {
-            "node": "Email",
+            "node": "WhatsApp",
             "type": "main",
             "index": 0
           }

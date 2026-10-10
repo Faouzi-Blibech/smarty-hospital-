@@ -7,41 +7,74 @@
       "name": "From router",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [0, 0],
-      "parameters": { "inputSource": "passthrough" }
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
     },
     {
       "id": "b3a0c1d2-0000-4000-8000-000000000302",
-      "name": "Telegram messages",
+      "name": "WhatsApp messages",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [240, -120],
+      "position": [
+        240,
+        -120
+      ],
       "parameters": {
-        "jsCode": "// event dose.missed (contract v1.1): {dose_id, patient_first_name, bed, meds[], scheduled_at, nurse_chat_ids[], doctor_chat_id, doctor_email}\nconst out = [];\nfor (const item of $input.all()) {\n  const d = item.json.data || {};\n  const at = d.scheduled_at ? DateTime.fromISO(d.scheduled_at).setZone('Africa/Tunis').toFormat('HH:mm') : '?';\n  const text = `💊 Missed dose · Bed ${d.bed ?? '?'} · ${d.patient_first_name ?? 'Patient'} · ${(d.meds || []).join(', ') || 'meds'} (due ${at})`;\n  const ids = [...(d.nurse_chat_ids || []), d.doctor_chat_id].filter(Boolean).map(String);\n  for (const chat_id of [...new Set(ids)]) out.push({ json: { chat_id, text, dose_id: d.dose_id } });\n}\nreturn out;"
+        "jsCode": "// event dose.missed (contract v1.1): {dose_id, patient_first_name, bed, meds[], scheduled_at, nurse_chat_ids[], doctor_chat_id, doctor_email}\n// The message names the bed and time only: no patient name or medication leaves the server.\n// Demo routing: staff alerts go to every number in WARD_WHATSAPP_STAFF (comma-separated, country code first).\nconst staff = () => [...new Set(($env.WARD_WHATSAPP_STAFF || '').split(',').map(s => s.replace(/\\D/g, '')).filter(Boolean))];\nconst out = [];\nfor (const item of $input.all()) {\n  const d = item.json.data || {};\n  const at = d.scheduled_at ? DateTime.fromISO(d.scheduled_at).setZone('Africa/Tunis').toFormat('HH:mm') : '?';\n  const text = `Ward: missed dose, bed ${d.bed ?? '?'} (due ${at}). Open Ward.`;\n  for (const to of staff()) out.push({ json: { to, text, dose_id: d.dose_id } });\n}\nreturn out;"
       }
     },
     {
       "id": "b3a0c1d2-0000-4000-8000-000000000303",
-      "name": "Telegram",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [480, -120],
-      "onError": "continueRegularOutput",
+      "name": "WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        -120
+      ],
       "parameters": {
-        "chatId": "={{ $json.chat_id }}",
-        "text": "={{ $json.text }}",
-        "additionalFields": { "appendAttribution": false }
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.to, type: 'text', text: { preview_url: false, body: $json.text } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "timeout": 15000
+        }
       },
-      "credentials": { "telegramApi": { "id": "wardTelegramCred", "name": "ward-telegram" } }
+      "onError": "continueRegularOutput"
     },
     {
       "id": "b3a0c1d2-0000-4000-8000-000000000304",
       "name": "Doctor email",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [240, 120],
+      "position": [
+        240,
+        120
+      ],
       "parameters": {
-        "jsCode": "const out = [];\nfor (const item of $input.all()) {\n  const d = item.json.data || {};\n  if (!d.doctor_email) continue;\n  const at = d.scheduled_at ? DateTime.fromISO(d.scheduled_at).setZone('Africa/Tunis').toFormat('dd/LL HH:mm') : '?';\n  out.push({ json: {\n    to: d.doctor_email,\n    subject: `Missed dose · Bed ${d.bed ?? '?'} · ${d.patient_first_name ?? 'Patient'}`,\n    text: `The dose due at ${at} (${(d.meds || []).join(', ')}) was not taken within 30 minutes.\\nBed ${d.bed ?? '?'} · ${d.patient_first_name ?? 'Patient'} · dose ${d.dose_id ?? ''}.\\nThe ward nurses were notified on Telegram.\\n\\n— Ward`,\n  } });\n}\nreturn out;"
+        "jsCode": "const out = [];\nfor (const item of $input.all()) {\n  const d = item.json.data || {};\n  if (!d.doctor_email) continue;\n  const at = d.scheduled_at ? DateTime.fromISO(d.scheduled_at).setZone('Africa/Tunis').toFormat('dd/LL HH:mm') : '?';\n  out.push({ json: {\n    to: d.doctor_email,\n    subject: `Missed dose · Bed ${d.bed ?? '?'}`,\n    text: `A dose due at ${at} at bed ${d.bed ?? '?'} was not taken within 30 minutes.\nThe ward nurses were notified on WhatsApp. Open Ward for details.\n\n— Ward`,\n  } });\n}\nreturn out;"
       }
     },
     {
@@ -49,7 +82,10 @@
       "name": "Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
-      "position": [480, 120],
+      "position": [
+        480,
+        120
+      ],
       "onError": "continueRegularOutput",
       "parameters": {
         "fromEmail": "={{ $env.WARD_MAIL_FROM }}",
@@ -57,22 +93,62 @@
         "subject": "={{ $json.subject }}",
         "emailFormat": "text",
         "text": "={{ $json.text }}",
-        "options": { "appendAttribution": false }
+        "options": {
+          "appendAttribution": false
+        }
       },
-      "credentials": { "smtp": { "id": "wardSmtpCred0001", "name": "ward-smtp" } }
+      "credentials": {
+        "smtp": {
+          "id": "wardSmtpCred0001",
+          "name": "ward-smtp"
+        }
+      }
     }
   ],
   "connections": {
     "From router": {
-      "main": [[
-        { "node": "Telegram messages", "type": "main", "index": 0 },
-        { "node": "Doctor email", "type": "main", "index": 0 }
-      ]]
+      "main": [
+        [
+          {
+            "node": "WhatsApp messages",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Doctor email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "Telegram messages": { "main": [[{ "node": "Telegram", "type": "main", "index": 0 }]] },
-    "Doctor email": { "main": [[{ "node": "Email", "type": "main", "index": 0 }]] }
+    "Doctor email": {
+      "main": [
+        [
+          {
+            "node": "Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp messages": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "settings": { "executionOrder": "v1", "timezone": "Africa/Tunis" },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Tunis"
+  },
   "pinData": {},
   "tags": []
 }
