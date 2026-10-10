@@ -6,8 +6,8 @@ Self-hosted n8n runs in Docker at http://localhost:5678. The contract is `docs/c
 
 - `workflows/W<n>-<slug>.json`: exported workflows (n8n → ⋯ → Download). Commit them after every change.
 - Credentials are **never** exported. Recreate them on each machine:
-  - **WhatsApp Cloud API** (no n8n credential, read from `.env`): `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`,
-    `WARD_WHATSAPP_STAFF` (comma-separated staff numbers) and `WARD_WHATSAPP_PATIENT`. See "WhatsApp setup" below.
+  - **WhatsApp** (no n8n credential, read from `.env`): `WAHA_API_KEY`, `WARD_WHATSAPP_STAFF` (comma-separated
+    staff numbers) and `WARD_WHATSAPP_PATIENT`. See "WhatsApp setup" below.
   - **SMTP**: e.g. a Gmail app password, credential name `ward-smtp`.
   - **Header Auth** for callbacks to the API: name `ward-callback`, header `X-N8N-Secret`, value = `N8N_CALLBACK_SECRET` from `.env`.
 
@@ -38,16 +38,24 @@ If an Email node shows the credential as missing (a credential created in the UI
 
 Every WhatsApp/Email node uses `onError: continueRegularOutput`: one bad recipient doesn't stop the others.
 
-## WhatsApp setup (about 20 minutes)
+## WhatsApp setup (about 5 minutes)
 
-1. https://developers.facebook.com/apps → Create app → type **Business** → add the **WhatsApp** product.
-2. WhatsApp → **API Setup**: copy the temporary access token (valid 24 h) and the **Phone number ID** into `.env`
-   as `WHATSAPP_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID`.
-3. Same page, "To": add each demo phone as a recipient (up to 5) and confirm the code WhatsApp sends to it.
-4. In `.env`: `WARD_WHATSAPP_STAFF=216xxxxxxxx,216yyyyyyyy` and `WARD_WHATSAPP_PATIENT=216zzzzzzzz` (digits only).
-5. **From each demo phone, send any message ("hi") to the test number.** Meta only delivers free-text messages to a
-   phone within 24 h of its last message to the business; do this the morning of the demo.
-6. Recreate n8n so it reads the new variables: `docker compose -f infra/docker-compose.yml --env-file .env up -d n8n`.
+Messages go out through **WAHA** (`waha` service in compose), a self-hosted gateway that links a WhatsApp account by
+QR code, the same way WhatsApp Web does. No Meta or Twilio account is needed. It is unofficial: use a spare or
+team number, not a personal one, and keep the volume low (a few demo messages).
+
+1. In `.env`: `WAHA_API_KEY=<random>`, `WARD_WHATSAPP_STAFF=216xxxxxxxx,216yyyyyyyy`,
+   `WARD_WHATSAPP_PATIENT=216zzzzzzzz` (digits only).
+2. `docker compose -f infra/docker-compose.yml --env-file .env up -d waha n8n`
+3. Open http://localhost:3010/dashboard (login `admin` / your `WAHA_API_KEY`). Start the session named **default**,
+   then on the sender phone: WhatsApp → **Linked devices → Link a device** → scan the QR code.
+4. When the session shows **WORKING**, send a test alert (see "Test" below).
+
+The sender number should differ from the recipients: a message to yourself lands in "Message yourself" with no
+notification. The link survives restarts (the `waha-sessions` volume).
+
+In production the hospital would use the official WhatsApp Business API (Meta) instead; only the HTTP node's URL
+and body change.
 
 **Privacy:** staff alerts name the bed only ("Ward: critical alert, bed C-12. Open Ward now."): no patient name,
 score, vitals or medication leaves the server. Patient messages carry the patient's own appointment details.

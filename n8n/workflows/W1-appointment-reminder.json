@@ -67,19 +67,19 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "=https://graph.facebook.com/v21.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "url": "={{ $env.WAHA_URL }}/api/sendText",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}"
+              "name": "X-Api-Key",
+              "value": "={{ $env.WAHA_API_KEY }}"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.to, type: 'text', text: { preview_url: false, body: $json.text } }) }}",
+        "jsonBody": "={{ JSON.stringify({ session: 'default', chatId: $json.to + '@c.us', text: $json.text, linkPreview: false }) }}",
         "options": {
           "response": {
             "response": {
