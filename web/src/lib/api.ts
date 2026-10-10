@@ -861,12 +861,12 @@ const counted = (s: MockStore, a: Appointment): Appointment => {
 };
 
 export async function getAppointmentExams(appointmentId: string): Promise<ExamOrder[]> {
-  if (USE_MOCKS) return mock((s) => (syncReadingSummaries(s), s.exams.filter((e) => e.appointment_id === appointmentId)));
+  if (USE_MOCKS) return mock((s) => (advanceMockReadings(s), s.exams.filter((e) => e.appointment_id === appointmentId)));
   return http<ExamOrder[]>("GET", `/appointments/${encodeURIComponent(appointmentId)}/exams`);
 }
 
 export async function getPatientExams(patientId: string): Promise<ExamOrder[]> {
-  if (USE_MOCKS) return mock((s) => (syncReadingSummaries(s), s.exams.filter((e) => e.patient_id === patientId && e.status !== "cancelled")));
+  if (USE_MOCKS) return mock((s) => (advanceMockReadings(s), s.exams.filter((e) => e.patient_id === patientId && e.status !== "cancelled")));
   return http<ExamOrder[]>("GET", `/patients/${encodeURIComponent(patientId)}/exams`);
 }
 
@@ -959,23 +959,35 @@ function syncReadingSummaries(s: MockStore): void {
     }
 }
 
+/**
+ * Mock: moves a queued reading to running, then ready, by real elapsed time since it was first seen (by the exams
+ * list or the reading itself). Real time, not now(): the mock clock never moves, so polling would never see a change.
+ */
+function advanceMockReading(resultId: string, rd: RadiographReading): void {
+  if (rd.status !== "queued" && rd.status !== "running") return;
+  const first = READING_FIRST_SEEN.get(resultId) ?? Date.now();
+  READING_FIRST_SEEN.set(resultId, first);
+  const waited = Date.now() - first;
+  if (waited >= MOCK_READING_QUEUE_MS) {
+    rd.status = "ready";
+    rd.ai_suggested = MOCK_READING_DRAFTS[resultId] ?? null;
+    rd.finished_at = iso(now());
+  } else if (waited >= MOCK_READING_QUEUE_MS / 2) rd.status = "running";
+}
+
+/** Mock: advances every pending reading (called by the exams list, which polls while one is pending). */
+function advanceMockReadings(s: MockStore): void {
+  for (const [resultId, rd] of Object.entries(s.readings)) advanceMockReading(resultId, rd);
+  syncReadingSummaries(s);
+}
+
 /** GET /exam-results/{id}/reading (doctor: full reading; the UI polls while queued/running). */
 export async function getRadiographReading(resultId: string): Promise<RadiographReading> {
   if (USE_MOCKS)
     return mock((s) => {
       const rd = s.readings[resultId] ?? notFound(`Reading for ${resultId}`);
-      if (rd.status === "queued" || rd.status === "running") {
-        // Real elapsed time, not now(): the mock clock never moves, so polling would never see a change.
-        const first = READING_FIRST_SEEN.get(resultId) ?? Date.now();
-        READING_FIRST_SEEN.set(resultId, first);
-        const waited = Date.now() - first;
-        if (waited >= MOCK_READING_QUEUE_MS) {
-          rd.status = "ready";
-          rd.ai_suggested = MOCK_READING_DRAFTS[resultId] ?? null;
-          rd.finished_at = iso(now());
-        } else if (waited >= MOCK_READING_QUEUE_MS / 2) rd.status = "running";
-        syncReadingSummaries(s);
-      }
+      advanceMockReading(resultId, rd);
+      syncReadingSummaries(s);
       return rd;
     });
   return http<RadiographReading>("GET", `/exam-results/${encodeURIComponent(resultId)}/reading`);

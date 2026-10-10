@@ -2,7 +2,7 @@
 
 // A doctor reviews the AI draft of one radiograph and signs the final report. The AI only suggests: nothing is
 // stored as a report until the doctor confirms the text (human in the loop).
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useT } from "@/i18n/I18nProvider";
 import { confirmRadiographReading, examFileUrl, getRadiographReading } from "@/lib/api";
 import { tunisDay, tunisTime } from "@/lib/time";
@@ -57,7 +57,10 @@ export function RadiographReadingCard({
         setLoadFailed(false);
         if (PENDING.includes(rd.status)) timer = setTimeout(load, POLL_MS);
       } catch {
-        if (alive) setLoadFailed(true);
+        // Show the error but keep trying on the next tick while mounted (a blip must not stop polling forever).
+        if (!alive) return;
+        setLoadFailed(true);
+        timer = setTimeout(load, POLL_MS);
       }
     }
     void load();
@@ -67,10 +70,14 @@ export function RadiographReadingCard({
     };
   }, [resultId]);
 
-  // Tell the parent about status changes.
+  // Tell the parent about status changes (the callback is read through a ref, so a new closure never re-fires it).
+  const onStatusRef = useRef(onStatus);
+  useEffect(() => {
+    onStatusRef.current = onStatus;
+  });
   const status = reading?.status;
   useEffect(() => {
-    if (status) onStatus?.(status);
+    if (status) onStatusRef.current?.(status);
   }, [status]);
 
   // Prefill the report once the draft (or the signed text) arrives, unless the doctor already typed.
@@ -120,15 +127,22 @@ export function RadiographReadingCard({
     <div className={styles.card} aria-label={t("radiology.title")} role="region">
       <div className={styles.head}>
         <b className={styles.title}>{t("radiology.title")}</b>
-        {reading ? (
-          <span className={`${styles.chip} ${pending ? styles.chipPending : styles.chipDone}`} aria-live="polite">
-            {pending ? <span className={styles.pulse} aria-hidden="true" /> : null}
-            {reading.human_confirmed_by ? t("radiology.statusConfirmed") : t(STATUS_KEY[reading.status])}
-          </span>
-        ) : null}
+        {/* Stable live region: it exists before the status text first appears or changes. */}
+        <span aria-live="polite" className={styles.chipSlot}>
+          {reading ? (
+            <span className={`${styles.chip} ${pending ? styles.chipPending : styles.chipDone}`}>
+              {pending ? <span className={styles.pulse} aria-hidden="true" /> : null}
+              {reading.human_confirmed_by ? t("radiology.statusConfirmed") : t(STATUS_KEY[reading.status])}
+            </span>
+          ) : null}
+        </span>
       </div>
 
-      <p className={styles.disclaimer} role="note" dir="auto">{ai?.disclaimer || t("radiology.disclaimer")}</p>
+      {/* The UI disclaimer is always shown; a different one from the model run is added below, never instead. */}
+      <div className={styles.disclaimer} role="note">
+        <p>{t("radiology.disclaimer")}</p>
+        {ai?.disclaimer && ai.disclaimer !== t("radiology.disclaimer") ? <p dir="auto">{ai.disclaimer}</p> : null}
+      </div>
 
       {imgUrl ? (
         <img className={styles.img} src={imgUrl} alt={t("radiology.imageAlt")} />

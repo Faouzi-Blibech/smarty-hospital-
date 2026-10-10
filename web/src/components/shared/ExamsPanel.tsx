@@ -6,13 +6,14 @@
 import { examLabel, deptLabel } from "@/lib/labels";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useT } from "@/i18n/I18nProvider";
-import { ApiError, examFileUrl, getPatientExams, getRadiographReading, uploadOutsideRadiograph } from "@/lib/api";
+import { ApiError, examFileUrl, getPatientExams, uploadOutsideRadiograph } from "@/lib/api";
 import { tunisDay, tunisTime } from "@/lib/time";
 import type { ExamOrder, ExamResultFile, ReadingStatus, Role } from "@/lib/types";
 import { RadiographReadingCard } from "./RadiographReadingCard";
 import styles from "./ExamsPanel.module.css";
 
-const POLL_MS = 4000;
+const POLL_MS = 10_000;
+const POLL_MAX_MS = 10 * 60_000;
 const STATUS_KEY = {
   queued: "radiology.statusQueued",
   running: "radiology.statusRunning",
@@ -31,43 +32,48 @@ export function ExamsPanel({ patientId, role }: { patientId: string; role?: Role
   const [reviewing, setReviewing] = useState<Set<string>>(() => new Set());
   const [adding, setAdding] = useState(false);
   const isDoctor = role === "doctor";
-  const alive = useRef(true);
+  // Every request gets a token; only the latest one (current patient, still mounted) may set state.
+  const latest = useRef(0);
+  // Bumped when a list fetch settles (ok or not): the poll below schedules its next fetch from that.
+  const [settled, setSettled] = useState(0);
 
   const reload = useCallback(async () => {
+    const token = ++latest.current;
     try {
       const r = await getPatientExams(patientId);
-      if (alive.current) {
-        setRows(r);
-        setFailed(false);
-      }
+      if (token !== latest.current) return;
+      setRows(r);
+      setFailed(false);
     } catch {
-      if (alive.current) setFailed(true);
+      if (token !== latest.current) return;
+      setFailed(true);
     }
+    setSettled((n) => n + 1);
   }, [patientId]);
 
   useEffect(() => {
-    alive.current = true;
+    setRows(null);
     void reload();
     return () => {
-      alive.current = false;
+      latest.current++; // drop any response still in flight for this patient
     };
   }, [reload]);
 
-  // While a reading is queued/running, refresh the list so its chip moves by itself. A doctor also fetches the
-  // reading itself (that is what advances the mock queue; on the real backend it returns the same status).
-  const pendingIds = (rows ?? [])
-    .flatMap((e) => e.results ?? [])
-    .filter((r) => r.reading && isPending(r.reading.status))
-    .map((r) => r.id)
-    .join(",");
+  // While a reading is queued/running, re-fetch the list so its chip moves by itself: a chained timeout (the next
+  // fetch is scheduled only after the previous one settled, so requests never overlap), stopped when nothing is
+  // pending or after POLL_MAX_MS. Only an open RadiographReadingCard polls the reading itself.
+  const anyPending = (rows ?? []).some((e) => (e.results ?? []).some((r) => r.reading && isPending(r.reading.status)));
+  const pollSince = useRef<number | null>(null);
   useEffect(() => {
-    if (!pendingIds) return;
-    const timer = setInterval(async () => {
-      if (isDoctor) await Promise.allSettled(pendingIds.split(",").map((id) => getRadiographReading(id)));
-      await reload();
-    }, POLL_MS);
-    return () => clearInterval(timer);
-  }, [pendingIds, isDoctor, reload]);
+    if (!anyPending) {
+      pollSince.current = null;
+      return;
+    }
+    pollSince.current ??= Date.now();
+    if (Date.now() - pollSince.current > POLL_MAX_MS) return;
+    const timer = setTimeout(() => void reload(), POLL_MS);
+    return () => clearTimeout(timer);
+  }, [anyPending, settled, reload]);
 
   async function open(resultId: string) {
     if (opening) return;
@@ -110,7 +116,7 @@ export function ExamsPanel({ patientId, role }: { patientId: string; role?: Role
           ? styles.chipReady
           : styles.chipManual;
     return (
-      <span className={`${styles.chip} ${cls}`} aria-live="polite">
+      <span className={`${styles.chip} ${cls}`}>
         {confirmed ? t("radiology.statusConfirmed") : t(STATUS_KEY[status])}
       </span>
     );
@@ -158,7 +164,7 @@ export function ExamsPanel({ patientId, role }: { patientId: string; role?: Role
             <div key={r.id} className={styles.resultBlock}>
               <div className={styles.result}>
                 <button className={styles.file} onClick={() => void open(r.id)}>{r.file_name}</button>
-                {readingChip(r)}
+                <span aria-live="polite" className={styles.chipSlot}>{readingChip(r)}</span>
                 {r.report_text ? <span dir="auto">“{r.report_text}”</span> : null}
                 {r.uploaded_by_name ? <span className={styles.dept}>· {r.uploaded_by_name}</span> : null}
                 {isDoctor && r.reading ? (

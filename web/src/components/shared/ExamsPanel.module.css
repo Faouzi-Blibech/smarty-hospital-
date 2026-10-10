@@ -37,3 +37,4 @@
   outline: 2px solid var(--teal);
   outline-offset: 2px;
 }
+.chipSlot { display: inline-flex; }
