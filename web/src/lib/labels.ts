@@ -44,6 +44,31 @@ export const URGENCY_BAR: Record<Urgency, string> = {
   1: "#A4B3BB",
 };
 
+const DEPT_KEYS: Record<string, Key> = {
+  Cardiology: "shared.deptCardiology",
+  Laboratory: "shared.deptLaboratory",
+  Imaging: "shared.deptImaging",
+  Pediatrics: "shared.deptPediatrics",
+  Pulmonology: "shared.deptPulmonology",
+  "Internal Medicine": "shared.deptInternalMedicine",
+};
+
+/** A department or specialty name in the interface language; unknown names are shown as written. */
+export function deptLabel(name: string | null | undefined, t: TFn): string {
+  if (!name) return "";
+  const key = DEPT_KEYS[name];
+  return key ? t(key) : name;
+}
+
+const EXAM_CODES = new Set([
+  "ecg", "echo", "troponin", "cbc", "crp", "d_dimer", "inr", "hba1c", "creatinine", "chest_xray", "brain_ct", "leg_doppler",
+]);
+
+/** A catalogue exam (`rules/exam_bundles.v1.json`) by code; unknown codes keep the API label. */
+export function examLabel(exam: { code: string; label: string }, t: TFn): string {
+  return EXAM_CODES.has(exam.code) ? t(`shared.exam_${exam.code}` as Key) : exam.label;
+}
+
 /** Message keys for triage `red_flags` codes. */
 export const RED_FLAG_LABELS: Record<string, Key> = {
   chest_pain: "shared.flagChestPain",

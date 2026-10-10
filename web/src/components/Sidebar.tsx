@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useT } from "@/i18n/I18nProvider";
+import type { Key } from "@/i18n/messages";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { USE_MOCKS } from "@/lib/time";
 import { initialsOf, useMe } from "@/lib/useMe";
 import { NAV_COUNTS } from "@/mocks";
@@ -10,7 +13,7 @@ export type StaffRole = "doctor" | "nurse" | "admin";
 
 export interface NavItem {
   key: string;
-  label: string;
+  label: Key;
   href: string;
   count?: string;
   /** "hot" count: teal pill (nurse alerts). */
@@ -18,32 +21,37 @@ export interface NavItem {
 }
 
 /** The design's people (mock mode). Real mode shows the signed-in user from GET /me. */
-const USERS: Record<StaffRole, { name: string; sub: string; ini: string }> = {
-  doctor: { name: "Dr Trabelsi", sub: "Doctor · Cardiology", ini: "DT" },
-  nurse: { name: "Nurse Ines", sub: "Nurse · Ward C", ini: "NI" },
-  admin: { name: "Mme Gharbi", sub: "Administration", ini: "MG" },
+const USERS: Record<StaffRole, { name: string; sub: Key; ini: string }> = {
+  doctor: { name: "Dr Trabelsi", sub: "shared.userDoctorSub", ini: "DT" },
+  nurse: { name: "Nurse Ines", sub: "shared.userNurseSub", ini: "NI" },
+  admin: { name: "Mme Gharbi", sub: "shared.subAdmin", ini: "MG" },
 };
 
 /** Real-mode subtitle: /me has no ward, so the role word is enough. */
-const ROLE_SUB: Record<string, string> = { doctor: "Doctor", nurse: "Nurse", admin: "Administration", patient: "Patient" };
+const ROLE_SUB: Record<string, Key> = {
+  doctor: "shared.roleDoctor",
+  nurse: "shared.roleNurse",
+  admin: "shared.subAdmin",
+  patient: "shared.rolePatient",
+};
 
 export const NAV: Record<StaffRole, NavItem[]> = {
   doctor: [
-    { key: "patients", label: "My patients", href: "/doctor", count: NAV_COUNTS.doctor.patients },
-    { key: "requests", label: "Appointment requests", href: "/doctor/requests", count: NAV_COUNTS.doctor.requests },
+    { key: "patients", label: "shared.navMyPatients", href: "/doctor", count: NAV_COUNTS.doctor.patients },
+    { key: "requests", label: "shared.navRequests", href: "/doctor/requests", count: NAV_COUNTS.doctor.requests },
   ],
   nurse: [
-    { key: "board", label: "Ward board", href: "/nurse", count: NAV_COUNTS.nurse.board },
-    { key: "alerts", label: "Alerts", href: "/nurse/alerts", count: NAV_COUNTS.nurse.alerts, hot: true },
-    { key: "meds", label: "Med round", href: "/nurse/meds", count: NAV_COUNTS.nurse.meds },
-    { key: "exams", label: "Exams", href: "/nurse/exams" },
-    { key: "patients", label: "Patients", href: "/nurse/patients", count: NAV_COUNTS.nurse.patients },
+    { key: "board", label: "shared.navWardBoard", href: "/nurse", count: NAV_COUNTS.nurse.board },
+    { key: "alerts", label: "shared.navAlerts", href: "/nurse/alerts", count: NAV_COUNTS.nurse.alerts, hot: true },
+    { key: "meds", label: "shared.navMedRound", href: "/nurse/meds", count: NAV_COUNTS.nurse.meds },
+    { key: "exams", label: "shared.navExams", href: "/nurse/exams" },
+    { key: "patients", label: "shared.navPatients", href: "/nurse/patients", count: NAV_COUNTS.nurse.patients },
   ],
   admin: [
-    { key: "dashboard", label: "Dashboard", href: "/admin", count: NAV_COUNTS.admin.dashboard },
-    { key: "waitlist", label: "Waitlist", href: "/admin/waitlist", count: NAV_COUNTS.admin.waitlist },
-    { key: "devices", label: "Beds & devices", href: "/admin/devices", count: NAV_COUNTS.admin.devices },
-    { key: "staff", label: "Staff", href: "/admin/staff", count: NAV_COUNTS.admin.staff },
+    { key: "dashboard", label: "shared.navDashboard", href: "/admin", count: NAV_COUNTS.admin.dashboard },
+    { key: "waitlist", label: "shared.navWaitlist", href: "/admin/waitlist", count: NAV_COUNTS.admin.waitlist },
+    { key: "devices", label: "shared.navDevices", href: "/admin/devices", count: NAV_COUNTS.admin.devices },
+    { key: "staff", label: "shared.navStaff", href: "/admin/staff", count: NAV_COUNTS.admin.staff },
   ],
 };
 
@@ -70,12 +78,17 @@ export interface SidebarProps {
 
 /** Role navigation, exactly as Sidebar.dc.html (248 px wide in the shell). */
 export function Sidebar({ role, active, live = true, counts }: SidebarProps) {
+  const { t } = useT();
   const items = NAV[role];
   const current = active ?? items[0].key;
   const me = useMe(role);
   const u = USE_MOCKS
-    ? USERS[role]
-    : { name: me?.name ?? "", sub: me ? (ROLE_SUB[me.role] ?? me.role) : "", ini: me ? initialsOf(me.name) : "" };
+    ? { ...USERS[role], sub: t(USERS[role].sub) }
+    : {
+        name: me?.name ?? "",
+        sub: me ? (ROLE_SUB[me.role] ? t(ROLE_SUB[me.role]) : me.role) : "",
+        ini: me ? initialsOf(me.name) : "",
+      };
   return (
     <div className={styles.root}>
       <div className={styles.brand}>
@@ -83,7 +96,7 @@ export function Sidebar({ role, active, live = true, counts }: SidebarProps) {
           <span className={styles.mark} />
           <span className={styles.name}>Ward</span>
         </div>
-        <span className={styles.tag}>Prototype · simulated data</span>
+        <span className={styles.tag}>{t("common.prototypeTag")}</span>
       </div>
       <nav className={styles.nav}>
         {items.map((n) => {
@@ -98,7 +111,7 @@ export function Sidebar({ role, active, live = true, counts }: SidebarProps) {
               aria-current={on ? "page" : undefined}
             >
               <span className={styles.dot} />
-              <span className={styles.label}>{n.label}</span>
+              <span className={styles.label}>{t(n.label)}</span>
               {count && count !== "0" ? (
                 <span className={`${styles.count} ${n.hot ? styles.countHot : ""}`}>{count}</span>
               ) : null}
@@ -113,15 +126,16 @@ export function Sidebar({ role, active, live = true, counts }: SidebarProps) {
           USE_MOCKS ? (
             <span className={styles.live}>
               <span className={styles.liveDot} />
-              Live
+              {t("common.live")}
             </span>
           ) : null
         ) : (
           <span className={styles.paused}>
             <span className={styles.pausedDot} />
-            Reconnecting…
+            {t("common.reconnecting")}
           </span>
         )}
+        <LanguageSwitcher tone="dark" compact />
         <div className={styles.user}>
           <span className={styles.avatar}>{u.ini}</span>
           <div className={styles.who}>

@@ -1,12 +1,22 @@
 // One vitals chart row (label + value + SVG with the normal band and last-point dot),
 // plus the time axis row. Shared by the doctor patient detail and the nurse views.
+"use client";
+
 import type { ReactNode } from "react";
+import { useT } from "@/i18n/I18nProvider";
+import type { Key } from "@/i18n/messages";
 import styles from "./VitalsChart.module.css";
 
 const W = 600;
 const H = 84;
 /** When paused, the real line stops at 90 % and a dashed segment fills the rest (never interpolated). */
 const PAUSED_SPAN = 0.9;
+
+const TREND_KEY: Record<string, Key> = {
+  rising: "shared.trendRising",
+  falling: "shared.trendFalling",
+  steady: "shared.trendSteady",
+};
 
 export interface Trend {
   /** "↑", "↓" or "→". */
@@ -73,6 +83,8 @@ export function VitalChartRow({
   range,
   paused = false,
 }: VitalChartRowProps) {
+  const { t } = useT();
+  const trendWord = trend ? (TREND_KEY[trend.word] ? t(TREND_KEY[trend.word]) : trend.word) : "";
   const yOf = (v: number) => (1 - (v - min) / (max - min)) * H;
   const span = paused ? W * PAUSED_SPAN : W;
   const n = values.length;
@@ -102,21 +114,21 @@ export function VitalChartRow({
   const bandH = yOf(normalLo) - bandY;
 
   return (
-    <div className={styles.row}>
+    <div className={styles.row} dir="ltr">
       <div className={styles.label}>
         <span className={styles.name}>{name}</span>
         <span className={styles.valueLine} style={paused ? { opacity: 0.55 } : undefined}>
           <span className={styles.value}>{last == null ? "—" : format(last)}</span>
           <span className={styles.unit}>{unit}</span>
           {trend ? (
-            <span title={trend.word} className={styles.arrow} style={{ color: trend.color }}>
+            <span title={trendWord} className={styles.arrow} style={{ color: trend.color }}>
               {trend.arrow}
             </span>
           ) : null}
         </span>
         <span className={styles.range}>
           {range ?? rangeOf(present, format)}
-          {trend ? ` · ${trend.word}` : ""}
+          {trend ? ` · ${trendWord}` : ""}
         </span>
       </div>
       <div className={styles.chart}>
@@ -173,7 +185,7 @@ export interface TimeAxisRowProps {
 /** The time labels under the charts (same 160 px gutter as the chart rows). */
 export function TimeAxisRow({ labels }: TimeAxisRowProps) {
   return (
-    <div className={styles.axisRow}>
+    <div className={styles.axisRow} dir="ltr">
       <span />
       <div className={styles.axis}>
         {labels.map((l, i) => (

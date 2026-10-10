@@ -197,7 +197,7 @@ textarea {
 }
 
 /* Directional glyphs (chevrons, arrows) point the other way in Arabic. */
-:dir(rtl) .flip {
+[dir="rtl"] .flip {
   display: inline-block;
   transform: scaleX(-1);
 }

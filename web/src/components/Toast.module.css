@@ -22,13 +22,13 @@
 
 .fixed {
   position: fixed;
-  right: 32px;
+  inset-inline-end: 32px;
   bottom: 32px;
 }
 
 .absolute {
   position: absolute;
-  right: 32px;
+  inset-inline-end: 32px;
   bottom: 32px;
 }
 

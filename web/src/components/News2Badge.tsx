@@ -1,4 +1,8 @@
+"use client";
+
 import type { CSSProperties } from "react";
+import { useT } from "@/i18n/I18nProvider";
+import { news2Word } from "@/lib/labels";
 import { level, PULSE } from "@/lib/news2";
 import styles from "./News2Badge.module.css";
 
@@ -14,12 +18,14 @@ export interface News2BadgeProps {
 
 /** NEWS2 score bubble with its word; colour never stands alone. */
 export function News2Badge({ score, pulse, variant = "pill", className, style }: News2BadgeProps) {
+  const { t } = useT();
   const lv = level(score);
+  const word = news2Word(lv.word, t);
   const animate = pulse ?? score >= 7;
   if (variant === "dot") {
     return (
       <span
-        title={`NEWS2 ${score} · ${lv.word}`}
+        title={`NEWS2 ${score} · ${word}`}
         className={`${styles.dot} ${className ?? ""}`}
         style={{ background: lv.bg, color: lv.fg, borderColor: lv.edge, ...style }}
       >
@@ -35,7 +41,7 @@ export function News2Badge({ score, pulse, variant = "pill", className, style }:
       <span className={styles.bubble} style={{ background: lv.edge }}>
         {score}
       </span>
-      NEWS2 · {lv.word}
+      NEWS2 · {word}
     </span>
   );
 }

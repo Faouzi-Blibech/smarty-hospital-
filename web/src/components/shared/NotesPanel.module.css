@@ -86,7 +86,7 @@
 }
 
 .when {
-  margin-left: auto;
+  margin-inline-start: auto;
   font-size: 13px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
@@ -102,7 +102,7 @@
 
 /* Nurse design: 44 px button aligned right, 15 px label. */
 .addNurse {
-  margin-left: auto;
+  margin-inline-start: auto;
   min-height: 44px;
   padding: 0 18px;
   font-size: 15px;

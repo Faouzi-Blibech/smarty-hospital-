@@ -1,18 +1,22 @@
 import Link from "next/link";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { LoginForm } from "@/components/LoginForm";
+import type { Key } from "@/i18n/messages";
+import { getT } from "@/i18n/server";
 import { USE_MOCKS } from "@/lib/time";
 import styles from "./page.module.css";
 
 // Mock mode: a role picker standing in for the login (the design's "Login & components"
 // file was not in the handoff bundle). Real mode (NEXT_PUBLIC_USE_MOCKS=0): a sign-in form.
 const ROLES = [
-  { href: "/doctor", role: "Doctor", name: "Dr Trabelsi", sub: "Cardiology · Ward C", ini: "DT" },
-  { href: "/nurse", role: "Nurse", name: "Nurse Ines", sub: "Ward C · day shift", ini: "NI" },
-  { href: "/admin", role: "Admin", name: "Mme Gharbi", sub: "Administration", ini: "MG" },
-  { href: "/patient", role: "Patient", name: "Amira", sub: "Bed C-12 · Ward C", ini: "AB" },
-] as const;
+  { href: "/doctor", role: "shared.roleDoctor", name: "Dr Trabelsi", sub: "shared.subDoctor", ini: "DT" },
+  { href: "/nurse", role: "shared.roleNurse", name: "Nurse Ines", sub: "shared.subNurse", ini: "NI" },
+  { href: "/admin", role: "shared.roleAdmin", name: "Mme Gharbi", sub: "shared.subAdmin", ini: "MG" },
+  { href: "/patient", role: "shared.rolePatient", name: "Amira", sub: "shared.subPatient", ini: "AB" },
+] as const satisfies readonly { href: string; role: Key; name: string; sub: Key; ini: string }[];
 
-export default function Home() {
+export default async function Home() {
+  const { t } = await getT();
   return (
     <div className={styles.page}>
       <div className={styles.inner}>
@@ -21,29 +25,27 @@ export default function Home() {
             <span className={styles.mark} />
             <span className={styles.name}>Ward</span>
           </div>
-          <span className={styles.tag}>Prototype · simulated data</span>
+          <span className={styles.tag}>{t("common.prototypeTag")}</span>
+          <LanguageSwitcher tone="light" />
         </header>
 
         {USE_MOCKS ? (
           <>
             <div className={styles.intro}>
-              <h1 className={styles.title}>Choose a role</h1>
-              <p className={styles.lead}>
-                Doctor, nurse, admin and patient share one patient record. Pick a role to open its view. Values are
-                simulated for this prototype.
-              </p>
+              <h1 className={styles.title}>{t("shared.pickRoleTitle")}</h1>
+              <p className={styles.lead}>{t("shared.pickRoleLead")}</p>
             </div>
 
-            <nav className={styles.grid} aria-label="Roles">
+            <nav className={styles.grid} aria-label={t("shared.rolesAria")}>
               {ROLES.map((r) => (
                 <Link key={r.href} href={r.href} className={styles.card}>
                   <span className={styles.avatar}>{r.ini}</span>
                   <span className={styles.who}>
-                    <span className={styles.role}>{r.role}</span>
+                    <span className={styles.role}>{t(r.role)}</span>
                     <span className={styles.person}>{r.name}</span>
-                    <span className={styles.sub}>{r.sub}</span>
+                    <span className={styles.sub}>{t(r.sub)}</span>
                   </span>
-                  <span className={styles.chev} aria-hidden="true">
+                  <span className={`${styles.chev} flip`} aria-hidden="true">
                     ›
                   </span>
                 </Link>
@@ -53,11 +55,8 @@ export default function Home() {
         ) : (
           <>
             <div className={styles.intro}>
-              <h1 className={styles.title}>Sign in</h1>
-              <p className={styles.lead}>
-                Doctor, nurse, admin and patient share one patient record. Sign in to open your view. Values are
-                simulated for this prototype.
-              </p>
+              <h1 className={styles.title}>{t("shared.signIn")}</h1>
+              <p className={styles.lead}>{t("shared.signInLead")}</p>
             </div>
             <LoginForm />
           </>
