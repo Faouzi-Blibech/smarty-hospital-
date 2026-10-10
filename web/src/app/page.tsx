@@ -4,6 +4,7 @@ import { LoginForm } from "@/components/LoginForm";
 import type { Key } from "@/i18n/messages";
 import { getT } from "@/i18n/server";
 import { USE_MOCKS } from "@/lib/time";
+import authStyles from "@/components/auth/Auth.module.css";
 import styles from "./page.module.css";
 
 // Mock mode: a role picker standing in for the login (the design's "Login & components"
@@ -61,6 +62,10 @@ export default async function Home() {
             <LoginForm />
           </>
         )}
+        <nav className={authStyles.links} aria-label={t("auth.accountLinks")}>
+          <Link href="/register">{t("auth.createAccount")}</Link>
+          <Link href="/reset">{t("auth.haveCode")}</Link>
+        </nav>
       </div>
     </div>
   );

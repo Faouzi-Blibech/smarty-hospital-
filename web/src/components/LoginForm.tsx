@@ -4,7 +4,8 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { useT } from "@/i18n/I18nProvider";
-import { ApiError, login } from "@/lib/api";
+import { describeError } from "@/lib/accountsUi";
+import { login } from "@/lib/api";
 import type { Role } from "@/lib/types";
 import styles from "@/app/page.module.css";
 
@@ -27,11 +28,7 @@ export function LoginForm() {
       const res = await login(email.trim(), password);
       router.push(HOME[res.user.role] ?? "/");
     } catch (err) {
-      setError(
-        err instanceof ApiError && (err.status === 401 || err.status === 400 || err.status === 422)
-          ? t("shared.loginWrong")
-          : t("shared.loginUnreachable"),
-      );
+      setError(t(describeError(err, "login").key));
       setBusy(false);
     }
   }
