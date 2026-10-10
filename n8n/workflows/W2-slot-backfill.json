@@ -38,7 +38,7 @@
         -160
       ],
       "parameters": {
-        "jsCode": "// Demo routing: patient messages go to WARD_WHATSAPP_PATIENT (digits only, country code first).\nconst to = ($env.WARD_WHATSAPP_PATIENT || '').replace(/\\D/g, '');\nreturn to ? $input.all().map(i => ({ json: { ...i.json, to } })) : [];"
+        "jsCode": "// Demo routing: patient messages go to every number in WARD_WHATSAPP_PATIENT (comma-separated, country code first).\nconst nums = [...new Set(($env.WARD_WHATSAPP_PATIENT || '').split(',').map(s => s.replace(/\\D/g, '')).filter(Boolean))];\nreturn $input.all().flatMap(i => nums.map(to => ({ json: { ...i.json, to } })));"
       }
     },
     {
@@ -234,7 +234,7 @@
         240
       ],
       "parameters": {
-        "jsCode": "// Demo routing: patient messages go to WARD_WHATSAPP_PATIENT (digits only, country code first).\nconst to = ($env.WARD_WHATSAPP_PATIENT || '').replace(/\\D/g, '');\nreturn to ? $input.all().map(i => ({ json: { ...i.json, to } })) : [];"
+        "jsCode": "// Demo routing: patient messages go to every number in WARD_WHATSAPP_PATIENT (comma-separated, country code first).\nconst nums = [...new Set(($env.WARD_WHATSAPP_PATIENT || '').split(',').map(s => s.replace(/\\D/g, '')).filter(Boolean))];\nreturn $input.all().flatMap(i => nums.map(to => ({ json: { ...i.json, to } })));"
       }
     },
     {
