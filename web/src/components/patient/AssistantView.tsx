@@ -8,6 +8,8 @@
 import { useEffect, useRef, useState } from "react";
 import { askAssistant } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
+import { useT } from "@/i18n/I18nProvider";
+import type { Key } from "@/i18n/messages";
 import type { AssistantIntent } from "@/lib/types";
 import { Toast, useToast } from "@/components/Toast";
 import { ErrorCard } from "@/components/shared/ErrorCard";
@@ -46,9 +48,10 @@ const START: Msg[] = [
   { kind: "bot", id: 6, text: "I can’t answer medical questions. Please ask your nurse or doctor.", ar: false, intent: "ask_staff", sources: [] },
 ];
 
-const CHIPS = ["When is my next pill?", "My appointment", "waja3 fi sadri"];
+const CHIPS: Key[] = ["patient.chipPill", "patient.chipAppt", "patient.chipChest"];
 
 export function AssistantView() {
+  const { t } = useT();
   const flags = useDemoFlags();
   const [chat, setChat] = useState<Msg[]>(START);
   const [input, setInput] = useState("");
@@ -92,18 +95,18 @@ export function AssistantView() {
     }
   }
 
-  const callNurse = () => showHint(CALL_NURSE_HINT);
+  const callNurse = () => showHint(t(CALL_NURSE_HINT));
 
   return (
     <PatientScreen>
       <div className={styles.head}>
         <div className={styles.headRow}>
-          <h1 className={styles.title}>Assistant</h1>
+          <h1 className={styles.title}>{t("patient.assistantTitle")}</h1>
           <button type="button" className={styles.callBtn} onClick={callNurse}>
-            How to reach a nurse
+            {t("patient.reachNurse")}
           </button>
         </div>
-        <span className={styles.headSub}>Answers only from your own record · not a doctor</span>
+        <span className={styles.headSub}>{t("patient.assistantSub")}</span>
       </div>
 
       <div ref={listRef} className={styles.list} aria-live="polite">
@@ -113,8 +116,9 @@ export function AssistantView() {
               <div key={m.id} className={styles.item}>
                 <ErrorCard
                   variant="patient"
-                  title="Something went wrong."
-                  message="We couldn’t send your question."
+                  title={t("patient.errTitle")}
+                  message={t("patient.askErr")}
+                  retryLabel={t("patient.tryAgain")}
                   onRetry={() => ask(m.question, m.id)}
                 />
               </div>
@@ -127,11 +131,11 @@ export function AssistantView() {
             <div key={m.id} className={`${styles.item} ${me ? styles.itemMe : styles.itemBot}`}>
               {m.kind === "bot" && m.intent === "urgent" ? (
                 <div role="alert" className={styles.urgent}>
-                  <span className={styles.urgentTitle}>This could be urgent. Call your nurse now.</span>
+                  <span className={styles.urgentTitle}>{t("patient.urgentTitle")}</span>
                   <button type="button" className={styles.urgentBtn} onClick={callNurse}>
-                    How to reach a nurse
+                    {t("patient.reachNurse")}
                   </button>
-                  <span className={styles.urgentSub}>If you are not in hospital, call 190.</span>
+                  <span className={styles.urgentSub}>{t("patient.urgentSub")}</span>
                 </div>
               ) : null}
               <div dir={dir} lang={m.ar ? "ar" : "en"} className={`${styles.bubble} ${me ? styles.bubbleMe : styles.bubbleBot}`}>
@@ -145,7 +149,7 @@ export function AssistantView() {
               ) : null}
               {m.kind === "bot" && m.intent === "ask_staff" ? (
                 <button type="button" className={styles.askNurse} onClick={callNurse}>
-                  How to reach a nurse
+                  {t("patient.reachNurse")}
                 </button>
               ) : null}
             </div>
@@ -153,7 +157,7 @@ export function AssistantView() {
         })}
         {pending ? (
           <div className={`${styles.item} ${styles.itemBot}`}>
-            <div className={`${styles.bubble} ${styles.bubbleBot} ${styles.typing}`} aria-busy="true" aria-label="The assistant is answering">
+            <div className={`${styles.bubble} ${styles.bubbleBot} ${styles.typing}`} aria-busy="true" aria-label={t("patient.answering")}>
               …
             </div>
           </div>
@@ -162,8 +166,8 @@ export function AssistantView() {
 
       <div className={styles.chips}>
         {CHIPS.map((c) => (
-          <button key={c} type="button" dir="auto" className={styles.chip} disabled={pending} onClick={() => ask(c)}>
-            {c}
+          <button key={c} type="button" dir="auto" className={styles.chip} disabled={pending} onClick={() => ask(t(c))}>
+            {t(c)}
           </button>
         ))}
       </div>
@@ -178,11 +182,11 @@ export function AssistantView() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           dir="auto"
-          placeholder="Ask about medicines or appointments"
-          aria-label="Your question"
+          placeholder={t("patient.askPlaceholder")}
+          aria-label={t("patient.askLabel")}
           className={styles.input}
         />
-        <button type="submit" aria-label="Send" className={styles.send} disabled={pending}>
+        <button type="submit" aria-label={t("patient.send")} className={styles.send} disabled={pending}>
           ↑
         </button>
       </form>

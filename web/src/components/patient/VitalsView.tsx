@@ -5,6 +5,8 @@
 // 24 h heart-rate line. Values are simulated for this prototype (the brand tag says so).
 import { getVitals } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
+import { useT } from "@/i18n/I18nProvider";
+import type { TFn } from "@/i18n/messages";
 import { ago, now, tunisTime } from "@/lib/time";
 import type { Vital } from "@/lib/types";
 import { ErrorCard } from "@/components/shared/ErrorCard";
@@ -29,13 +31,14 @@ function hrPoints(values: number[]): string {
     .join(" ");
 }
 
-function startLabel(iso: string): string {
+function startLabel(iso: string, t: TFn): string {
   const d = daysBetween(iso, now().toISOString());
   const hour = `${tunisTime(iso).slice(0, 2)}:00`;
-  return d === 0 ? `Today ${hour}` : d === 1 ? `Yesterday ${hour}` : hour;
+  return d === 0 ? `${t("common.today")} ${hour}` : d === 1 ? `${t("patient.yesterday")} ${hour}` : hour;
 }
 
 export function VitalsView() {
+  const { t, lang } = useT();
   const flags = useDemoFlags();
   const offline = useOffline();
   const res = useLoad(async () => getVitals(await myPatientId()));
@@ -46,14 +49,14 @@ export function VitalsView() {
   const latest = vitals?.[vitals.length - 1];
   const hrSeries = (vitals ?? []).filter((v) => v.hr != null);
   const s = latest ? Math.round((now().getTime() - Date.parse(latest.ts)) / 1000) : 0;
-  const updated = latest ? (s < 60 ? "a few seconds ago" : ago(latest.ts)) : null;
+  const updated = latest ? (s < 60 ? t("patient.fewSeconds") : ago(latest.ts, now(), lang)) : null;
 
   const tiles = vitals
     ? [
-        { key: "hr", label: "Heart rate", unit: "beats/min", value: last(vitals, "hr"), wide: false },
-        { key: "spo2", label: "Oxygen", unit: "%", value: last(vitals, "spo2"), wide: false },
-        { key: "temp", label: "Temperature", unit: "°C", value: last(vitals, "temp"), wide: true },
-      ].filter((t) => t.value != null)
+        { key: "hr", label: t("patient.heartRate"), unit: t("patient.beatsMin"), value: last(vitals, "hr"), wide: false },
+        { key: "spo2", label: t("patient.oxygen"), unit: "%", value: last(vitals, "spo2"), wide: false },
+        { key: "temp", label: t("patient.temperature"), unit: "°C", value: last(vitals, "temp"), wide: true },
+      ].filter((tile) => tile.value != null)
     : [];
 
   return (
@@ -61,58 +64,65 @@ export function VitalsView() {
       <div className={`${styles.scroll} ${styles.vitalsBody}`}>
         {offline ? <OfflineBanner since={offlineSince(res.loadedAt)} /> : null}
         <div className={styles.titleBlock}>
-          <h1 className={styles.h1Small}>My vitals</h1>
+          <h1 className={styles.h1Small}>{t("patient.vitalsTitle")}</h1>
           <span className={styles.sublineSmall}>
-            Last 24 hours{updated ? ` · ${offline ? `paused at ${offlineSince(res.loadedAt)}` : `updated ${updated}`}` : ""}
+            {updated
+              ? offline
+                ? t("patient.last24Paused", { time: offlineSince(res.loadedAt) })
+                : t("patient.last24Updated", { when: updated })
+              : t("patient.last24")}
           </span>
         </div>
 
         {failed ? (
           <ErrorCard
             variant="patient"
-            title="Something went wrong."
-            message="We couldn’t load your vitals."
+            title={t("patient.errTitle")}
+            message={t("patient.vitalsLoadErr")}
+            retryLabel={t("patient.tryAgain")}
             onRetry={flags.state === "error" ? undefined : res.retry}
           />
         ) : !vitals ? (
           <SkeletonCard />
         ) : tiles.length === 0 ? (
-          <EmptyCard title="No readings yet">No readings yet today. Ask your nurse if that seems wrong.</EmptyCard>
+          <EmptyCard title={t("patient.noReadingsTitle")}>{t("patient.noReadingsText")}</EmptyCard>
         ) : (
           <>
             <div className={`${styles.tiles} ${offline ? styles.paused : ""}`}>
-              {tiles.map((t) => {
-                const v = t.value as number;
-                const word = vitalWord(t.key as "hr" | "spo2" | "temp", v);
+              {tiles.map((tile) => {
+                const v = tile.value as number;
+                const word = vitalWord(tile.key as "hr" | "spo2" | "temp", v);
                 return (
-                  <div key={t.key} className={`${styles.tile} ${t.wide ? styles.tileWide : ""}`}>
-                    <span className={styles.tileLabel}>{t.label}</span>
+                  <div key={tile.key} className={`${styles.tile} ${tile.wide ? styles.tileWide : ""}`}>
+                    <span className={styles.tileLabel}>{tile.label}</span>
                     <span className={styles.tileValue}>
-                      <span className={styles.tileNum}>{t.key === "temp" ? v.toFixed(1) : v}</span>
-                      <span>{t.unit}</span>
+                      <span className={styles.tileNum}>{tile.key === "temp" ? v.toFixed(1) : v}</span>
+                      <span>{tile.unit}</span>
                     </span>
                     <span className={`${styles.word} ${word === "Normal" ? styles.word_ok : styles.word_attention}`}>
                       <span className={styles.wordDot} />
-                      {word}
+                      {word === "Normal" ? t("shared.news2Normal") : t("patient.needsAttention")}
                     </span>
                   </div>
                 );
               })}
             </div>
             {hrSeries.length > 1 ? (
-              <section className={styles.chartCard} aria-label="Heart rate over the last 24 hours">
-                <span className={styles.chartTitle}>Heart rate · 24 h</span>
-                <svg viewBox="0 0 300 90" className={styles.chart} role="img" aria-label="Heart rate line">
+              <section className={styles.chartCard} aria-label={t("patient.hrChartLabel")}>
+                <span className={styles.chartTitle}>{t("patient.hrChartTitle")}</span>
+                <div dir="ltr">
+                <svg viewBox="0 0 300 90" className={styles.chart} role="img" aria-label={t("patient.hrLine")}>
                   <rect x="0" y="45" width="300" height="34" className={styles.band} />
                   <polyline points={hrPoints(hrSeries.map((v) => v.hr as number))} className={styles.line} />
                 </svg>
                 <div className={styles.axis}>
-                  <span>{startLabel(hrSeries[0].ts)}</span>
-                  <span>Now</span>
+                  <span>{startLabel(hrSeries[0].ts, t)}</span>
+                  <span>{t("patient.now")}</span>
+                </div>
                 </div>
                 <span className={styles.legend}>
                   <span className={styles.legendSwatch} />
-                  Shaded = usual range
+                  {t("patient.shaded")}
                 </span>
               </section>
             ) : null}
@@ -120,7 +130,7 @@ export function VitalsView() {
         )}
 
         <div className={styles.careNote}>
-          Your care team sees these too. If you feel unwell, tell any member of staff.
+          {t("patient.careNote")}
         </div>
       </div>
     </PatientScreen>

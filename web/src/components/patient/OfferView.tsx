@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { acceptOffer, ApiError, getMyAppointments, getOffer } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
+import { useT } from "@/i18n/I18nProvider";
 import { tunisTime, USE_MOCKS } from "@/lib/time";
 import type { Appointment, SlotOffer } from "@/lib/types";
 import { ErrorCard } from "@/components/shared/ErrorCard";
@@ -28,6 +29,7 @@ async function loadOffer(id: string) {
 }
 
 export function OfferView({ id }: { id: string }) {
+  const { t, lang } = useT();
   const flags = useDemoFlags();
   const res = useLoad(() => loadOffer(id), id);
   const [result, setResult] = useState<Result>(null);
@@ -54,8 +56,8 @@ export function OfferView({ id }: { id: string }) {
     }
   }
 
-  const when = offer ? `${longDay(offer.slot_at)} at ${tunisTime(offer.slot_at)}` : "";
-  const currentDay = current?.slot_at ? longDay(current.slot_at) : null;
+  const when = offer ? t("patient.whenAt", { day: longDay(offer.slot_at, lang), time: tunisTime(offer.slot_at) }) : "";
+  const currentDay = current?.slot_at ? longDay(current.slot_at, lang) : null;
 
   if (offer && shown === "booked") {
     return (
@@ -64,14 +66,14 @@ export function OfferView({ id }: { id: string }) {
           <span className={styles.resultIcon} aria-hidden="true">
             ✓
           </span>
-          <h1 className={`${styles.resultTitle} ${styles.resultTitleBig}`}>Booked</h1>
+          <h1 className={`${styles.resultTitle} ${styles.resultTitleBig}`}>{t("patient.booked")}</h1>
           <span className={`${styles.resultText} ${styles.resultTextBig}`}>
-            {when} with {offer.doctor_name}.
-            {currentDay && result === "booked" ? ` Your ${currentDay.split(" ")[0]} appointment is cancelled for you.` : ""}
+            {t("patient.bookedWith", { when, doctor: offer.doctor_name })}
+            {currentDay && result === "booked" ? ` ${t("patient.bookedCancelled", { day: currentDay.split(" ")[0] })}` : ""}
           </span>
           <span className={styles.flex} />
           <Link href="/patient" className={`${styles.primaryBtn} ${styles.fullWidth}`}>
-            Done
+            {t("patient.done")}
           </Link>
         </div>
       </PatientScreen>
@@ -85,14 +87,14 @@ export function OfferView({ id }: { id: string }) {
           <span className={`${styles.resultIcon} ${styles.resultIconMuted}`} aria-hidden="true">
             –
           </span>
-          <h1 className={`${styles.resultTitle} ${styles.resultTitleMid}`}>Sorry, this slot was just taken.</h1>
+          <h1 className={`${styles.resultTitle} ${styles.resultTitleMid}`}>{t("patient.takenTitle")}</h1>
           <span className={`${styles.resultText} ${styles.resultTextBig}`}>
-            Your request stays on the list.
-            {current?.slot_at ? ` You still have ${currentDay} at ${tunisTime(current.slot_at)}.` : ""}
+            {t("patient.takenText")}
+            {current?.slot_at ? ` ${t("patient.takenStill", { day: currentDay ?? "", time: tunisTime(current.slot_at) })}` : ""}
           </span>
           <span className={styles.flex} />
           <Link href="/patient" className={`${styles.primaryBtn} ${styles.fullWidth}`}>
-            OK
+            {t("patient.ok")}
           </Link>
         </div>
       </PatientScreen>
@@ -108,47 +110,53 @@ export function OfferView({ id }: { id: string }) {
         {failed ? (
           <ErrorCard
             variant="patient"
-            title="Something went wrong."
-            message="We couldn’t load this offer."
+            title={t("patient.errTitle")}
+            message={t("patient.offerLoadErr")}
+            retryLabel={t("patient.tryAgain")}
             onRetry={flags.state === "error" ? undefined : res.retry}
           />
         ) : !data ? (
           <SkeletonCard />
         ) : !offer ? (
-          <EmptyCard title="This offer isn’t available">It may have been taken or withdrawn. Your current appointment stays as it is.</EmptyCard>
+          <EmptyCard title={t("patient.offerNoneTitle")}>{t("patient.offerNoneText")}</EmptyCard>
         ) : (
           <>
-            <span className={styles.goodNews}>Good news</span>
-            <h1 className={styles.offerTitle}>An earlier appointment is available</h1>
+            <span className={styles.goodNews}>{t("patient.goodNews")}</span>
+            <h1 className={styles.offerTitle}>{t("patient.offerTitle")}</h1>
             <section className={styles.offerCard}>
               <span className={styles.offerWhen}>{when}</span>
               <span className={styles.offerWho}>
-                with {offer.doctor_name} · {offer.room}
+                {t("patient.offerWith", { doctor: offer.doctor_name, room: offer.room })}
               </span>
               {currentDay ? (
                 <span className={styles.offerInstead}>
-                  Instead of {currentDay}
-                  {sooner > 0 ? ` — ${sooner} day${sooner === 1 ? "" : "s"} sooner` : ""}
+                  {t("patient.insteadOf", { day: currentDay })}
+                  {sooner > 0 ? ` — ${t(sooner === 1 ? "patient.soonerOne" : "patient.soonerMany", { n: sooner })}` : ""}
                 </span>
               ) : null}
             </section>
             <span className={styles.offerText}>
-              Someone cancelled. We’re offering it to people on the list, first to reply gets it.
+              {t("patient.offerText")}
             </span>
             {sendError ? (
-              <ErrorCard variant="patient" title="Something went wrong." message="We couldn’t send your answer. Please try again." />
+              <ErrorCard
+                variant="patient"
+                title={t("patient.errTitle")}
+                message={t("patient.sendErr")}
+                retryLabel={t("patient.tryAgain")}
+              />
             ) : null}
             <span className={styles.flex} />
             <button type="button" className={styles.primaryBtn} disabled={busy} onClick={() => take()}>
-              Take this slot
+              {t("patient.takeSlot")}
             </button>
             {USE_MOCKS ? (
               <button type="button" className={styles.demoLink} disabled={busy} onClick={() => take(true)}>
-                Demo: simulate “someone was faster”
+                {t("patient.demoFaster")}
               </button>
             ) : null}
             <Link href="/patient" className={`${styles.secondaryBtn} ${styles.keepBtn}`}>
-              {currentDay ? `Keep ${currentDay}` : "Keep my appointment"}
+              {currentDay ? t("patient.keepDay", { day: currentDay }) : t("patient.keepMine")}
             </Link>
           </>
         )}
