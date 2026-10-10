@@ -1,2 +1,0 @@
-# The root .gitignore (Python template) ignores every `lib/`; keep the web app's.
-!src/lib/

@@ -234,3 +234,11 @@ next-env.d.ts
 .worktrees/
 .superpowers/
 .env.internet
+
+# --- moved from sub-folder .gitignore files ---
+# web: the Python template ignores every lib/; keep the web app's
+!web/src/lib/
+# hardware: SolidWorks / Office lock files (exist only while a file is open)
+~$*
+# hardware/ESP32 c3 Code: editor settings
+hardware/ESP32 c3 Code/.vscode/
