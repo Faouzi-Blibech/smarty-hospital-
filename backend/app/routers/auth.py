@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import codes
-from app.auth.deps import get_current_user
+from app.auth.deps import get_current_user, oauth2_scheme, user_from_token
 from app.auth.passwords import check_password
 from app.auth.ratelimit import CODE_LIMITS, DIRECTORY_LIMITS, LOGIN_LIMITS, check, client_ip, enforce, record
 from app.auth.security import create_token, hash_password, verify_password
@@ -139,11 +139,12 @@ def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)) 
 def reset_password(body: ResetIn, request: Request, db: Session = Depends(get_db)) -> Response:
     enforce(request, "reset", CODE_LIMITS)
     ip, email = client_ip(request), body.email.strip().lower()
+    check_password(body.new_password, email=email)  # generic first: nothing below may depend on the email existing
     user = db.scalar(select(User).where(User.email == email))
-    check_password(body.new_password, email=email, name=user.name if user else "")  # before the code is spent
     row = codes.find_valid(db, "reset", body.code, user_id=user.id) if user else None
     if row is None:
         raise _invalid_code(db, ip)
+    check_password(body.new_password, email=email, name=user.name)  # the name rule: only a valid code reveals it
     codes.mark_used(row, used_by=user.id)
     user.password_hash = hash_password(body.new_password)
     user.failed_logins, user.locked_until = 0, None
@@ -168,9 +169,12 @@ def change_password(body: ChangePasswordIn, request: Request, user: User = Depen
 
 
 @router.get("/doctors/directory")
-def doctor_directory(request: Request, db: Session = Depends(get_db)) -> list[dict]:
-    """Names for the sign-up "I work with" picker: no emails, no wards."""
-    enforce(request, "directory", DIRECTORY_LIMITS)
+def doctor_directory(request: Request, token: str | None = Depends(oauth2_scheme),
+                     db: Session = Depends(get_db)) -> list[dict]:
+    """Names for the sign-up "I work with" picker and the share panel: no emails, no wards. Anonymous callers share
+    the per-IP bucket (a hospital may sit behind one IP); a logged-in caller has a bucket of their own."""
+    caller = user_from_token(db, token)
+    enforce(request, "directory", DIRECTORY_LIMITS, who=f"user:{caller.id}" if caller else None)
     rows = db.scalars(select(User).where(User.role == "doctor", User.status == "active").order_by(User.name))
     return [{"id": u.id, "name": u.name} for u in rows]
 

@@ -24,7 +24,7 @@ from app.services.audit import audit
 
 def bootstrap(db: Session, email: str, name: str) -> str:
     email = email.strip().lower()
-    if db.scalar(select(User.id).where(User.role == "admin")):
+    if db.scalar(select(User.id).where(User.role == "admin", User.status == "active")):  # a disabled admin is no admin
         raise RuntimeError("an admin already exists: approve new accounts from the web app")
     if db.scalar(select(User.id).where(User.email == email)):
         raise RuntimeError(f"{email} is already used")

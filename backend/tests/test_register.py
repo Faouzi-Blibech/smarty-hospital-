@@ -151,3 +151,44 @@ def test_reset_code_for_another_user_is_refused(client, db):
     r = client.post("/auth/reset", json={"email": "doctor@ward.tn", "code": code, "new_password": GOOD})
     assert r.status_code == 400 and r.json()["code"] == "invalid_code"
     assert db.get(AccessCode, row.id).used_at is None
+
+
+def test_reset_name_rule_does_not_reveal_whether_an_email_exists(client):
+    pw = "Nurse  Ines"  # u-0002's name once spaces are ignored
+    answers = [client.post("/auth/reset", json={"email": e, "code": "AAAAA-BBBBB", "new_password": pw})
+               for e in ("nurse@ward.tn", "nobody@ward.tn")]
+    assert [(r.status_code, r.json()) for r in answers[:1]] == [(r.status_code, r.json()) for r in answers[1:]]
+    assert answers[0].status_code == 400 and answers[0].json()["code"] == "invalid_code"
+
+
+def test_reset_with_a_valid_code_still_applies_the_name_rule_without_burning_it(client, db):
+    code, row = codes.issue(db, "reset", issued_by="u-0004", user_id="u-0002")
+    r = client.post("/auth/reset", json={"email": "nurse@ward.tn", "code": code, "new_password": "Nurse  Ines"})
+    assert r.status_code == 422 and r.json()["code"] == "weak_password"
+    assert db.get(AccessCode, row.id).used_at is None
+
+
+def test_reset_generic_password_rule_is_the_same_for_every_email(client):
+    for email in ("nurse@ward.tn", "nobody@ward.tn"):
+        r = client.post("/auth/reset", json={"email": email, "code": "AAAAA-BBBBB", "new_password": "short"})
+        assert (r.status_code, r.json()["code"]) == (422, "weak_password")
+    r = client.post("/auth/reset", json={"email": "nobody@ward.tn", "code": "AAAAA-BBBBB",
+                                         "new_password": "nobody@ward.tn"})
+    assert r.status_code == 422  # the email rule is generic: it needs no lookup
+
+
+def test_login_body_has_length_limits(client):
+    ok = {"email": "nurse@ward.tn", "password": "ward1234"}
+    assert client.post("/auth/login", json=ok).status_code == 200
+    assert client.post("/auth/login", json=dict(ok, email="a" * 250 + "@x.tn")).status_code == 422
+    assert client.post("/auth/login", json=dict(ok, password="p" * 201)).status_code == 422
+    assert client.post("/auth/login", json=dict(ok, password="p" * 200)).status_code == 401
+
+
+def test_directory_does_not_throttle_a_logged_in_caller_with_the_ip_bucket(client):
+    h = login(client, "doctor@ward.tn")
+    assert [client.get("/doctors/directory").status_code for _ in range(30)] == [200] * 30
+    assert client.get("/doctors/directory").status_code == 429  # anonymous callers share the IP's bucket
+    assert client.get("/doctors/directory", headers=h).status_code == 200  # a logged-in caller has their own
+    assert [client.get("/doctors/directory", headers=h).status_code for _ in range(29)] == [200] * 29
+    assert client.get("/doctors/directory", headers=h).status_code == 429  # ... which is limited too

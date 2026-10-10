@@ -27,8 +27,8 @@ class Orm(BaseModel):
 
 # --- auth ---
 class LoginIn(BaseModel):
-    email: str
-    password: str
+    email: str = Field(max_length=254)
+    password: str = Field(max_length=200)
 
 
 class LoginUser(BaseModel):
