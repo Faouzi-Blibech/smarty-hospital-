@@ -8,7 +8,7 @@ from app.db import Base
 
 
 class HealthEvent(Base):
-    """A dated public-health event (data-model 1.6). Text is {"en","fr","ar"}."""
+    """A dated public-health event (data-model 1.7). Text is {"en","fr","ar"}."""
 
     __tablename__ = "health_events"
     id: Mapped[str] = mapped_column(String, primary_key=True)

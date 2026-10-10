@@ -1,15 +1,15 @@
-"""health calendar: health_events + health_event_prefs
+"""health calendar: health_events + health_event_prefs (data-model 1.7)
 
-Revision ID: 0006
-Revises: 0005
+Revision ID: 0007
+Revises: 0006
 Create Date: 2026-10-10
 """
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = '0006'
-down_revision = '0005'
+revision = '0007'
+down_revision = '0006'
 branch_labels = None
 depends_on = None
 

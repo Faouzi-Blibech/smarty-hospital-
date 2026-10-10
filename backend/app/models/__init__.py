@@ -1,4 +1,4 @@
-"""One SQLAlchemy class per table in docs/contracts/data-model.md (v1.6: health calendar)."""
+"""One SQLAlchemy class per table in docs/contracts/data-model.md (v1.7: health calendar)."""
 
 from app.models.access import AccessCode, PatientAccess
 from app.models.ai import AiSummary, ChatConversation, ChatMessage, NotebookEntry

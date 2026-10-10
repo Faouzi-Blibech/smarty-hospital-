@@ -1,4 +1,4 @@
-"""Health calendar (api.md 1.10): every active user reads events and sets category prefs; admins curate and can
+"""Health calendar (api.md 1.12): every active user reads events and sets category prefs; admins curate and can
 push an event now. Rules live in app/services/health_calendar.py."""
 
 from datetime import UTC, date, datetime, timedelta
