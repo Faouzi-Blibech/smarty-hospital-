@@ -61,7 +61,7 @@ services:
       WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}  # the sender's phone number ID (not the number)
       WARD_WHATSAPP_STAFF: ${WARD_WHATSAPP_STAFF:-}            # demo: staff numbers, comma-separated, e.g. 21612345678
       WARD_WHATSAPP_PATIENT: ${WARD_WHATSAPP_PATIENT:-}        # demo: the patient's number
-    ports: ["5678:5678"]
+    ports: ["${N8N_BIND:-0.0.0.0}:5678:5678"]
     volumes:
       - n8n-data:/home/node/.n8n
       - ../n8n/workflows:/ward-workflows:ro
@@ -78,12 +78,12 @@ services:
       MQTT_PASSWORD: ${MQTT_BACKEND_PASSWORD:-change-me-mqtt}
       MINIO_ENDPOINT: minio:9000
       N8N_WEBHOOK_URL: http://n8n:5678/webhook/ward-events
-    ports: ["${API_PORT:-8000}:8000"]
+    ports: ["${API_BIND:-0.0.0.0}:${API_PORT:-8000}:8000"]
     depends_on:
       db: { condition: service_healthy }
       mqtt: { condition: service_started }
       minio: { condition: service_started }
-    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips \"${FORWARDED_ALLOW_IPS:-127.0.0.1}\""]
 
   worker:
     build: ../backend
@@ -107,11 +107,24 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
         NEXT_PUBLIC_USE_MOCKS: ${NEXT_PUBLIC_USE_MOCKS:-1}
-    ports: ["${WEB_PORT:-3000}:3000"]
+    ports: ["${WEB_BIND:-0.0.0.0}:${WEB_PORT:-3000}:3000"]
     depends_on: [api]
+
+  proxy:
+    image: caddy:2.8
+    profiles: ["internet"]
+    environment:
+      WARD_DOMAIN: ${WARD_DOMAIN:-localhost}
+      WARD_TLS: ${WARD_TLS:-internal}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on: [api, web]
 
 volumes:
   db-data:
   mqtt-data:
   minio-data:
   n8n-data:
+  caddy-data:

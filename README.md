@@ -110,6 +110,36 @@ pip install -r simulator/requirements.txt
 python simulator/sim.py --device bsu-001 --patient p-0001
 ```
 
+## Internet access
+
+An optional HTTPS reverse proxy (Caddy) runs under the `internet` compose profile. It serves the web app at
+`https://$WARD_DOMAIN/` and the API at `https://$WARD_DOMAIN/api/*` (including the `/api/ws` WebSocket). MQTT is never
+exposed through it.
+
+Use an env file (not committed) with these overrides on top of `.env`:
+
+```bash
+API_BIND=127.0.0.1
+WEB_BIND=127.0.0.1
+N8N_BIND=127.0.0.1
+FORWARDED_ALLOW_IPS=*
+WARD_DOMAIN=ward.example.com
+WARD_TLS=internal            # or an email address for Let's Encrypt
+WEB_ORIGIN=https://ward.example.com
+NEXT_PUBLIC_API_URL=https://ward.example.com/api
+NEXT_PUBLIC_USE_MOCKS=0
+WARD_ENV=prod                # refuses the demo secrets; set real ones
+```
+
+```bash
+docker compose -f infra/docker-compose.yml --env-file .env.internet --profile internet up -d --build
+```
+
+For real Let's Encrypt certificates you need a public domain whose DNS points at the host, with ports 80 and 443
+reachable from the internet. `WARD_TLS=internal` uses Caddy's own CA (browsers show a warning once), fine for a LAN
+test. Known v1 limit: the Content-Security-Policy allows `'unsafe-inline'` scripts (needed by the Next.js App Router
+without nonces); tightening it with nonces is a later step.
+
 ## Repository
 
 ```
