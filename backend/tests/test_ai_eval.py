@@ -53,6 +53,6 @@ def test_v2_sets_are_well_formed(triage_rows, intent_rows):
 def test_v2_sets_do_not_leak_into_training_data():
     tri = [json.loads(x)["text"] for x in (eval_ai.V2 / "triage_eval.v2.jsonl").read_text("utf-8").splitlines()]
     its = [json.loads(x)["text"] for x in (eval_ai.V2 / "intent_eval.v2.jsonl").read_text("utf-8").splitlines()]
-    t_train = [r["text"] for r in _jsonl("triage_train.v1.jsonl")]
-    i_train = [r["state"]["body"] for r in _jsonl("intent_train.v1.jsonl")]
+    t_train = [r["text"] for r in _jsonl("triage_train.v1.jsonl") + _jsonl("triage_train.v2.jsonl")]
+    i_train = [r["state"]["body"] for r in _jsonl("intent_train.v1.jsonl")] + [r["text"] for r in _jsonl("intent_train.v2.jsonl")]
     assert leaks(tri, t_train, []) == [] and leaks(its, i_train, []) == []
