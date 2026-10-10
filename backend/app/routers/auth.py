@@ -4,6 +4,7 @@ from functools import lru_cache
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import codes
@@ -104,35 +105,40 @@ def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)) 
     enforce(request, "register", CODE_LIMITS)
     ip, email, name = client_ip(request), body.email.strip().lower(), body.name.strip()
     check_password(body.password, email=email, name=name)
-    if db.scalar(select(User.id).where(User.email == email)):
-        audit(db, None, "register_duplicate", "user", "", ip=ip)  # same answer: emails are not enumerable
-        db.commit()
-        return RECEIVED
-    if body.enrollment_code:
+    pw_hash = hash_password(body.password)  # before any lookup: every path pays the same bcrypt cost
+    row = None
+    if body.enrollment_code:  # judged first, independent of the email, so a bad code never reveals an account
         row = codes.find_valid(db, "enrollment", body.enrollment_code)
         if row is None:
             raise _invalid_code(db, ip)
         if db.scalar(select(User.id).where(User.patient_id == row.patient_id, User.status != "disabled")):
             raise ApiError(409, "already_enrolled", "this patient already has an account")
-        u = User(id=new_id(db, "u"), email=email, name=name, role="patient", status="active",
-                 patient_id=row.patient_id, password_hash=hash_password(body.password))
-        db.add(u)
-        db.flush()
-        codes.mark_used(row, used_by=u.id)
-        audit(db, u, "register", "user", u.id, patient_id=row.patient_id, ip=ip)
-        audit(db, u, "code_used", "access_code", row.id, patient_id=row.patient_id, ip=ip)
-        db.commit()
+    if db.scalar(select(User.id).where(User.email == email)):
+        audit(db, None, "register_duplicate", "user", "", ip=ip)  # same answer: emails are not enumerable
+        db.commit()  # an enrollment code stays unused
         return RECEIVED
-    doctor = db.get(User, body.requested_doctor_id) if body.requested_doctor_id else None
-    if doctor is not None and (doctor.role != "doctor" or doctor.status != "active"):
-        doctor = None
-    u = User(id=new_id(db, "u"), email=email, name=name, role=None, status="pending",
-             password_hash=hash_password(body.password), requested_note=(body.note or "").strip() or None,
-             requested_doctor_id=doctor.id if doctor else None)
-    db.add(u)
-    db.flush()
-    audit(db, u, "register", "user", u.id, ip=ip)
-    db.commit()
+    try:
+        if row is not None:
+            u = User(id=new_id(db, "u"), email=email, name=name, role="patient", status="active",
+                     patient_id=row.patient_id, password_hash=pw_hash)
+            db.add(u)
+            db.flush()
+            codes.mark_used(row, used_by=u.id)
+            audit(db, u, "register", "user", u.id, patient_id=row.patient_id, ip=ip)
+            audit(db, u, "code_used", "access_code", row.id, patient_id=row.patient_id, ip=ip)
+        else:
+            doctor = db.get(User, body.requested_doctor_id) if body.requested_doctor_id else None
+            if doctor is not None and (doctor.role != "doctor" or doctor.status != "active"):
+                doctor = None
+            u = User(id=new_id(db, "u"), email=email, name=name, role=None, status="pending",
+                     password_hash=pw_hash, requested_note=(body.note or "").strip() or None,
+                     requested_doctor_id=doctor.id if doctor else None)
+            db.add(u)
+            db.flush()
+            audit(db, u, "register", "user", u.id, ip=ip)
+        db.commit()
+    except IntegrityError:  # lost a race on the unique email (or a concurrent enrollment): same answer
+        db.rollback()
     return RECEIVED
 
 
@@ -157,7 +163,9 @@ def reset_password(body: ResetIn, request: Request, db: Session = Depends(get_db
 @router.post("/auth/change-password", status_code=204)
 def change_password(body: ChangePasswordIn, request: Request, user: User = Depends(get_current_user),
                     db: Session = Depends(get_db)) -> Response:
+    check(request, "password_change_failed", LOGIN_LIMITS)
     if not verify_password(body.current_password, user.password_hash):
+        record(request, "password_change_failed", LOGIN_LIMITS)
         raise ApiError(401, "bad_credentials", "wrong current password")
     check_password(body.new_password, email=user.email, name=user.name)
     user.password_hash = hash_password(body.new_password)

@@ -2,6 +2,7 @@ from sqlalchemy import func, select
 
 from app.auth import codes
 from app.models import AccessCode, User
+from app.routers.auth import RECEIVED
 from tests.helpers import login, make_patient
 
 GOOD = "correct-horse-battery"
@@ -116,3 +117,38 @@ def test_doctor_directory_lists_active_doctors_names_only(client):
     rows = client.get("/doctors/directory").json()
     assert {"id": "u-0001", "name": "Dr Trabelsi"} in rows
     assert all(set(r) == {"id", "name"} for r in rows)
+
+
+def test_bad_code_answer_is_the_same_for_existing_and_new_email(client):
+    a = _reg(client, email="doctor@ward.tn", enrollment_code="AAAAA-BBBBB")
+    b = _reg(client, email="fresh.t@ward.tn", enrollment_code="AAAAA-BBBBB")
+    assert a.status_code == b.status_code == 400
+    assert a.json() == b.json() and a.json()["code"] == "invalid_code"
+
+
+def test_existing_email_with_valid_code_creates_nothing_and_keeps_code(client, db):
+    p = make_patient(db, attending="u-0001")
+    code, row = codes.issue(db, "enrollment", issued_by="u-0004", patient_id=p.id)
+    r = _reg(client, email="doctor@ward.tn", enrollment_code=code)
+    assert r.status_code == 202 and r.json() == RECEIVED
+    assert db.scalar(select(func.count()).select_from(User).where(User.patient_id == p.id)) == 0
+    assert db.get(AccessCode, row.id).used_at is None
+
+
+def test_change_password_is_rate_limited(client):
+    h = login(client, "nurse@ward.tn")
+    bad = {"current_password": "nope-nope-1", "new_password": GOOD}
+    assert [client.post("/auth/change-password", headers=h, json=bad).status_code for _ in range(10)] == [401] * 10
+    assert client.post("/auth/change-password", headers=h, json=bad).status_code == 429
+
+
+def test_reset_unknown_email_is_invalid_code(client):
+    r = client.post("/auth/reset", json={"email": "nobody@ward.tn", "code": "AAAAA-BBBBB", "new_password": GOOD})
+    assert r.status_code == 400 and r.json()["code"] == "invalid_code"
+
+
+def test_reset_code_for_another_user_is_refused(client, db):
+    code, row = codes.issue(db, "reset", issued_by="u-0004", user_id="u-0002")
+    r = client.post("/auth/reset", json={"email": "doctor@ward.tn", "code": code, "new_password": GOOD})
+    assert r.status_code == 400 and r.json()["code"] == "invalid_code"
+    assert db.get(AccessCode, row.id).used_at is None
