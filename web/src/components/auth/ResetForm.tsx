@@ -3,18 +3,11 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useT } from "@/i18n/I18nProvider";
-import { describeError, normalizeCode, passwordProblem, type ErrorInfo } from "@/lib/accountsUi";
+import { describeError, normalizeCode, looksLikeEmail, PASSWORD_ERROR_KEYS, passwordProblem, type ErrorInfo } from "@/lib/accountsUi";
 import { resetPassword } from "@/lib/api";
 import { AuthFrame } from "./AuthFrame";
 import auth from "./Auth.module.css";
 import styles from "@/app/page.module.css";
-
-const PASSWORD_ERRORS = {
-  short: "auth.errPasswordShort",
-  long: "auth.errPasswordLong",
-  personal: "auth.errPasswordPersonal",
-  mismatch: "auth.errPasswordMismatch",
-} as const;
 
 export function ResetForm() {
   const { t } = useT();
@@ -29,9 +22,17 @@ export function ResetForm() {
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (busy) return;
+    if (!email.trim() || !code.trim() || !pw || !confirm) {
+      setError({ key: "auth.errRequired", detail: null });
+      return;
+    }
+    if (!looksLikeEmail(email)) {
+      setError({ key: "auth.errEmail", detail: null });
+      return;
+    }
     const problem = passwordProblem(pw, confirm, email.trim());
     if (problem) {
-      setError({ key: PASSWORD_ERRORS[problem], detail: null });
+      setError({ key: PASSWORD_ERROR_KEYS[problem], detail: null });
       return;
     }
     setBusy(true);
@@ -63,7 +64,7 @@ export function ResetForm() {
 
   return (
     <AuthFrame title={t("auth.resetTitle")} lead={t("auth.resetLead")}>
-      <form className={styles.login} onSubmit={submit} aria-label={t("auth.resetTitle")}>
+      <form className={styles.login} noValidate onSubmit={submit} aria-label={t("auth.resetTitle")}>
         <label className={styles.field}>
           <span className={styles.fieldLabel}>{t("auth.fieldEmail")}</span>
           <input type="email" dir="ltr" required autoComplete="username" className={styles.input} value={email} onChange={(e) => setEmail(e.target.value)} />

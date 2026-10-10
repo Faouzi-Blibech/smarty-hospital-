@@ -3,19 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { useT } from "@/i18n/I18nProvider";
-import { describeError, normalizeCode, passwordProblem, type ErrorInfo } from "@/lib/accountsUi";
+import { describeError, normalizeCode, looksLikeEmail, PASSWORD_ERROR_KEYS, passwordProblem, type ErrorInfo } from "@/lib/accountsUi";
 import { getDoctorDirectory, registerAccount } from "@/lib/api";
 import type { DoctorRef } from "@/lib/types";
 import { AuthFrame } from "./AuthFrame";
 import auth from "./Auth.module.css";
 import styles from "@/app/page.module.css";
-
-const PASSWORD_ERRORS = {
-  short: "auth.errPasswordShort",
-  long: "auth.errPasswordLong",
-  personal: "auth.errPasswordPersonal",
-  mismatch: "auth.errPasswordMismatch",
-} as const;
 
 export function RegisterForm() {
   const { t } = useT();
@@ -38,9 +31,17 @@ export function RegisterForm() {
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (busy) return;
+    if (!f.name.trim() || !f.email.trim() || !f.password || !f.confirm) {
+      setError({ key: "auth.errRequired", detail: null });
+      return;
+    }
+    if (!looksLikeEmail(f.email)) {
+      setError({ key: "auth.errEmail", detail: null });
+      return;
+    }
     const problem = passwordProblem(f.password, f.confirm, f.email.trim(), f.name.trim());
     if (problem) {
-      setError({ key: PASSWORD_ERRORS[problem], detail: null });
+      setError({ key: PASSWORD_ERROR_KEYS[problem], detail: null });
       return;
     }
     setBusy(true);
@@ -79,7 +80,7 @@ export function RegisterForm() {
 
   return (
     <AuthFrame title={t("auth.registerTitle")} lead={t("auth.registerLead")}>
-      <form className={styles.login} onSubmit={submit} aria-label={t("auth.registerTitle")}>
+      <form className={styles.login} noValidate onSubmit={submit} aria-label={t("auth.registerTitle")}>
         <label className={styles.field}>
           <span className={styles.fieldLabel}>{t("auth.fieldName")}</span>
           <input dir="auto" required autoComplete="name" className={styles.input} value={f.name} onChange={(e) => set("name")(e.target.value)} />

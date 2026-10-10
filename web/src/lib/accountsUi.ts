@@ -59,6 +59,18 @@ export function passwordProblem(pw: string, confirm: string, email = "", name = 
   return null;
 }
 
+export const PASSWORD_ERROR_KEYS: Record<PasswordProblem, Key> = {
+  short: "auth.errPasswordShort",
+  long: "auth.errPasswordLong",
+  personal: "auth.errPasswordPersonal",
+  mismatch: "auth.errPasswordMismatch",
+};
+
+/** Loose email shape check; the server stays the authority. */
+export function looksLikeEmail(v: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+}
+
 /** "Mon 5 Oct 09:10" in the hospital's time zone (Tunis); "Today 09:10" when the date is today. */
 export function fmtWhen(iso: string, lang: Lang): string {
   const today = tunisDate(iso) === tunisDate(now().toISOString());
