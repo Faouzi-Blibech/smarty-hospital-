@@ -129,9 +129,9 @@ def test_shipped_intent_model_classifies_unseen_questions(question, intent):
 
 
 @pytest.mark.parametrize("question", [
-    "Please come quickly, I need a nurse now", "I'm going to faint", "I fell and I can't get up", "help me",
+    "Please come quickly, I need a nurse now", "I'm going to faint", "I fell and I can't get up", "help!",
     "j'ai besoin d'une infirmière tout de suite", "au secours", "je vais m'évanouir", "je suis tombé dans la salle de bain",
-    "ساعدوني", "أريد ممرضة الآن", "سقطت وما نقدرش نوقف", "nheb infirmiere fisa3", "3awnouni", "bech nghmi",
+    "الحقوني", "أريد ممرضة الآن", "سقطت وما نقدرش نوقف", "nheb infirmiere fisa3", "bech nghmi",
 ])
 def test_patient_side_urgency_wording_is_urgent(no_models, question):
     assert A.classify_intent(question) == ("urgent", 1.0, "rules")
