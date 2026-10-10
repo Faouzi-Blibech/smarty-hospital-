@@ -72,7 +72,7 @@ WhatsApp is still a third-party service outside Tunisia: a real deployment needs
 | `W2-slot-backfill.json` | `wardBackfillW2xx` | Offers a freed slot to the event's `candidate` (WhatsApp + email, link previews off) with an accept link valid 2 h (n8n resume URL under `N8N_PUBLIC_URL`). On click: `backfill-accept` → HTML result page + confirmation, or "slot already taken" on 409. A used link answers 409. |
 | `W6-discharge-follow-up.json` | `wardFollowUpW6xx` | Calls `follow-up` (14 days) and, only if the backend created the appointment, tells the patient over WhatsApp + email that the follow-up is requested and the hospital will confirm the date. |
 | `W5-doctor-daily-digest.json` | `wardDigestW5xxxx` | Every day at 07:30 Africa/Tunis (or on demand via its "Run now" trigger): `GET daily-digest`, then one email per doctor with an address and at least one admitted patient. Patients are listed by bed, highest NEWS2 first, with NEWS2 >= 5 flagged "review first" and summaries labelled as AI suggestions to review. Not called by the router. |
-| `W11-whatsapp-watchdog.json` | `wardWahaWatchW11` | Every 2 minutes: if the WAHA session is `FAILED` or `STOPPED` (for example after a network cut), restart it, so WhatsApp messages are not lost silently. A session waiting for a QR scan is left alone. |
+| `W10-health-watch.json` | `wardHlthWatchW10` | Every day at 07:00 (or `POST /webhook/ward-health-watch` with `X-Ward-Secret`, the demo button): `GET health-watch`, then for today's and tomorrow's weather-health alerts one WhatsApp to the staff numbers (staff advice in French and Arabic, number of at-risk patients) and, when someone is at risk, one to the patient numbers (patient advice). No names. Not called by the router. |
 
 ## Test
 

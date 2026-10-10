@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     jwt_secret: str = DEFAULT_JWT_SECRET
     jwt_expire_hours: int = 8
     hospital_name: str = "Ward Hospital"  # GET /hospital: this install's hospital (one install per hospital)
+    # health watch: the hospital's city for the weather-health alerts (Open-Meteo, no key) and the news feeds
+    hospital_city: str = "Tunis"
+    hospital_lat: float = 36.8065
+    hospital_lon: float = 10.1815
+    health_watch_offline: bool = False  # true: no outside calls (offline demo)
+    health_watch_demo: str = ""  # heatwave | dust | cold: inject a labelled demo scenario into the forecast
     # comma-separated; the proxy domain in the internet profile
     web_origin: str = "http://localhost:3000"
     bcrypt_rounds: int = 12
