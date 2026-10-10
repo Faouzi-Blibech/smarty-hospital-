@@ -178,7 +178,7 @@
 }
 
 .undo {
-  margin-left: auto;
+  margin-inline-start: auto;
   font: 600 13px/1 var(--sans);
   color: var(--news-normal-fg);
   background: none;

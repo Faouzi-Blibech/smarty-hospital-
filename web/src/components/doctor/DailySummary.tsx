@@ -4,22 +4,24 @@
 // interactions (fixed rules) and the human review step (Mark as reviewed / Undo).
 import { useEffect, useState } from "react";
 import { AiBadge } from "@/components/AiBadge";
+import { useT } from "@/i18n/I18nProvider";
+import type { Key } from "@/i18n/messages";
 import { ApiError, getSummary, reviewSummary } from "@/lib/api";
 import { tunisTime, USE_MOCKS } from "@/lib/time";
 import type { AiSummary, Severity } from "@/lib/types";
 import styles from "./DailySummary.module.css";
 
-const SEV: Record<Severity, { word: string; bg: string; fg: string }> = {
-  high: { word: "High", bg: "var(--news-crit-bg)", fg: "var(--news-crit-fg)" },
-  medium: { word: "Medium", bg: "var(--news-low-bg)", fg: "var(--news-low-fg)" },
-  low: { word: "Low", bg: "var(--news-normal-bg)", fg: "var(--news-normal-fg)" },
+const SEV: Record<Severity, { word: Key; bg: string; fg: string }> = {
+  high: { word: "doctor.sevHigh", bg: "var(--news-crit-bg)", fg: "var(--news-crit-fg)" },
+  medium: { word: "doctor.sevMedium", bg: "var(--news-low-bg)", fg: "var(--news-low-fg)" },
+  low: { word: "doctor.sevLow", bg: "var(--news-normal-bg)", fg: "var(--news-normal-fg)" },
 };
 
 /** Emphasise trend sentences (UI-only formatting of the summary text). */
 function SummaryText({ text }: { text: string }) {
   const parts = text.split(/(?<=\.)\s+(?=[A-Z])/);
   return (
-    <p className={styles.text}>
+    <p dir="auto" className={styles.text}>
       {parts.map((s, i) => (
         <span key={i}>
           {i ? " " : ""}
@@ -39,6 +41,7 @@ export interface DailySummaryProps {
 }
 
 export function DailySummary({ patientId, aiFallback, actorId }: DailySummaryProps) {
+  const { t } = useT();
   const [summary, setSummary] = useState<AiSummary | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "none" | "error">("loading");
   const [busy, setBusy] = useState(false);
@@ -83,17 +86,19 @@ export function DailySummary({ patientId, aiFallback, actorId }: DailySummaryPro
   const source = summary?.source ?? (aiFallback ? "rules" : "model");
   const reviewed = !!summary?.human_confirmed_by;
   const reviewedLabel = reviewed
-    ? `✓ Reviewed by ${summary?.human_confirmed_by_name ?? summary?.human_confirmed_by}${summary?.reviewed_at ? `, ${tunisTime(summary.reviewed_at)}` : ""}`
+    ? summary?.reviewed_at
+      ? t("doctor.reviewedByAt", { name: summary.human_confirmed_by_name ?? summary.human_confirmed_by ?? "", time: tunisTime(summary.reviewed_at) })
+      : t("doctor.reviewedBy", { name: summary?.human_confirmed_by_name ?? summary?.human_confirmed_by ?? "" })
     : undefined;
 
   return (
     <section className={styles.card}>
       <div className={styles.head}>
-        <h3 className={styles.h3}>Daily summary</h3>
+        <h3 className={styles.h3}>{t("doctor.summaryTitle")}</h3>
         <AiBadge source={source} state={reviewed ? "reviewed" : "needs_review"} stateLabel={reviewedLabel} className={styles.badge} />
       </div>
       {source === "rules" ? (
-        <span className={styles.fallback}>AI unavailable — figures below come from fixed rules; no narrative trend analysis.</span>
+        <span className={styles.fallback}>{t("doctor.summaryFallback")}</span>
       ) : null}
 
       {status === "loading" ? (
@@ -103,34 +108,34 @@ export function DailySummary({ patientId, aiFallback, actorId }: DailySummaryPro
           <span className="ward-skeleton" style={{ height: 14, width: "64%" }} />
         </div>
       ) : status === "none" ? (
-        <p className={styles.muted}>No daily summary yet for this patient.</p>
+        <p className={styles.muted}>{t("doctor.summaryNone")}</p>
       ) : status === "error" ? (
         <p role="alert" className={styles.muted}>
-          Couldn’t load the summary. The server didn’t answer.
+          {t("doctor.summaryError")}
         </p>
       ) : summary ? (
         <>
           <SummaryText text={summary.summary} />
           {summary.based_on ? (
             <div className={styles.based}>
-              <span className={styles.basedLabel}>Based on:</span>
-              <span className={styles.basedChip}>{summary.based_on.vitals} vitals readings</span>
-              <span className={styles.basedChip}>{summary.based_on.doses} doses</span>
-              <span className={styles.basedChip}>{summary.based_on.notes} notes</span>
+              <span className={styles.basedLabel}>{t("doctor.basedOn")}</span>
+              <span className={styles.basedChip}>{t("doctor.basedVitals", { n: summary.based_on.vitals })}</span>
+              <span className={styles.basedChip}>{t("doctor.basedDoses", { n: summary.based_on.doses })}</span>
+              <span className={styles.basedChip}>{t("doctor.basedNotes", { n: summary.based_on.notes })}</span>
             </div>
           ) : null}
           <div className={styles.ix}>
             <span className={styles.ixHead}>
-              Drug interactions<span className={styles.ixNote}>fixed rules, not AI</span>
+              {t("doctor.drugInteractions")}<span className={styles.ixNote}>{t("doctor.fixedRulesNotAi")}</span>
             </span>
-            {summary.interactions.length === 0 ? <span className={styles.ixWhy}>None found.</span> : null}
+            {summary.interactions.length === 0 ? <span className={styles.ixWhy}>{t("doctor.noneFound")}</span> : null}
             {summary.interactions.map((ix) => {
               const sev = SEV[ix.severity];
               return (
                 <div key={ix.drugs.join("+")} className={styles.ixRow}>
                   <span className={styles.ixPair}>{ix.drugs.join(" + ")}</span>
                   <span className={styles.ixSev} style={{ background: sev.bg, color: sev.fg }}>
-                    {sev.word}
+                    {t(sev.word)}
                   </span>
                   <span className={styles.ixWhy}>{ix.note}</span>
                 </div>
@@ -143,18 +148,18 @@ export function DailySummary({ patientId, aiFallback, actorId }: DailySummaryPro
               {reviewedLabel?.replace(/^✓ /, "")}
               {USE_MOCKS ? (
                 <button type="button" onClick={undo} className={styles.undo}>
-                  Undo
+                  {t("doctor.undo")}
                 </button>
               ) : null}
             </div>
           ) : (
             <>
               <button type="button" onClick={review} disabled={busy} className={styles.review}>
-                Mark as reviewed
+                {t("doctor.markReviewed")}
               </button>
               {reviewError ? (
                 <span role="alert" className={styles.reviewError}>
-                  Couldn’t save the review. The server didn’t answer — try again.
+                  {t("doctor.reviewError")}
                 </span>
               ) : null}
             </>

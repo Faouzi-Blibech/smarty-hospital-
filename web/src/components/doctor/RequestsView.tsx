@@ -4,6 +4,7 @@
 // Mock: Cardiology (the design). Real: /me has no ward, so the specialty is the ward of the
 // doctor's own patients (GET /patients); when that is unknown, all specialties are shown.
 import { useEffect, useState } from "react";
+import { useT } from "@/i18n/I18nProvider";
 import { Waitlist } from "@/components/Waitlist";
 import { getMyPatients } from "@/lib/api";
 import { useDemoFlags } from "@/lib/demo";
@@ -30,14 +31,15 @@ function useMySpecialty(): string | null | undefined {
 }
 
 export function RequestsView() {
+  const { t } = useT();
   const flags = useDemoFlags();
   const specialty = useMySpecialty();
   return (
     <div className={styles.page}>
       <div className={styles.titles}>
-        <h2 className={styles.h2}>Appointment requests</h2>
+        <h2 className={styles.h2}>{t("doctor.requestsTitle")}</h2>
         <span className={styles.sub}>
-          Ranked by the AI as a suggestion. You confirm each one.
+          {t("doctor.requestsSub")}
         </span>
       </div>
       <div className={styles.waitlist}>
