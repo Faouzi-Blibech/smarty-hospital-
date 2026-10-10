@@ -9,6 +9,7 @@ import { LiveBanner } from "@/components/LiveBanner";
 import { DosesTimeline } from "@/components/shared/DosesTimeline";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { NotesPanel } from "@/components/shared/NotesPanel";
+import { AccessPanel } from "@/components/shared/AccessPanel";
 import { ExamsPanel } from "@/components/shared/ExamsPanel";
 import { LIVE_JITTER, useLiveTick } from "@/components/shared/useLiveTick";
 import { Toast, useToast } from "@/components/Toast";
@@ -131,6 +132,13 @@ export function PatientDetail({ id }: { id: string }) {
               />
             </div>
             <div className={styles.col}>
+              {me && data.patient.attending_doctor_id === me.id ? (
+                <AccessPanel
+                  patientId={id}
+                  patientName={`${data.patient.first_name} ${data.patient.last_name}`}
+                  excludeIds={[me.id]}
+                />
+              ) : null}
               <ExamsPanel patientId={id} />
               <DailySummary patientId={id} aiFallback={flags.aiFallback} actorId={DOCTOR_ID} />
               <DosesTimeline doses={data.doses} now={now()} />

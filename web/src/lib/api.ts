@@ -407,6 +407,27 @@ export function getPatient(id: string): Promise<Patient> {
   return http<Patient>("GET", `/patients/${encodeURIComponent(id)}`);
 }
 
+/** GET /patients?q= as admin: name, bed and device only (no attending doctor, no vitals). */
+export interface PatientListItem {
+  id: string;
+  first_name: string;
+  last_name: string;
+  ward: string | null;
+  bed: string | null;
+  device_id: string | null;
+}
+
+/** GET /patients?q= (admin branch: matches name or ID). Mock: every patient matching the query. */
+export function searchPatients(q: string): Promise<PatientListItem[]> {
+  const needle = q.trim().toLowerCase();
+  const pick = (p: PatientListItem) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name, ward: p.ward, bed: p.bed, device_id: p.device_id });
+  if (USE_MOCKS)
+    return mock((s) =>
+      s.patients.filter((p) => !needle || p.id.toLowerCase().includes(needle) || `${p.first_name} ${p.last_name}`.toLowerCase().includes(needle)).map(pick),
+    );
+  return http<PatientListItem[]>("GET", `/patients?q=${encodeURIComponent(q.trim())}`);
+}
+
 /** GET /patients/{id}/vitals?from=&to= — oldest first, default last 24 h. */
 export function getVitals(patientId: string, opts: { from?: string; to?: string } = {}): Promise<Vital[]> {
   if (USE_MOCKS)
