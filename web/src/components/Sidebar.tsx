@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useT } from "@/i18n/I18nProvider";
 import type { Key } from "@/i18n/messages";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { LogoutButton } from "./LogoutButton";
+import { getHealthEvents } from "@/lib/api";
+import { addDays, badgeCount, todayIso } from "@/lib/healthCalendar";
 import { USE_MOCKS } from "@/lib/time";
 import { initialsOf, useMe } from "@/lib/useMe";
 import { NAV_COUNTS } from "@/mocks";
@@ -42,6 +45,7 @@ export const NAV: Record<StaffRole, NavItem[]> = {
     { key: "requests", label: "shared.navRequests", href: "/doctor/requests", count: NAV_COUNTS.doctor.requests },
     { key: "assistant", label: "shared.navAssistant", href: "/doctor/assistant" },
     { key: "team", label: "accounts.navTeam", href: "/doctor/team" },
+    { key: "calendar", label: "calendar.nav", href: "/doctor/calendar", hot: false },
     { key: "password", label: "auth.navPassword", href: "/doctor/password" },
   ],
   nurse: [
@@ -51,6 +55,7 @@ export const NAV: Record<StaffRole, NavItem[]> = {
     { key: "exams", label: "shared.navExams", href: "/nurse/exams" },
     { key: "patients", label: "shared.navPatients", href: "/nurse/patients", count: NAV_COUNTS.nurse.patients },
     { key: "assistant", label: "shared.navAssistant", href: "/nurse/assistant" },
+    { key: "calendar", label: "calendar.nav", href: "/nurse/calendar", hot: false },
     { key: "password", label: "auth.navPassword", href: "/nurse/password" },
   ],
   admin: [
@@ -60,6 +65,7 @@ export const NAV: Record<StaffRole, NavItem[]> = {
     { key: "staff", label: "shared.navStaff", href: "/admin/staff", count: NAV_COUNTS.admin.staff },
     { key: "pending", label: "accounts.navPending", href: "/admin/pending" },
     { key: "patients", label: "accounts.navPatientAccess", href: "/admin/patients" },
+    { key: "calendar", label: "calendar.nav", href: "/admin/calendar", hot: false },
     { key: "password", label: "auth.navPassword", href: "/admin/password" },
   ],
 };
@@ -91,6 +97,19 @@ export function Sidebar({ role, active, live = true, counts }: SidebarProps) {
   const items = NAV[role];
   const current = active ?? items[0].key;
   const me = useMe(role);
+  // Health calendar badge: events for me, active now or starting within 7 days.
+  // A real endpoint, so it shows in mock and real mode alike.
+  const [calCount, setCalCount] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    getHealthEvents({ role, from: todayIso(), to: addDays(todayIso(), 7) }).then(
+      (ev) => alive && setCalCount(badgeCount(ev, todayIso())),
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, [role]);
   const u = USE_MOCKS
     ? { ...USERS[role], sub: t(USERS[role].sub) }
     : {
@@ -111,7 +130,12 @@ export function Sidebar({ role, active, live = true, counts }: SidebarProps) {
         {items.map((n) => {
           const on = n.key === current;
           // Real mode: no stats endpoint yet (proposed in api.md), so no count pills.
-          const count = USE_MOCKS ? String(counts?.[n.key] ?? n.count ?? "") : String(counts?.[n.key] ?? "");
+          const count =
+            n.key === "calendar"
+              ? String(counts?.[n.key] ?? calCount ?? "")
+              : USE_MOCKS
+                ? String(counts?.[n.key] ?? n.count ?? "")
+                : String(counts?.[n.key] ?? "");
           return (
             <Link
               key={n.key}
