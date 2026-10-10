@@ -233,3 +233,4 @@ next-env.d.ts
 # local worktrees and subagent workspaces
 .worktrees/
 .superpowers/
+.env.internet

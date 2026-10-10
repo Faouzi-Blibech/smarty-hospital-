@@ -106,8 +106,21 @@ services:
     ports: ["${WEB_BIND:-0.0.0.0}:${WEB_PORT:-3000}:3000"]
     depends_on: [api]
 
+  proxy:
+    image: caddy:2.8
+    profiles: ["internet"]
+    environment:
+      WARD_DOMAIN: ${WARD_DOMAIN:-localhost}
+      WARD_TLS: ${WARD_TLS:-internal}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on: [api, web]
+
 volumes:
   db-data:
   mqtt-data:
   minio-data:
   n8n-data:
+  caddy-data:
