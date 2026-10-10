@@ -16,8 +16,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 def user_from_token(db: Session, token: str | None) -> User | None:
+    """The token's user, or None if the token is bad or the account is not active (disable works immediately)."""
     claims = decode_token(token) if token else None
-    return db.get(User, claims["sub"]) if claims and claims.get("sub") else None
+    user = db.get(User, claims["sub"]) if claims and claims.get("sub") else None
+    return user if user is not None and user.status == "active" else None
 
 
 def get_current_user(token: str | None = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
