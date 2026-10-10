@@ -276,7 +276,7 @@ flowchart LR
     EW["2 · Early warning<br/>NEWS2 partial + z-score"]
     CP["3 · Doctor copilot<br/>templated summary + rule interactions<br/>(optional open LLM rewrite)"]
     NS["5 · No-show model<br/>LogReg on Kaggle dataset"]
-    PA["6 · Patient assistant<br/>Laya + trained classifier → intent<br/>templated answers"]
+    PA["6 · Patient assistant<br/>keyword rules + trained classifier → intent<br/>templated answers"]
   end
   W["llm.py wrapper (optional)<br/>strip PII · LLM_PROVIDER · open models only"]
   subgraph Human["Human confirms"]
@@ -306,7 +306,7 @@ flowchart LR
 
 **How the modules decide:**
 - **Triage:** urgency = max(red-flag floor, trained classifier, 2 if age ≥ 75). The model can raise urgency above the floor, never lower it.
-- **Assistant:** a red-flag question gets the URGENT message with no model call. Otherwise the intent is the average of Laya (base model, zero-shot, optional install) and a trained char n-gram classifier. Low confidence means "ask staff". The answer is a template filled from the caller's own record.
+- **Assistant:** a red-flag question gets the URGENT message with no model call. A question that names exactly one topic (dose, appointment, vitals) is answered by keyword rules; otherwise a small trained char n-gram classifier picks the intent. Low confidence means "ask staff". The answer is a template filled from the caller's own record.
 - **Copilot:** the summary and the interaction list come from templates and a curated rule file.
   - The summary is cached 10 minutes and stored in `ai_summaries`. The doctor marks it reviewed, or undoes that.
   - An optional open LLM may rewrite the text. Our setup is Groq with `openai/gpt-oss-120b`, an open-weight model; Ollama works for fully local use. If the call fails, the template text is served (`source: "rules"`).
@@ -323,12 +323,9 @@ flowchart LR
 | Triage classifier alone | 29 referrals | exact 0.897, within one 1.0, under-triaged 2, urgent missed 1 |
 | Triage rules + model | same 29 | exact 0.897, within one 1.0, under-triaged 2, urgent missed 1 |
 | Intent: classifier argmax | 36 questions | accuracy 0.722 (26/36) |
-| Intent: classifier + 0.4 confidence threshold, red flags first (the Docker default, no Laya) | same 36 | accuracy 0.611 (22/36) |
-| Intent: base Laya argmax | same 36 | accuracy 0.694 (25/36), median 139 ms on a laptop CPU |
-| Intent: average of both, argmax | same 36 | accuracy 0.750 (27/36) |
-| Intent: average of both + 0.4 threshold, red flags first | same 36 | accuracy 0.694 (25/36) |
+| Intent: classifier + 0.4 confidence threshold, red flags first (the shipped behaviour) | same 36 | accuracy 0.611 (22/36) |
 
-The Docker image runs without Laya unless `requirements-laya.txt` is installed, so the default deployment is the classifier row with the 0.4 threshold (0.611): about four questions in ten fall to "ask your nurse" or the wrong template. On 2026-10-06 the evaluation sets were rewritten to remove leakage into the training data (a test now guards this), which is why these numbers are lower than earlier ones. A Laya fine-tuned head was tried before the fix (0.694 on the old set) and is not shipped. The one urgent-missed triage case is a Darija chest/faint complaint scored 4 instead of 5, and no keyword rule covers it. Sources: `backend/app/ai/models/*metrics.json`. These sets are tiny; read them as a sanity check, not a validation.
+The shipped behaviour is the classifier row with the 0.4 threshold (0.611): about four questions in ten fall to "ask your nurse" or the wrong template. On 2026-10-06 the evaluation sets were rewritten to remove leakage into the training data (a test now guards this), which is why these numbers are lower than earlier ones. The one urgent-missed triage case is a Darija chest/faint complaint scored 4 instead of 5, and no keyword rule covers it. Sources: `backend/app/ai/models/*metrics.json`. These sets are tiny; read them as a sanity check, not a validation.
 
 **Rules for every module:**
 - Every module works with no LLM. A trained model is optional too: without its file the module drops to rules.
@@ -372,7 +369,6 @@ Partial score → severity:
   - `LLM_PROVIDER=local` sends nothing off the machine (Ollama).
   - `groq` calls the Groq API with an open-weight model (`openai/gpt-oss-120b`).
   - Only the doctor's summary text uses it today. Tests always run with `LLM_PROVIDER=none`.
-- Laya, when installed, runs locally on the CPU; its weights are downloaded once from the Hugging Face Hub. `snapshot_download` contacts the Hub on each process start (metadata only), so set `HF_HUB_OFFLINE=1` after the first download.
 - Seed data is synthetic (`backend/app/seed.py`).
   - Staff: one doctor, a Cardiology nurse, an Internal Medicine nurse, an Imaging nurse and a Laboratory nurse, plus one admin.
   - 12 patients, of whom one is admitted with 48 h of vitals and one prescription.

@@ -37,7 +37,7 @@ The core of Ward is the medication loop: **the doctor prescribes, the bedside de
 | WS7 No-show model + backfill ranking | **Hedi** | Day 1 | Moved earlier; the hardware lane is small now |
 | WS8 Next.js PWA: doctor → nurse → admin → patient | **Faouzi** | core | Doctor + Admin role owner |
 | WS9 n8n: W4, W3, W1 core; W2, W5, W6 stretch | **Faouzi** | core/stretch | |
-| WS10 AI: triage (rules + trained model), copilot, assistant (Laya intents); no paper digitizer | **Faouzi** | after core step 6 | Hand-coded and trained, no LLM needed |
+| WS10 AI: triage (rules + trained model), copilot, assistant (keyword rules + small classifier); no paper digitizer | **Faouzi** | after core step 6 | Hand-coded and trained, no LLM needed |
 | WS11 Appointments & waitlist endpoints + n8n callbacks | **Faouzi** | core | On Wali's schema |
 | WS12 Simulator (`simulator/`): all vitals, nurse taps, call-nurse, dose taken; `--companion` mode next to the ESP | **Hedi** | Day 0 | Main patient-side traffic source for the demo |
 | WS13 Seed data | **Wali** | Day 1 | Finishes with the schema |

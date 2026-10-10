@@ -58,11 +58,7 @@ def test_scale_label_maps_our_urgency_to_the_hospital_scale():
     assert triage("douleur thoracique", [], 50).scale == scale_label(5)
 
 
-# Phrasings red_flags.v1.json does not cover yet (reported to Faouzi, owner of app/ai). strict: an XPASS fails,
-# so remove the mark once the rule file covers the phrase.
-GAP = pytest.mark.xfail(strict=True, reason="not covered by red_flags.v1 yet")
-
-
+# Phrasings the first rule file missed (suicide, seizure, overdose, anaphylaxis); each must raise its own flag to 5.
 @pytest.mark.parametrize("text,flag", [
     ("patient a fait une tentative de suicide hier", "suicide_self_harm"),
     ("I want to kill myself, I have pills ready", "suicide_self_harm"),
@@ -72,17 +68,17 @@ GAP = pytest.mark.xfail(strict=True, reason="not covered by red_flags.v1 yet")
     ("crise convulsive ce matin", "seizure"),
     ("my son had a seizure for 5 minutes", "seizure"),
     ("طفلي عنده تشنجات", "seizure"),
-    pytest.param("weldi 3andou sar3 w techennoj", "seizure", marks=GAP),
+    ("weldi 3andou sar3 w techennoj", "seizure"),
     ("took 30 paracetamol tablets", "overdose"),
     ("suspicion d'intoxication medicamenteuse", "overdose"),
-    pytest.param("il a avale tous les comprimes", "overdose", marks=GAP),
+    ("il a avale tous les comprimes", "overdose"),
     ("ولدي تسمم بالدواء", "overdose"),
-    pytest.param("chrab barcha dwa, bla3 dwa lkol", "overdose", marks=GAP),
+    ("chrab barcha dwa, bla3 dwa lkol", "overdose"),
     ("swelling of the throat after eating peanuts, hard to swallow", "anaphylaxis"),
     ("choc anaphylactique apres piqure de guepe", "anaphylaxis"),
     ("gorge qui gonfle apres un medicament", "anaphylaxis"),
-    pytest.param("عنده حساسية وما يقدرش يتنفس", "anaphylaxis", marks=GAP),
-    pytest.param("7asasiya w ma najjamch nitnaffes", "anaphylaxis", marks=GAP),
+    ("عنده حساسية وما يقدرش يتنفس", "anaphylaxis"),
+    ("7asasiya w ma najjamch nitnaffes", "anaphylaxis"),
 ])
 def test_safety_red_flags_floor_is_five(text, flag):
     assert flag in [f["id"] for f in T.match_red_flags(text)]
@@ -104,16 +100,41 @@ def _fake_model(monkeypatch, probs):
     monkeypatch.setattr(T.textclf, "predict_proba", lambda m, text: probs)
 
 
-def test_unsure_model_without_flag_is_raised_for_review(monkeypatch):
-    _fake_model(monkeypatch, {1: 0.28, 2: 0.25, 3: 0.2, 4: 0.27})
+def test_risk_mass_raises_an_unsure_case_to_four(monkeypatch):
+    # argmax is 1 but 31% of the mass sits on urgency 4-5: at the default tau a person must look at it
+    _fake_model(monkeypatch, {1: 0.38, 2: 0.31, 4: 0.21, 5: 0.10})
     r = T.triage("renouvellement d'ordonnance", [], 30)
-    assert r.red_flags == [] and r.urgency == T.UNSURE_URGENCY and r.confidence == 0.28
-    assert any(x.startswith("Model unsure (28%)") for x in r.reasons)
+    assert r.red_flags == [] and r.urgency == 4 and r.model_urgency == 1 and r.confidence == 0.38
+    assert any(x.startswith("Model unsure: 31% chance of urgency 4 or more") for x in r.reasons)
 
 
-def test_no_unsure_raise_when_confident_or_flag_fires(monkeypatch):
+def test_risk_mass_below_tau_changes_nothing(monkeypatch):
+    _fake_model(monkeypatch, {1: 0.6, 2: 0.2, 3: 0.08, 4: 0.07, 5: 0.05})
+    r = T.triage("renouvellement d'ordonnance", [], 30)
+    assert r.urgency == 1 and not any("Model unsure" in x for x in r.reasons)
+
+
+def test_a_flat_distribution_no_longer_defaults_to_three(monkeypatch):
+    # the old "unsure -> 3" rule is gone: low confidence alone is not a reason to raise
+    _fake_model(monkeypatch, {1: 0.3, 2: 0.3, 3: 0.3, 4: 0.05, 5: 0.05})
+    assert T.triage("renouvellement d'ordonnance", [], 30).urgency == 1
+
+
+def test_the_model_file_carries_its_own_tau(monkeypatch):
+    monkeypatch.setattr(T.textclf, "load", lambda name: {"risk_tau": 0.6})
+    monkeypatch.setattr(T.textclf, "predict_proba", lambda m, text: {1: 0.5, 4: 0.3, 5: 0.2})
+    assert T.triage("renouvellement d'ordonnance", [], 30).urgency == 1  # mass 0.5 < 0.6
+    monkeypatch.setattr(T.textclf, "predict_proba", lambda m, text: {1: 0.3, 4: 0.4, 5: 0.3})
+    assert T.triage("renouvellement d'ordonnance", [], 30).urgency == 4  # mass 0.7 >= 0.6
+
+
+def test_risk_mass_never_lowers_a_red_flag(monkeypatch):
     _fake_model(monkeypatch, {1: 0.9, 2: 0.1})
-    assert not any("Model unsure" in x for x in T.triage("renouvellement d'ordonnance", [], 30).reasons)
-    _fake_model(monkeypatch, {1: 0.3, 2: 0.3, 3: 0.4})
     r = T.triage("I want to kill myself", [], 30)
-    assert "suicide_self_harm" in r.red_flags and not any("Model unsure" in x for x in r.reasons)
+    assert r.urgency == 5 and "suicide_self_harm" in r.red_flags and not any("Model unsure" in x for x in r.reasons)
+
+
+def test_a_denied_red_flag_leaves_the_decision_to_the_model(monkeypatch):
+    _fake_model(monkeypatch, {1: 0.9, 2: 0.1})
+    r = T.triage("pas de douleur thoracique, juste un certificat", [], 30)
+    assert r.red_flags == [] and r.urgency == 1

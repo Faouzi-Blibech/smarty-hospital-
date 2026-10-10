@@ -65,7 +65,7 @@ Full diagrams are in [`docs/architecture.md`](docs/architecture.md): use cases, 
 | Data | PostgreSQL + TimescaleDB, MinIO (exam result files) |
 | Web | Next.js PWA |
 | Automation | n8n (self-hosted) |
-| AI | Hand-coded rules + small trained models (scikit-learn, optional Laya), plus an optional open LLM through one privacy wrapper. The LLM can be Groq (`openai/gpt-oss-120b`) or local Ollama. |
+| AI | Hand-coded rules + small trained models (scikit-learn), plus an optional open LLM through one privacy wrapper. The LLM can be Groq (`openai/gpt-oss-120b`) or local Ollama. |
 | Deploy | Docker Compose |
 
 ## Quick start

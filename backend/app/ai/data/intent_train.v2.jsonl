@@ -1,0 +1,874 @@
+{"text": "متى موعد الدواء القادم؟", "intent": "next_dose", "lang": "ar"}
+{"text": "وقتاش نشرب الدوا الجاي؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "شنوة الدوا اللي لازم نشربو توا؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "هل أخذت حبة الضغط هذا الصباح؟", "intent": "next_dose", "lang": "ar"}
+{"text": "نسيت نشرب الدوا متاع العشية، نعمل شنوة؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "قداش بقاو من الحبوب؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "كم حبة يجب أن أتناول بعد الغداء؟", "intent": "next_dose", "lang": "ar"}
+{"text": "حبوب؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "متى أتناول الإنسولين مرة أخرى؟", "intent": "next_dose", "lang": "ar"}
+{"text": "الدوا متاع الليل وقتاش؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "شربت الدوا متاع الصباح ولا لا؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "فاتتني جرعة الأمس، هل أضاعف الجرعة؟", "intent": "next_dose", "lang": "ar"}
+{"text": "وقتاش نخذي الانسولين اللي جاي", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "ما هو الدواء المقرر لي بعد العشاء؟", "intent": "next_dose", "lang": "ar"}
+{"text": "اورديناس متاعي فيها شنوة ووقتاش؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "نحب نعرف الحبة الحمراء وقتاش تتشرب", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "يا فلان قولي كم مرة في النهار نشرب البروفين", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "الحبوب التي تبقت تكفي كم يوماً؟", "intent": "next_dose", "lang": "ar"}
+{"text": "الدوا خلص وقتاش يجيبولي زيادة", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "متى جرعتي التالية من المضاد الحيوي؟", "intent": "next_dose", "lang": "ar"}
+{"text": "نسيت نخذي دوا السكر، ينجم نخذيه توا؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "ما موعد دوائي المسائي؟", "intent": "next_dose", "lang": "ar"}
+{"text": "وقتاش الحبة الجاية؟ ما نعرفش الساعة", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "جرعة الأنسولين القادمة متى؟", "intent": "next_dose", "lang": "ar"}
+{"text": "هل شربت دوا الضغط البارح؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "دوا الكرش وقتاش نشربو", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "كم تبقى من الحقن؟", "intent": "next_dose", "lang": "ar"}
+{"text": "nشرب الحبة هذي قبل ولا بعد الماكلة؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "شنية الدوا متاع الظهر", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "أي دواء يجب أن آخذه الآن؟", "intent": "next_dose", "lang": "ar"}
+{"text": "وقتاش عندي رنديفو الجاي؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "متى موعدي القادم مع الطبيب؟", "intent": "next_visit", "lang": "ar"}
+{"text": "الطبيب يجي وقتاش اليوم؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "هل عندي فحص أشعة غداً؟", "intent": "next_visit", "lang": "ar"}
+{"text": "وقتاش نعمل الراديو؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "رنديفو؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "متى سيمر الطبيب علي؟", "intent": "next_visit", "lang": "ar"}
+{"text": "وقتاش الدكتور باش يعدي ياخو عليا؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "متى جلسة العلاج الطبيعي القادمة؟", "intent": "next_visit", "lang": "ar"}
+{"text": "اليوم عندي كونسولتاسيون ولا لا؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "هل لدي موعد مراجعة هذا الأسبوع؟", "intent": "next_visit", "lang": "ar"}
+{"text": "نهار الاثنين عندي موعد مع الطبيب؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "في أي ساعة الفحص القادم؟", "intent": "next_visit", "lang": "ar"}
+{"text": "وقتاش باش يجيو ياخذو مني التحليل؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "وقتاش كونترول بعد العملية؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "متى سيأتي الأخصائي لزيارتي؟", "intent": "next_visit", "lang": "ar"}
+{"text": "يعيشك قولي ساعة الموعد متاعي", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "أريد معرفة موعد استشارتي القادمة", "intent": "next_visit", "lang": "ar"}
+{"text": "عندي تحليل وقتاش؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "هل موعد الطبيب اليوم أم غداً؟", "intent": "next_visit", "lang": "ar"}
+{"text": "اليوم يجي الدكتور متاع القلب؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "متى موعد خروجي من المستشفى حسب الفحص التالي؟", "intent": "next_visit", "lang": "ar"}
+{"text": "الموعد القادم قداه بعد؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "ما هو موعد الجراحة؟", "intent": "next_visit", "lang": "ar"}
+{"text": "وقتاش العملية متاعي؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "نخمم عندي كونترول الجمعة، صحيح؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "ما التاريخ المحدد لمراجعتي في العيادة؟", "intent": "next_visit", "lang": "ar"}
+{"text": "رنديفو متاع اورديناس الدكتور وقتاش", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "وقتاش نمشي نعمل الايكوغرافي؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "كيف هو ضغطي الآن؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "الضغط متاعي شنوة توا؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "السخانة متاعي قداش؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "نبض قلبي مليح؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "هل مستوى الأكسجين عندي طبيعي؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "الاوكسيجين متاعي قداه؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "هل علاماتي الحيوية جيدة؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "وضعي مليح ولا لا؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "قولي قياس السكر الأخير متاعي", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "ما آخر قراءة لضغط الدم؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "نجم نعرف الضغط متاعي كيف كان البارح؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "حرارتي ارتفعت ولا هبطت؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "هل أنا بخير؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "ضغطي؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "كم نسبة الأكسجين في دمي؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "دقات قلبي عادية؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "هل ارتفعت حرارتي منذ الصباح؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "شنوة قراءة السكر الصباحية؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "النبض متاعي سريع ولا عادي؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "أريد رؤية قياساتي الأخيرة", "intent": "my_vitals", "lang": "ar"}
+{"text": "اوريلي القياسات متاعي", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "هل ضغطي مستقر اليوم؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "قداش وزني توا في الكشف الأخير؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "ما هي حرارة جسمي حالياً؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "الجهاز قاللي شنوة على الضغط؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "نحب ممرضة توا توا", "intent": "urgent", "lang": "darija_ar"}
+{"text": "ما نجمش نتنفس", "intent": "urgent", "lang": "darija_ar"}
+{"text": "صدري يؤلمني بشدة", "intent": "urgent", "lang": "ar"}
+{"text": "أشعر أنني سأفقد وعيي", "intent": "urgent", "lang": "ar"}
+{"text": "نحس روحي باش نغيب", "intent": "urgent", "lang": "darija_ar"}
+{"text": "لقد سقطت على الأرض", "intent": "urgent", "lang": "ar"}
+{"text": "طحت في الحمام ورجلي تعورني", "intent": "urgent", "lang": "darija_ar"}
+{"text": "أنا أنزف بشدة", "intent": "urgent", "lang": "ar"}
+{"text": "الدم يسيل ما يوقفش", "intent": "urgent", "lang": "darija_ar"}
+{"text": "ساعدوني بسرعة", "intent": "urgent", "lang": "ar"}
+{"text": "الحقوني يا ناس", "intent": "urgent", "lang": "darija_ar"}
+{"text": "نحب انفيرميير فيسع", "intent": "urgent", "lang": "darija_ar"}
+{"text": "ضيق شديد في تنفسي الآن", "intent": "urgent", "lang": "ar"}
+{"text": "راسي يدور برشا و باش نطيح", "intent": "urgent", "lang": "darija_ar"}
+{"text": "ألم حاد في بطني ولا أحتمله", "intent": "urgent", "lang": "ar"}
+{"text": "كرشي يوجعني بقوة توا", "intent": "urgent", "lang": "darija_ar"}
+{"text": "يدي لا تتحرك ووجهي مائل", "intent": "urgent", "lang": "ar"}
+{"text": "عندي تشنج وما نجمش نحرك يدي", "intent": "urgent", "lang": "darija_ar"}
+{"text": "زوجي فاقد للوعي في الغرفة", "intent": "urgent", "lang": "ar"}
+{"text": "بابا ما عادش يجاوبني", "intent": "urgent", "lang": "darija_ar"}
+{"text": "أشعر بنبض قلبي يتسارع بشدة وأنا خائف", "intent": "urgent", "lang": "ar"}
+{"text": "قلبي يدق بسرعة برشا وعرقان", "intent": "urgent", "lang": "darija_ar"}
+{"text": "اتصلوا بالطبيب الآن من فضلكم", "intent": "urgent", "lang": "ar"}
+{"text": "عيطولي الدكتور بالسرعة", "intent": "urgent", "lang": "darija_ar"}
+{"text": "مرتي تتقيا دم", "intent": "urgent", "lang": "darija_ar"}
+{"text": "الدوخة شديدة ولا أستطيع الوقوف", "intent": "urgent", "lang": "ar"}
+{"text": "نختنق، ما عنديش هواء", "intent": "urgent", "lang": "darija_ar"}
+{"text": "أريد النجدة", "intent": "urgent", "lang": "ar"}
+{"text": "الطاقة خلصت، نحس روحي باش نموت", "intent": "urgent", "lang": "darija_ar"}
+{"text": "وقتاش نخرج من السبيطار؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل يمكنني الذهاب إلى البيت اليوم؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "ما هو تشخيص حالتي بالضبط؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "الكنام تغطي العملية؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل يغطي التأمين هذا العلاج؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "فما ويفي في الغرفة؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "ما هي كلمة سر الواي فاي؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "الماكلة اليوم شنوة؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل يمكنني طلب وجبة خاصة بدون ملح؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "وين البركينغ متاع الزوار؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "أين يوجد موقف السيارات؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "نجم نشوف جاري في البيت الاخر؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "متى ساعات الزيارة؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "نجم نخذي دوش؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل العملية خطيرة؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "كيفاش نخلص الفاتورة؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "أين أحصل على شهادة الإقامة؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "مرتي نجم تبات معايا؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل أستطيع الأكل قبل العملية؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "ليش عندي هالحبوب في جسمي", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "لماذا أصابني هذا المرض؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "كيفاش نبدل الغرفة؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل المرض معدٍ؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "لقيت ورقة التحليل ما فهمتهاش", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "أين تقع صالة الصلاة؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "وين الكافيتريا", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل يمكنني استعمال الهاتف؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "شكون الدكتور متاعي؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل سأتعافى قريباً؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "نجم نمشي للدار الاسبوع الجاي؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "سلام، الدوا متاع الصباح شربتو؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "الحبة الزرقا هذي لشكون ووقتاش؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "هل تناولت جرعة الظهر أم لا أتذكر؟", "intent": "next_dose", "lang": "ar"}
+{"text": "ما فماش دوا باش نشربو الليلة؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "أحتاج تذكيراً بموعد حبوب القلب", "intent": "next_dose", "lang": "ar"}
+{"text": "بقاو كم حقنة من الانسولين؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "الصيرو يتشرب مرتين ولا ثلاثة؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "متى آخذ مسكن الألم؟", "intent": "next_dose", "lang": "ar"}
+{"text": "نسيت الدوا ياسر، ينجم نشربو دغيا؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "كيف أتناول الأقراص، قبل الأكل أم بعده؟", "intent": "next_dose", "lang": "ar"}
+{"text": "دوا الضغط وقتاش تو؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "هل أعطتني الممرضة دواء الصباح؟", "intent": "next_dose", "lang": "ar"}
+{"text": "قداش حبة نخذي في النهار", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "دواء ال diabète وقتاش", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "كم مرة أتناول الدواء في اليوم؟", "intent": "next_dose", "lang": "ar"}
+{"text": "الجرعة متاع المضاد الحيوي وقتاش تكمل", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "متى تنتهي مدة العلاج بالأقراص؟", "intent": "next_dose", "lang": "ar"}
+{"text": "يعيشك قولي الدوا القادم", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "حبة الليل ما شربتهاش، يزّي؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "ما اسم الدواء الذي سأتناوله الآن؟", "intent": "next_dose", "lang": "ar"}
+{"text": "وقتاش نخذي الدوا متاع كرشي", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "متى تحين جرعة الحقنة المسائية؟", "intent": "next_dose", "lang": "ar"}
+{"text": "ريماندر دوا؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "هذا الدوا نشربو كل قداه ساعة", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "أخبرني بمواعيد أدويتي اليوم", "intent": "next_dose", "lang": "ar"}
+{"text": "شربت جوج حبات بلا ما نقصد، وقتاش الجاي", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "الدواء الذي يؤخذ مع الطعام متى يكون؟", "intent": "next_dose", "lang": "ar"}
+{"text": "خلصو عليا الحبوب، وقتاش يعطيوني", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "هل حان وقت حبة الصداع؟", "intent": "next_dose", "lang": "ar"}
+{"text": "الحبة متاع الصباح أنا شربتها؟", "intent": "next_dose", "lang": "darija_ar"}
+{"text": "وين وصل ميعاد الدكتور؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "هل زيارة الطبيب بعد الغداء؟", "intent": "next_visit", "lang": "ar"}
+{"text": "في أي يوم لدي موعد فحص الدم؟", "intent": "next_visit", "lang": "ar"}
+{"text": "عندي رنديفو غدوة؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "ما موعد جلسة غسيل الكلى القادمة؟", "intent": "next_visit", "lang": "ar"}
+{"text": "ديالزة وقتاش؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "الاسكانار وقتاش؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "متى سيتم إجراء التصوير بالرنين؟", "intent": "next_visit", "lang": "ar"}
+{"text": "الطبيب قال نرجعلو، وقتاش بالضبط؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "متى يجب أن أراجع الطبيب بعد الخروج؟", "intent": "next_visit", "lang": "ar"}
+{"text": "وقتاش المراجعة متاعي؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "هل سيمر الطبيب هذا المساء؟", "intent": "next_visit", "lang": "ar"}
+{"text": "الدكتور متاع العظام وقتاش يجي", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "كونتروال الأسبوع الجاي نهار شنوة؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "نهار شنوة نعمل الكونسولتاسيون؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "أود أن أعرف موعد زيارة أخصائي التغذية", "intent": "next_visit", "lang": "ar"}
+{"text": "المخبر وقتاش نمشيلو؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "ما هي ساعة الفحص غداً صباحاً؟", "intent": "next_visit", "lang": "ar"}
+{"text": "الموعد القادم يا ترى وقتاش؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "عندي تحليل نهار الخميس؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "متى أقابل الجراح؟", "intent": "next_visit", "lang": "ar"}
+{"text": "وقتاش تجي الممرضة تاخذ مني السكر؟ (الفحص)", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "هل هناك فحص لي اليوم؟", "intent": "next_visit", "lang": "ar"}
+{"text": "نحب نعرف رنديفو متاع ولدي", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "متى موعد المتابعة في عيادة الأعصاب؟", "intent": "next_visit", "lang": "ar"}
+{"text": "ساعة الطبيب غدوة؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "الدكتور ما عدّاش اليوم؟ وقتاش يجي", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "ما التاريخ الجديد لموعدي؟", "intent": "next_visit", "lang": "ar"}
+{"text": "نبضي ولا السخانة متاعي كيفاش؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "هل تغيرت قراءة ضغطي عن أمس؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "الضغط متاعي وقتاش تقاس آخر مرة وقداش كان؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "الاوكسيجين مليح؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "السكر في دمي قداش؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "هل معدل ضربات قلبي طبيعي؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "نجم نعرف حالتي كلها كيفاش؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "أخبرني بنتائج قياساتي", "intent": "my_vitals", "lang": "ar"}
+{"text": "وين وصل الضغط متاعي اليوم", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "آخر قياس لسخانتي؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "هل مؤشراتي الحيوية مستقرة؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "راني مليح؟ الجهاز يقول شنوة؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "هل ضغطي مرتفع؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "درجة الحرارة متاعي قداه؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "الاوكسيجين تحت ال 95؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "كم كان نبضي في الليل؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "قراءة السكر ارتفعت توا؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "هل لدي حرارة؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "نبضي كيف ماشي؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "ضغطي طاح ولا طلع؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "هل أنا مصاب بالحمى؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "الضغط واش؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "ما قياس الأكسجين الأخير؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "وزني مبدل؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "كيفاش قياساتي اليوم؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "هل مؤشرات أمي جيدة؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "كيفاش حرارة بنتي؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "الحرارة؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "أنا أختنق، أحضروا الممرضة", "intent": "urgent", "lang": "ar"}
+{"text": "دوخة قوية و باش نطيح", "intent": "urgent", "lang": "darija_ar"}
+{"text": "ألم شديد في صدري يمتد ليدي", "intent": "urgent", "lang": "ar"}
+{"text": "نحس بوجيعة في قلبي توا", "intent": "urgent", "lang": "darija_ar"}
+{"text": "ما أستطيع التحرك، ساقي لا تعمل", "intent": "urgent", "lang": "ar"}
+{"text": "طحت من السرير", "intent": "urgent", "lang": "darija_ar"}
+{"text": "عيّطولي المرا بسرعة، فما حاجة غالطة", "intent": "urgent", "lang": "darija_ar"}
+{"text": "أرجوكم أحتاج مساعدة الآن", "intent": "urgent", "lang": "ar"}
+{"text": "اسعاف! ماما سقطت", "intent": "urgent", "lang": "darija_ar"}
+{"text": "أشعر بأنني سأتقيأ دماً", "intent": "urgent", "lang": "ar"}
+{"text": "تقيأت دم توا", "intent": "urgent", "lang": "darija_ar"}
+{"text": "تشنجات في جسمي وأخاف", "intent": "urgent", "lang": "ar"}
+{"text": "ولدي ما عادش يتنفس", "intent": "urgent", "lang": "darija_ar"}
+{"text": "يوجد ألم رهيب في رأسي مفاجئ", "intent": "urgent", "lang": "ar"}
+{"text": "راسي يتفرقع بالوجيعة", "intent": "urgent", "lang": "darija_ar"}
+{"text": "الممرضة وينها؟ نحس روحي ماشي نغيب", "intent": "urgent", "lang": "darija_ar"}
+{"text": "ضغط على صدري وعرق بارد", "intent": "urgent", "lang": "ar"}
+{"text": "نعرق برشا و صدري ضايق", "intent": "urgent", "lang": "darija_ar"}
+{"text": "سقطت ولا أقدر على القيام", "intent": "urgent", "lang": "ar"}
+{"text": "ما نحسش بيدي اليمين و لساني تقيل", "intent": "urgent", "lang": "darija_ar"}
+{"text": "أرجو استدعاء الطبيب بشكل عاجل", "intent": "urgent", "lang": "ar"}
+{"text": "ضيق نفس مفاجئ مالصباح", "intent": "urgent", "lang": "darija_ar"}
+{"text": "الجرح يسيل دم مرة ثانية برشا", "intent": "urgent", "lang": "darija_ar"}
+{"text": "أشعر بخدر في وجهي ويدي", "intent": "urgent", "lang": "ar"}
+{"text": "لازمني دكتور توا، حالتي تدهورت", "intent": "urgent", "lang": "darija_ar"}
+{"text": "هل نجم نشرب القهوة؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "الدكتور يقول شنوة على حالتي؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل سأحتاج إلى عملية جراحية؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "وقتاش نأكل بعد العملية؟ (سؤال للطبيب)", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل يغطي الضمان الاجتماعي تكاليف الإقامة؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "نحب نبدل الميدسين متاعي", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "ما الفرق بين هذين الدوائين؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "فما شاحن للتلفون؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل يمكنني استخدام الشاحن الخاص بي؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "كيفاش نجيب شهادة اقامة في السبيطار؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "من هو المريض في الغرفة المجاورة؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "شنوة نتيجة التحليل متاع جاري؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل مرضي خطير؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "مرضي ينجم يتعدى للعايلة؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "أين يمكنني شراء الماء؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "فمة اكل بدون سكر؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل يمكن لأهلي المبيت معي؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "قداش باش تطلع الفاتورة؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل عملية القلب ناجحة عادة؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "ننجم نخرج نتمشى برا؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "متى يمكنني الاستحمام؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "كيفاش نشكي على خدمة؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "ما معنى هذا المصطلح في تقريري؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "عندي برشا ضجيج بالليل في الغرفة", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل يجوز لي الصيام وأنا مريض؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "نجم نحكي مع مرا اجتماعية؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "أين دورة المياه؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "السبيطار فيه جامع؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "متى يعطونني شهادة الخروج؟", "intent": "ask_staff", "lang": "ar"}
+{"text": "فما تلفزة في الغرفة؟", "intent": "ask_staff", "lang": "darija_ar"}
+{"text": "هل نبضي طبيعي بعد المشي؟", "intent": "my_vitals", "lang": "ar"}
+{"text": "سخانتي هبطت بعد الدوا؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "الاكسيجين متاع بابا قداش؟", "intent": "my_vitals", "lang": "darija_ar"}
+{"text": "أشعر بضيق مفاجئ في صدري، أرسلوا ممرضة", "intent": "urgent", "lang": "ar"}
+{"text": "طحت و راسي يدمي، يعيشك الحقوني", "intent": "urgent", "lang": "darija_ar"}
+{"text": "الدكتور باش يعدي عليا قبل الظهر ولا بعد؟", "intent": "next_visit", "lang": "darija_ar"}
+{"text": "wa9tech nekhou l dwe jeya", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "chnowa l comprimés li lazem nekhdhou lyoum", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "pills?", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "nsit nekhou dwa sba7 chnowa na3mel", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "kil dwe mte3 l asr wa9tech", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "khdhit l doliprane wella lé", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "bkaddech men 7abba lazemni nechreb lyoum", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "wa9tech l'insuline jeya", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "9olli l dwe mte3 l tension wa9tech", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "ma nsitch nekhou dwa mte3 l lil", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "3andi bkaddech men comprimé fi l boite", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "l'antibiotique nekhdhou 3 marrat wella 2", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "wa9tech lazem nekhou l sirop", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "dose jeya", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "mazal nekhou l'antalgique ba3d 9adech", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "nheb na3raf l ordonnance mte3i chnowa fiha", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "tawa wa9t l dwe wella barcha bakri", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "est-ce que khdhit les médicaments mte3 l ghodwa", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "nesit l dwe mte3 yesterday nzidhom lyoum", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "chkoun l dwa li ba9i lyoum", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "wa9tech ndawi l'yed bel pommade", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "nechrab l metformine ba3d l makla wella 9bal", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "l'infirmière 9alet 3andi dwe fil 8 wella 9", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "chnoua l prochaine prise", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "doses mte3 lyoum chnowa bqa", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "mta3 l 9alb wa9tech", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "b9a 9adech nekhou l comprimé jeya", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "lazem nechrab l dwe bel ma wella 3adi", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "medicament tawa", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "ya3tik essaha ki wa9t l dwe tji", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "wa9tech l rendez-vous mte3 doctor jey", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "doctor yji lyoum wella ghodwa", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "l consultation mte3i wa9tech", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "chkoun doctor li bech yechoufni lyoum", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "wa9tech bech namel l radio", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "l'analyse mte3 ghodwa fil 9adech", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "l visite mte3 doctor fil sba7 wella 3chiya", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "bech ncheou doctor l9alb wa9tech", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "nheb na3raf wa9tech l examen jey", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "wa9tech yji l specialiste", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "fama rendez-vous ba3d el ghodwa", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "tarikh l controle l jey chnowa", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "bkadech bech nestanna doctor", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "doctor ma jech lyoum wa9tech yji", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "l scanner wa9tech", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "l'opération mte3i ila yom", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "nesit l date mte3 l rdv", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "wa9tech passage mte3 doctor", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "m3a mi la visite ghodwa", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "rendez vous fil poliklinik wa9tech", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "l9albi chkoun wa9tech nechouf doctor", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "kadech baqi 3al rendez-vous", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "est-ce que l médecin passage l'après-midi", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "doctor jey wa9tech tawa", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "wa9t l echo mte3 ghodwa", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "ba3d kadech 3andi controle", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "tension mte3i chnowa lyoum", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "9adech s5ana", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "temperature", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "9adech l oxygène mte3i", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "l'pouls mte3i normal wella lé", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "dhaghti kifech", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "ana mliha wella 3andi mochkla fi l mesures", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "chnowa l résultat mte3 l tension lyoum", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "9adech 9albi ydhrab fil dar9a", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "sucre mte3i lyoum 9adech", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "l'machine 9alet chnowa 3al saturation", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "nheb nchouf mesures mte3i", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "heart rate tawa", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "s5ana mte3i tla3et wella nzelet", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "9adech 9ist l ghodwa dhaghta", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "saturation mliha", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "ahwal l mesures mte3i", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "l chiffre mte3 l tension kbir wella sghir", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "mazelt s5ana", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "9adech fil dar9a nafass", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "nheb na3raf 9adech l vitals mte3i", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "l poids mte3i 9adech", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "dhaghta w nabd", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "oxygène 9ayis", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "tension tawa 9adech", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "l pouls mouch normal", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "kifech 9albi lyoum", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "9adech s5ana 3andi", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "fil oxygene ya3ni mliha", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "l temperature mte3i barcha", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "ma nnajjamch nnafas", "intent": "urgent", "lang": "darija_latin"}
+{"text": "sdri yoja3ni barcha", "intent": "urgent", "lang": "darija_latin"}
+{"text": "tawa nwa93 ndouekh", "intent": "urgent", "lang": "darija_latin"}
+{"text": "infirmière stp 3ajel", "intent": "urgent", "lang": "darija_latin"}
+{"text": "wa93et fil ard", "intent": "urgent", "lang": "darija_latin"}
+{"text": "9albi yo9ros mel dar9a", "intent": "urgent", "lang": "darija_latin"}
+{"text": "nhess b doukha kbira bech nghmi", "intent": "urgent", "lang": "darija_latin"}
+{"text": "3andi dem", "intent": "urgent", "lang": "darija_latin"}
+{"text": "nheb ndhoukha ma nnajjamch nenhedh", "intent": "urgent", "lang": "darija_latin"}
+{"text": "ndou5 w nes7a9 3ala rouhi", "intent": "urgent", "lang": "darija_latin"}
+{"text": "urgence stp", "intent": "urgent", "lang": "darija_latin"}
+{"text": "3andi douleur fil sder tawa", "intent": "urgent", "lang": "darija_latin"}
+{"text": "mouch na9der nitnaffes", "intent": "urgent", "lang": "darija_latin"}
+{"text": "infirmière w9aat", "intent": "urgent", "lang": "darija_latin"}
+{"text": "9ar3at fil ras w dem", "intent": "urgent", "lang": "darija_latin"}
+{"text": "nheb nsa3dou ma yetnafs", "intent": "urgent", "lang": "darija_latin"}
+{"text": "bba ghmi 3lih", "intent": "urgent", "lang": "darija_latin"}
+{"text": "3andi s5ana kbira w nrouji barcha", "intent": "urgent", "lang": "darija_latin"}
+{"text": "tawa 3al 3al ma yjini ki nemchi n9ou3", "intent": "urgent", "lang": "darija_latin"}
+{"text": "n9ayi ma yewa99afch", "intent": "urgent", "lang": "darija_latin"}
+{"text": "sdri m3aser ma nnajjamch nitnaffes bel ma", "intent": "urgent", "lang": "darija_latin"}
+{"text": "nheb tbib tawa", "intent": "urgent", "lang": "darija_latin"}
+{"text": "dowkha w ras yedour", "intent": "urgent", "lang": "darija_latin"}
+{"text": "9ouli nadi l infirmière tawa w mouch ba3d", "intent": "urgent", "lang": "darija_latin"}
+{"text": "ayyetli doctor tawa 3andi waja3 kbir", "intent": "urgent", "lang": "darija_latin"}
+{"text": "hasset b ga3da tdouli sdri", "intent": "urgent", "lang": "darija_latin"}
+{"text": "ma3a9ra l ma ma 9derch n7arrek yedi", "intent": "urgent", "lang": "darija_latin"}
+{"text": "tkhabbet fil hammam", "intent": "urgent", "lang": "darija_latin"}
+{"text": "wain l wifi", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "nheb nroua7 lel dar", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "wa9tech nkhroj mel hopital", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "l ghdha mte3 lyoum chnowa", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "chnowa l'maradh mte3i bedhabt", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "l assurance CNAM tkhalles", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "mnin nal9a parking", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "nheb nzour khouya wa9tech l visite", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "l wejba bkri barcha", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "n9dar na3mel douche", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "chkoun l'mara fil sir9a l9diida", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "mara7bou", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "ya3tik essaha 3andi so2al 3la l diagnostic", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "nheb nbaddel chambre", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "est-ce que n9dar nkhroj lel jnina", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "l facture mte3i 9adech", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "chnowa l'maradh li 9alou 3liha tawa", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "wa9tech nrawe7", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "chkoun yekhdem fil nuit", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "ma nheb ness fil bit", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "nheb nkallem l assistante sociale", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "cantine wa9tech tefta7", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "n9dar nakhou tilifoun l charger", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "chnowa naamel bech nweli bkhir", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "mrath wella lé", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "est ce que 3andi cancer", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "n9dar nakel 7aja ghodwa 9bal l 3amaliya", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "l mutuelle tkhalles", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "mnin n7ot l marouq", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "hwa ihtijaj 3la l visite", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "9olli chnowa dwa nekhdou tawa", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "nsit ken khdhit l comprimé mte3 sba7", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "bech nekhou l'insuline 9bal l makla wella ba3d", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "les cachets mte3 lil wa9tech", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "chhal men 7abba b9aw fil dwe", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "l dwe li fil tiroir mte3 chkoun", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "khdhit double dose ghalta wella la", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "wa9t el 7abba l zar9a", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "mazelt ma khdhitch dwe l 3chiya", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "lazem nekhou paracétamol kol 6 sa3at wella 8", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "dwe mte3 l ma3da wa9tech", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "a9olli stp wa9t l antibiotique", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "fama dwe jdid fil ordonnance mte3 lyoum", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "tawa nekhou l comprimé wella nestanna", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "sirop mte3 l bébé kol kadech", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "my pills wa9tech", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "l'injection mte3 lyoum khdhitha wella lé", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "l'infirmiere nsat tjib l dwe mte3 l ghdwa", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "nheb na3raf wa9tech khdhit akhir 7abba", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "b9ali 7abba w7da w ma3ndich ghyrha", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "wa9tech l reminder mte3 l dwa", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "l tension tablet wa9tech", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "nekhou 2 comprimés wella wa7da", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "l'ordonnance mte3 lyoum chnoua fiha", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "dwe l'sokkar nekhdou m3a l ftour", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "chbih l'alarme mte3 dwe ma daqetch", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "nzid nekhou l dwe tawa 5ater tfawet l wa9t", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "9adech men dose lyoum", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "mta3 l 3chiya khdhitou", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "tab wa9tech", "intent": "next_dose", "lang": "darija_latin"}
+{"text": "wa9tech l'prochain examen mte3 dem", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "l docteur yji ba3d l ghdwa wella", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "rendez-vous mte3 l echographie wa9tech", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "next appointment", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "nheb nsa2l wa9tech 3andi consultation 3and l cardiologue", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "chkoun l médecin li bech ychoufni ghodwa", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "doctor Ali jey wa9tech", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "3andi rdv lyoum wella ghodwa", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "wa9tech bech yeb3athouni l radio", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "l9it ma n3arfch wa9tech l controle mte3i", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "l'bilan mte3 l dem wa9tech", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "fil sa3a kadech yji doctor", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "rdv ba3d l 3amaliya wa9tech", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "chhal b9a 3al visite", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "doctor 3chiya wella sba7", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "wa9tech l'IRM mte3i", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "nes2l 3la wa9t l consultation", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "bech nchouf specialist l9alb wa9tech", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "visite doctor tawa wella ba3d", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "l9it ma9ritch l date mte3 rdv", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "wa9tech l'kine jey", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "doctor ba3thni nrajja3 wa9tech", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "wa9tech passage mte3 l prof", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "rendez vous b3id wella 9rib", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "nchoufou doctor fi 9adech", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "l examen mte3 ghodwa fi wa9tech", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "tarikh visite", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "wa9tech nemchi lel radio", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "doctor yeji lyoum", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "mta3 echo wa9tech", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "ya3tik essaha chnowa 3andi ghodwa m3a doctor", "intent": "next_visit", "lang": "darija_latin"}
+{"text": "nabdhi chnowa lyoum", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "dhaghta kbira wella normal", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "9adech l SpO2 mte3i", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "mes mesures lyoum", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "temp 9adech", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "l chiffre mte3 l 9alb", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "ahwali mliha m3a l machine", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "tension mte3 l bare7 9adech", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "mosta9er l nabd", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "oxygen bas wella normal", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "kifech l resultat mte3 s5ana", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "nheb na3raf 9adech l tension tawa", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "heart beat", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "9adech 9arit l machine l sa3a", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "5ayef l oxygen mte3i nazel", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "fiya s5ana wella lé", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "saturation mte3i 9adech", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "mes constantes", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "nheb nchouf grafik l tension", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "dhaghta mrtfe3a wella", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "9adech l sokkar lyoum", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "l'machine tgolli normal", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "pulse ok?", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "9adech nsa3 l oxygene", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "tension normal tawa", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "s5ana tla3t barcha", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "chnowa l mesure l akhra", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "batti 9albi sri3 wella", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "l'oxygène 9a3ed yenzel", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "mes valeurs mliha", "intent": "my_vitals", "lang": "darija_latin"}
+{"text": "yaaaa nhess ma nnajjamch nitnaffes", "intent": "urgent", "lang": "darija_latin"}
+{"text": "n7ess rouhi bech n9a3 men doukha", "intent": "urgent", "lang": "darija_latin"}
+{"text": "sder yoja3ni tawa tawa", "intent": "urgent", "lang": "darija_latin"}
+{"text": "Infirmière viteee", "intent": "urgent", "lang": "darija_latin"}
+{"text": "ma3adch nnajem nitnaffes tawa", "intent": "urgent", "lang": "darija_latin"}
+{"text": "dem barcha yekhrej", "intent": "urgent", "lang": "darija_latin"}
+{"text": "nheb nba3th l infirmiere 7ala", "intent": "urgent", "lang": "darija_latin"}
+{"text": "wa9a3t w rejli tzerreb", "intent": "urgent", "lang": "darija_latin"}
+{"text": "3andi crise tawa", "intent": "urgent", "lang": "darija_latin"}
+{"text": "9albi ma3adch ydhrab normal infirmière", "intent": "urgent", "lang": "darija_latin"}
+{"text": "nafass ma3adch ygouli", "intent": "urgent", "lang": "darija_latin"}
+{"text": "help stp ma nnajjamch", "intent": "urgent", "lang": "darija_latin"}
+{"text": "3andi waja3 9wi fil sder 9a3ed", "intent": "urgent", "lang": "darija_latin"}
+{"text": "bech nghmi hlp", "intent": "urgent", "lang": "darija_latin"}
+{"text": "cheft noujoum w ndou5", "intent": "urgent", "lang": "darija_latin"}
+{"text": "mahouch mliha ndakhal tawa", "intent": "urgent", "lang": "darija_latin"}
+{"text": "nerjou7 barcha w batn yoja3 stp fisa3", "intent": "urgent", "lang": "darija_latin"}
+{"text": "ma yjini hawa", "intent": "urgent", "lang": "darija_latin"}
+{"text": "jibou l infirmiere 3ajel", "intent": "urgent", "lang": "darija_latin"}
+{"text": "dem fil bol w waja3 barcha", "intent": "urgent", "lang": "darija_latin"}
+{"text": "wejhi yekhrej 3ara9 w nes9 nafass", "intent": "urgent", "lang": "darija_latin"}
+{"text": "nes7a9 stp", "intent": "urgent", "lang": "darija_latin"}
+{"text": "9albi bech yfaajer 3al infirmière", "intent": "urgent", "lang": "darija_latin"}
+{"text": "ma nchoufch mlih l'3iin tbeda", "intent": "urgent", "lang": "darija_latin"}
+{"text": "3andi zeroufa ma3adch nesta3 yedi", "intent": "urgent", "lang": "darija_latin"}
+{"text": "tkhabit l bébé w ma yetnaffesch", "intent": "urgent", "lang": "darija_latin"}
+{"text": "3andi allergie wejhi wrem tawa", "intent": "urgent", "lang": "darija_latin"}
+{"text": "sdari y9ols ma7atch nit2akked ken infirmiere", "intent": "urgent", "lang": "darija_latin"}
+{"text": "bech nfi9 bel 3ong ntakhr", "intent": "urgent", "lang": "darija_latin"}
+{"text": "n9dar nroua7 lyoum", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "l wejba wa9tech", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "chnowa l diagnostic mte3i", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "l parking fin", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "nheb nchouf l'assurance", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "est ce que nest9bel zyara", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "chnouwa l'maradh li 3andi", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "kifech nkallem l admin", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "l'factura mta3 chnowa", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "n9dar naamel x-ray ghodwa", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "chkoun l doctor mte3 l chambre 4", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "cantine mta3 l hopital", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "nheb nbadel menou chambre", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "chnowa l'khatar mte3 l'3amaliya", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "wa9tech nkhrej m3a famili", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "televizioun ma yekhdemch", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "hajti blanket zeyda", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "est-ce que mara9i khatir", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "bkadech tkallef l chambre", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "nheb cheft l papier mta3 l CNAM", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "n9dar ntal3 l bara", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "rdw bel 3ala l ma9ala wa9tech", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "chnowa dwa jdid yaatih doctor", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "ma3andi mochkla fil mutuelle chkoun nkallem", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "n9dar nechreb 9ahwa wella lé", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "chkoun yedfa3 l facture", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "l'bébé mte3i yetnafess normal wella ya3ni nes2l doctor", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "wa9tech yetfa7 l'visiteur", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "kifech nwali nemchi wahdi ba3d l 3amaliya", "intent": "ask_staff", "lang": "darija_latin"}
+{"text": "When do I take my next pill?", "intent": "next_dose", "lang": "en"}
+{"text": "C'est à quelle heure mon prochain médicament ?", "intent": "next_dose", "lang": "fr"}
+{"text": "Quels médicaments je dois prendre ce soir ?", "intent": "next_dose", "lang": "fr"}
+{"text": "Did I already take my morning tablets or not?", "intent": "next_dose", "lang": "en"}
+{"text": "J'ai oublié ma dose de midi, je fais quoi ?", "intent": "next_dose", "lang": "fr"}
+{"text": "I missed my 8 o'clock dose, should I take it now?", "intent": "next_dose", "lang": "en"}
+{"text": "Combien de comprimés il me reste dans la boîte ?", "intent": "next_dose", "lang": "fr"}
+{"text": "what time is my insulin due", "intent": "next_dose", "lang": "en"}
+{"text": "mon traitement du soir c'est quoi déjà ?", "intent": "next_dose", "lang": "fr"}
+{"text": "How many tablets am I supposed to take with dinner?", "intent": "next_dose", "lang": "en"}
+{"text": "est-ce que j'ai pris mon antibiotique aujourd'hui", "intent": "next_dose", "lang": "fr"}
+{"text": "is it time for my meds yet", "intent": "next_dose", "lang": "en"}
+{"text": "Dose suivante ?", "intent": "next_dose", "lang": "fr"}
+{"text": "Remind me which medicine I take in the afternoon", "intent": "next_dose", "lang": "en"}
+{"text": "La nurse m'a dit un médicament à 14h, c'est lequel ?", "intent": "next_dose", "lang": "fr"}
+{"text": "Can you tell me how much paracetamol I'm on and when the next one is?", "intent": "next_dose", "lang": "en"}
+{"text": "mon ordonnance dit deux fois par jour, c'est à quelle heure ?", "intent": "next_dose", "lang": "fr"}
+{"text": "I think the servo box didn't open, where's my dose", "intent": "next_dose", "lang": "en"}
+{"text": "quand je dois reprendre mon doliprane", "intent": "next_dose", "lang": "fr"}
+{"text": "am I due any medication in the next hour", "intent": "next_dose", "lang": "en"}
+{"text": "Le dawa mta3 el 9lib, c'est quand la prochaine prise ?", "intent": "next_dose", "lang": "fr"}
+{"text": "which pill is the white one for?  and when do I have it", "intent": "next_dose", "lang": "en"}
+{"text": "j'ai pris le comprimé rose ce matin ou pas ?", "intent": "next_dose", "lang": "fr"}
+{"text": "medicine schedule for today pls", "intent": "next_dose", "lang": "en"}
+{"text": "Je veux savoir mes doses de la journée", "intent": "next_dose", "lang": "fr"}
+{"text": "did the nurse already give me my blood thinner", "intent": "next_dose", "lang": "en"}
+{"text": "encore combien de jours d'antibiotiques ?", "intent": "next_dose", "lang": "fr"}
+{"text": "how many days left on my course of tablets", "intent": "next_dose", "lang": "en"}
+{"text": "prochain cachet à quelle heure svp", "intent": "next_dose", "lang": "fr"}
+{"text": "When is my next appointment?", "intent": "next_visit", "lang": "en"}
+{"text": "C'est quand mon prochain RDV ?", "intent": "next_visit", "lang": "fr"}
+{"text": "doctor visit?", "intent": "next_visit", "lang": "en"}
+{"text": "Quand est-ce que le médecin passe me voir ?", "intent": "next_visit", "lang": "fr"}
+{"text": "What time is my scan tomorrow?", "intent": "next_visit", "lang": "en"}
+{"text": "À quelle heure est mon échographie ?", "intent": "next_visit", "lang": "fr"}
+{"text": "do I have anything booked this week", "intent": "next_visit", "lang": "en"}
+{"text": "J'ai un RDV avec le cardiologue quand ?", "intent": "next_visit", "lang": "fr"}
+{"text": "When will the surgeon come round?", "intent": "next_visit", "lang": "en"}
+{"text": "ma prochaine consultation c'est quel jour", "intent": "next_visit", "lang": "fr"}
+{"text": "Which day is my follow-up check?", "intent": "next_visit", "lang": "en"}
+{"text": "Le docteur passe à quelle heure demain ?", "intent": "next_visit", "lang": "fr"}
+{"text": "my x-ray time?", "intent": "next_visit", "lang": "en"}
+{"text": "Quand est mon bilan sanguin ?", "intent": "next_visit", "lang": "fr"}
+{"text": "is the physio coming today", "intent": "next_visit", "lang": "en"}
+{"text": "Prochain contrôle ?", "intent": "next_visit", "lang": "fr"}
+{"text": "Tell me the date of my next clinic visit please", "intent": "next_visit", "lang": "en"}
+{"text": "à quelle heure je descends pour l'IRM", "intent": "next_visit", "lang": "fr"}
+{"text": "when's my ward round", "intent": "next_visit", "lang": "en"}
+{"text": "el rdv mta3i m3a el docteur à quelle date ?", "intent": "next_visit", "lang": "fr"}
+{"text": "Am I seeing the specialist before I leave?", "intent": "next_visit", "lang": "en"}
+{"text": "Je dois voir quel médecin la semaine prochaine ?", "intent": "next_visit", "lang": "fr"}
+{"text": "what time is my appointment on Thursday", "intent": "next_visit", "lang": "en"}
+{"text": "visite du docteur c'est quand", "intent": "next_visit", "lang": "fr"}
+{"text": "Have they scheduled my endoscopy yet?", "intent": "next_visit", "lang": "en"}
+{"text": "est-ce que j'ai un examen demain matin", "intent": "next_visit", "lang": "fr"}
+{"text": "When is the next doctor's round?", "intent": "next_visit", "lang": "en"}
+{"text": "Mon prochain rendez-vous de suivi, c'est pour quand ?", "intent": "next_visit", "lang": "fr"}
+{"text": "What's my blood pressure?", "intent": "my_vitals", "lang": "en"}
+{"text": "Ma tension est comment aujourd'hui ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "Quel est mon taux d'oxygène ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "Is my heart rate normal?", "intent": "my_vitals", "lang": "en"}
+{"text": "Mon pouls est bon ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "how's my oxygen level now", "intent": "my_vitals", "lang": "en"}
+{"text": "ma température a baissé ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "Can I see my last readings?", "intent": "my_vitals", "lang": "en"}
+{"text": "Quelles sont mes constantes ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "am I ok? what do my numbers say", "intent": "my_vitals", "lang": "en"}
+{"text": "ma tension de ce matin c'était combien", "intent": "my_vitals", "lang": "fr"}
+{"text": "what was my pulse at the last check", "intent": "my_vitals", "lang": "en"}
+{"text": "Est-ce que j'ai de la fièvre ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "Tell me my sats please", "intent": "my_vitals", "lang": "en"}
+{"text": "mon taux de saturation c'est combien ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "How is my blood pressure compared to yesterday?", "intent": "my_vitals", "lang": "en"}
+{"text": "est-ce que mes chiffres sont corrects", "intent": "my_vitals", "lang": "fr"}
+{"text": "is my temp still high", "intent": "my_vitals", "lang": "en"}
+{"text": "Mon coeur bat à combien ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "show me my vitals", "intent": "my_vitals", "lang": "en"}
+{"text": "ma tension w el sokkor lyoum kifech", "intent": "my_vitals", "lang": "fr"}
+{"text": "am I running a fever?", "intent": "my_vitals", "lang": "en"}
+{"text": "dernière mesure de pulsation", "intent": "my_vitals", "lang": "fr"}
+{"text": "Has my heart rate gone up in the night?", "intent": "my_vitals", "lang": "en"}
+{"text": "ma saturation est normale ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "BP now?", "intent": "my_vitals", "lang": "en"}
+{"text": "Et mon oxygène, ça va ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "Are my readings stable?", "intent": "my_vitals", "lang": "en"}
+{"text": "ma température d'hier soir c'était combien", "intent": "my_vitals", "lang": "fr"}
+{"text": "I can't breathe!", "intent": "urgent", "lang": "en"}
+{"text": "call the nurse now", "intent": "urgent", "lang": "en"}
+{"text": "J'ai mal à la poitrine", "intent": "urgent", "lang": "fr"}
+{"text": "Je vais m'évanouir", "intent": "urgent", "lang": "fr"}
+{"text": "my chest hurts", "intent": "urgent", "lang": "en"}
+{"text": "appelez une infirmière tout de suite", "intent": "urgent", "lang": "fr"}
+{"text": "I fell on the floor and can't get up", "intent": "urgent", "lang": "en"}
+{"text": "Je suis tombé dans la salle de bain", "intent": "urgent", "lang": "fr"}
+{"text": "help please i feel very dizzy and sick", "intent": "urgent", "lang": "en"}
+{"text": "j'ai le coeur qui bat super vite et je me sens mal", "intent": "urgent", "lang": "fr"}
+{"text": "Something's wrong, I'm sweating and my arm feels numb", "intent": "urgent", "lang": "en"}
+{"text": "infirmière svp urgent", "intent": "urgent", "lang": "fr"}
+{"text": "I'm bleeding and it won't stop", "intent": "urgent", "lang": "en"}
+{"text": "ça saigne beaucoup, aidez-moi", "intent": "urgent", "lang": "fr"}
+{"text": "nurse!! now", "intent": "urgent", "lang": "en"}
+{"text": "J'étouffe", "intent": "urgent", "lang": "fr"}
+{"text": "I think I'm having a seizure coming on", "intent": "urgent", "lang": "en"}
+{"text": "ma jambe ne bouge plus et ma bouche est bizarre", "intent": "urgent", "lang": "fr"}
+{"text": "Can someone come quickly, my drip has come out and there's blood everywhere", "intent": "urgent", "lang": "en"}
+{"text": "I've got a terrible pain in my stomach, come now", "intent": "urgent", "lang": "en"}
+{"text": "J'ai très mal à la tête d'un coup, c'est horrible", "intent": "urgent", "lang": "fr"}
+{"text": "feeling like i might pass out", "intent": "urgent", "lang": "en"}
+{"text": "Quelqu'un peut venir ? j'ai du mal à respirer", "intent": "urgent", "lang": "fr"}
+{"text": "Help, I'm choking", "intent": "urgent", "lang": "en"}
+{"text": "ma perfusion a un problème et j'ai très mal au bras", "intent": "urgent", "lang": "fr"}
+{"text": "my face feels strange and I can't speak properly", "intent": "urgent", "lang": "en"}
+{"text": "besoin d'aide maintenant", "intent": "urgent", "lang": "fr"}
+{"text": "The pain is unbearable, please send someone", "intent": "urgent", "lang": "en"}
+{"text": "je me sens partir, vite", "intent": "urgent", "lang": "fr"}
+{"text": "I've just been sick and I feel faint, can a nurse come", "intent": "urgent", "lang": "en"}
+{"text": "j'ai vu du sang dans mes selles, venez", "intent": "urgent", "lang": "fr"}
+{"text": "my heart is pounding out of my chest", "intent": "urgent", "lang": "en"}
+{"text": "je tombe, aidez moi", "intent": "urgent", "lang": "fr"}
+{"text": "Can I go home today?", "intent": "ask_staff", "lang": "en"}
+{"text": "Est-ce que je peux sortir demain ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "Where is the parking?", "intent": "ask_staff", "lang": "en"}
+{"text": "Y a-t-il le Wi-Fi dans la chambre ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "what's for lunch", "intent": "ask_staff", "lang": "en"}
+{"text": "Does my insurance cover this stay?", "intent": "ask_staff", "lang": "en"}
+{"text": "Comment je fais pour la mutuelle ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "Why do I have to stay another night?", "intent": "ask_staff", "lang": "en"}
+{"text": "Est-ce grave ce que j'ai ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "Can my sister visit after 8pm?", "intent": "ask_staff", "lang": "en"}
+{"text": "Est-ce que ma voisine de chambre a quoi ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "Is the Wi-Fi password written anywhere?", "intent": "ask_staff", "lang": "en"}
+{"text": "Mon diagnostic, vous pouvez m'expliquer ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "how much will the bill be", "intent": "ask_staff", "lang": "en"}
+{"text": "Je peux manger quoi ce soir ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "Can I have an extra blanket?", "intent": "ask_staff", "lang": "en"}
+{"text": "À quelle heure sont les visites ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "Is it normal to have this scar after the operation?", "intent": "ask_staff", "lang": "en"}
+{"text": "C'est quand que je vais guérir ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "where can I charge my phone", "intent": "ask_staff", "lang": "en"}
+{"text": "Est-ce que je peux prendre une douche ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "Who is the doctor looking after me?", "intent": "ask_staff", "lang": "en"}
+{"text": "je peux fumer dehors ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "can i get a copy of my discharge letter", "intent": "ask_staff", "lang": "en"}
+{"text": "Le résultat de mon scanner, c'est bon ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "Can you change my room, it's too noisy", "intent": "ask_staff", "lang": "en"}
+{"text": "quand est-ce que je peux reprendre le sport ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "what's wrong with the man next to me", "intent": "ask_staff", "lang": "en"}
+{"text": "est-ce qu'on peut me ramener un café", "intent": "ask_staff", "lang": "fr"}
+{"text": "Will I need surgery?", "intent": "ask_staff", "lang": "en"}
+{"text": "Où se trouve la cafétéria ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "wat time do i take the tablets agian", "intent": "next_dose", "lang": "en"}
+{"text": "Il me reste combien de doses aujourd'hui ?", "intent": "next_dose", "lang": "fr"}
+{"text": "Should I take the antibiotic with food and when's the next one?", "intent": "next_dose", "lang": "en"}
+{"text": "quel médicament avant le repas ?", "intent": "next_dose", "lang": "fr"}
+{"text": "have I had my heart tablet this morning", "intent": "next_dose", "lang": "en"}
+{"text": "je sais plus si j'ai avalé mon cachet de 20h", "intent": "next_dose", "lang": "fr"}
+{"text": "My next dose, how long to wait?", "intent": "next_dose", "lang": "en"}
+{"text": "C'est l'heure de mon traitement ?", "intent": "next_dose", "lang": "fr"}
+{"text": "medication timetable", "intent": "next_dose", "lang": "en"}
+{"text": "Quand dois-je reprendre mon insuline ?", "intent": "next_dose", "lang": "fr"}
+{"text": "Is it too early to take the evening pill?", "intent": "next_dose", "lang": "en"}
+{"text": "dawa 3chiya w sbeh, quand exactement ?", "intent": "next_dose", "lang": "fr"}
+{"text": "The box beeped, which pill do I need to take?", "intent": "next_dose", "lang": "en"}
+{"text": "j'ai sauté ma dose cette nuit, je rattrape ?", "intent": "next_dose", "lang": "fr"}
+{"text": "can you check if my pain relief is due", "intent": "next_dose", "lang": "en"}
+{"text": "Rappelle-moi mes médicaments de demain matin", "intent": "next_dose", "lang": "fr"}
+{"text": "how many pills left for the week?", "intent": "next_dose", "lang": "en"}
+{"text": "Est-ce que l'infirmière m'a déjà donné mon traitement ?", "intent": "next_dose", "lang": "fr"}
+{"text": "next injection time?", "intent": "next_dose", "lang": "en"}
+{"text": "mes comprimés pour la tension, à quelle heure ?", "intent": "next_dose", "lang": "fr"}
+{"text": "Did I skip my dose by mistake", "intent": "next_dose", "lang": "en"}
+{"text": "ça fait combien de temps que j'ai pris mon dernier médicament", "intent": "next_dose", "lang": "fr"}
+{"text": "I need to know what to take before bed", "intent": "next_dose", "lang": "en"}
+{"text": "dose du soir ?", "intent": "next_dose", "lang": "fr"}
+{"text": "Please tell me about my medication for today", "intent": "next_dose", "lang": "en"}
+{"text": "je dois prendre combien de gélules le matin", "intent": "next_dose", "lang": "fr"}
+{"text": "when can I have another painkiller", "intent": "next_dose", "lang": "en"}
+{"text": "i forgot whether i took the water pill", "intent": "next_dose", "lang": "en"}
+{"text": "What day is my follow up, I forget", "intent": "next_visit", "lang": "en"}
+{"text": "Quand est-ce que je revois le docteur ?", "intent": "next_visit", "lang": "fr"}
+{"text": "any tests booked for tomorrow?", "intent": "next_visit", "lang": "en"}
+{"text": "Mon scanner est prévu quand ?", "intent": "next_visit", "lang": "fr"}
+{"text": "When do I get seen by the cardiologist", "intent": "next_visit", "lang": "en"}
+{"text": "c'est pour quand mon prochain examen", "intent": "next_visit", "lang": "fr"}
+{"text": "next visit?", "intent": "next_visit", "lang": "en"}
+{"text": "On m'a dit qu'un médecin passerait cet après-midi, c'est à quelle heure ?", "intent": "next_visit", "lang": "fr"}
+{"text": "when is my dialysis session", "intent": "next_visit", "lang": "en"}
+{"text": "Je dois aller faire une prise de sang quand ?", "intent": "next_visit", "lang": "fr"}
+{"text": "Who am I seeing next and when", "intent": "next_visit", "lang": "en"}
+{"text": "ma consultation avec le chirurgien est à quelle heure", "intent": "next_visit", "lang": "fr"}
+{"text": "can you remind me of my RDV tomorrow", "intent": "next_visit", "lang": "en"}
+{"text": "prochain RDV svp", "intent": "next_visit", "lang": "fr"}
+{"text": "What time does the doctor see me on Monday", "intent": "next_visit", "lang": "en"}
+{"text": "je veux connaître la date de mon contrôle", "intent": "next_visit", "lang": "fr"}
+{"text": "What's the plan for tomorrow, any exams?", "intent": "next_visit", "lang": "en"}
+{"text": "A quelle heure vient la kiné ?", "intent": "next_visit", "lang": "fr"}
+{"text": "do i have a check up after discharge", "intent": "next_visit", "lang": "en"}
+{"text": "el docteur ijih kn fi wa9t ?", "intent": "next_visit", "lang": "fr"}
+{"text": "When is my echo scheduled?", "intent": "next_visit", "lang": "en"}
+{"text": "je vais passer quand pour mon radio", "intent": "next_visit", "lang": "fr"}
+{"text": "appt time?", "intent": "next_visit", "lang": "en"}
+{"text": "Il y a un rendez-vous de prévu avant ma sortie ?", "intent": "next_visit", "lang": "fr"}
+{"text": "When can I expect the consultant?", "intent": "next_visit", "lang": "en"}
+{"text": "c'est quand la visite de l'équipe médicale", "intent": "next_visit", "lang": "fr"}
+{"text": "Is my appointment still on for Friday?", "intent": "next_visit", "lang": "en"}
+{"text": "le bilan sanguin de demain, à jeun, à quelle heure ?", "intent": "next_visit", "lang": "fr"}
+{"text": "how's my sugar level?", "intent": "my_vitals", "lang": "en"}
+{"text": "Mon taux de sucre est comment ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "What is my pulse right now", "intent": "my_vitals", "lang": "en"}
+{"text": "Est-ce que mon oxygène est bas ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "Is my temperature back to normal?", "intent": "my_vitals", "lang": "en"}
+{"text": "ma tension est trop haute ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "latest blood pressure reading please", "intent": "my_vitals", "lang": "en"}
+{"text": "dites-moi mon rythme cardiaque", "intent": "my_vitals", "lang": "fr"}
+{"text": "Is everything okay with my numbers?", "intent": "my_vitals", "lang": "en"}
+{"text": "mes paramètres sont normaux ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "oxygen?", "intent": "my_vitals", "lang": "en"}
+{"text": "La tension de ce soir, elle est bonne ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "My watch says 110 bpm, what does the monitor say?", "intent": "my_vitals", "lang": "en"}
+{"text": "ma fièvre est descendue depuis ce matin ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "have my vitals improved since morning", "intent": "my_vitals", "lang": "en"}
+{"text": "quelle est ma dernière température", "intent": "my_vitals", "lang": "fr"}
+{"text": "check my pulse and blood pressure for me", "intent": "my_vitals", "lang": "en"}
+{"text": "je veux voir mes résultats de tension", "intent": "my_vitals", "lang": "fr"}
+{"text": "Am I okay? What's my oxygen saturation", "intent": "my_vitals", "lang": "en"}
+{"text": "est ce que je vais bien niveau chiffres", "intent": "my_vitals", "lang": "fr"}
+{"text": "what was my highest temp today", "intent": "my_vitals", "lang": "en"}
+{"text": "ma tension w sakhana, kifech houma", "intent": "my_vitals", "lang": "fr"}
+{"text": "est-ce que mon taux d'oxygène est stable ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "temperature reading", "intent": "my_vitals", "lang": "en"}
+{"text": "Et mon pouls la nuit dernière ?", "intent": "my_vitals", "lang": "fr"}
+{"text": "are my sats alright, the clip fell off", "intent": "my_vitals", "lang": "en"}
+{"text": "constantes du jour", "intent": "my_vitals", "lang": "fr"}
+{"text": "Is my blood pressure too low?", "intent": "my_vitals", "lang": "en"}
+{"text": "I think I'm having a heart attack", "intent": "urgent", "lang": "en"}
+{"text": "Venez vite, je me sens mal, j'ai la tête qui tourne énormément", "intent": "urgent", "lang": "fr"}
+{"text": "everything is going black", "intent": "urgent", "lang": "en"}
+{"text": "infirmière !! maintenant", "intent": "urgent", "lang": "fr"}
+{"text": "I can't feel my left arm", "intent": "urgent", "lang": "en"}
+{"text": "Je tombe, je n'arrive plus à tenir debout", "intent": "urgent", "lang": "fr"}
+{"text": "Please hurry, I'm having trouble breathing and my lips feel tingly", "intent": "urgent", "lang": "en"}
+{"text": "c'est urgent, j'ai une douleur horrible dans le ventre", "intent": "urgent", "lang": "fr"}
+{"text": "I'm bleeding from my wound, it's soaking the bandage", "intent": "urgent", "lang": "en"}
+{"text": "J'ai vomi du sang", "intent": "urgent", "lang": "fr"}
+{"text": "i fell out of bed", "intent": "urgent", "lang": "en"}
+{"text": "ma perfusion saigne et mon bras gonfle", "intent": "urgent", "lang": "fr"}
+{"text": "get someone now, my chest is so tight", "intent": "urgent", "lang": "en"}
+{"text": "J'ai une crise, je tremble de partout", "intent": "urgent", "lang": "fr"}
+{"text": "Nurse please, I feel like I'm going to be sick and my heart is racing", "intent": "urgent", "lang": "en"}
+{"text": "nheb docteur tawa, je me sens mourir", "intent": "urgent", "lang": "fr"}
+{"text": "I'm very short of breath, it's getting worse", "intent": "urgent", "lang": "en"}
+{"text": "Il y a un malaise, mon voisin de lit ne répond plus", "intent": "urgent", "lang": "fr"}
+{"text": "I've had a sudden terrible headache and can't see properly", "intent": "urgent", "lang": "en"}
+{"text": "j'ai chuté en allant aux toilettes", "intent": "urgent", "lang": "fr"}
+{"text": "ça me serre dans la poitrine, c'est urgent", "intent": "urgent", "lang": "fr"}
+{"text": "My drip alarm is going and I feel cold and shaky", "intent": "urgent", "lang": "en"}
+{"text": "je saigne du nez et ça ne s'arrête pas", "intent": "urgent", "lang": "fr"}
+{"text": "Someone come, I'm in agony", "intent": "urgent", "lang": "en"}
+{"text": "J'arrive pas à respirer normalement, venez", "intent": "urgent", "lang": "fr"}
+{"text": "Can I eat before the test?", "intent": "ask_staff", "lang": "en"}
+{"text": "Le médecin peut m'expliquer pourquoi j'ai de la fièvre ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "How long will I be in hospital?", "intent": "ask_staff", "lang": "en"}
+{"text": "Est-ce que je suis contagieux ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "Can you call my family for me?", "intent": "ask_staff", "lang": "en"}
+{"text": "C'est normal si j'ai des nausées avec ce traitement ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "Is there a prayer room?", "intent": "ask_staff", "lang": "en"}
+{"text": "Je voudrais changer de lit", "intent": "ask_staff", "lang": "fr"}
+{"text": "When will I get my test results explained?", "intent": "ask_staff", "lang": "en"}
+{"text": "Pourquoi on ne m'a rien donné à manger ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "Do I need to bring my own medication from home?", "intent": "ask_staff", "lang": "en"}
+{"text": "puis-je avoir un certificat d'hospitalisation ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "Can my husband stay overnight?", "intent": "ask_staff", "lang": "en"}
+{"text": "Qui est le médecin de garde ce soir ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "will this operation hurt", "intent": "ask_staff", "lang": "en"}
+{"text": "Où je peux payer ma facture ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "Is the TV free?", "intent": "ask_staff", "lang": "en"}
+{"text": "Est-ce que ma maladie est héréditaire ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "do you do vegetarian meals", "intent": "ask_staff", "lang": "en"}
+{"text": "Je peux avoir les résultats de mon analyse d'urine ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "Is it safe to drive after I leave", "intent": "ask_staff", "lang": "en"}
+{"text": "est-ce que je peux avoir de la visite aujourd'hui", "intent": "ask_staff", "lang": "fr"}
+{"text": "What are the side effects of my drugs?", "intent": "ask_staff", "lang": "en"}
+{"text": "J'ai une question sur mon dossier médical", "intent": "ask_staff", "lang": "fr"}
+{"text": "Why was my room changed?", "intent": "ask_staff", "lang": "en"}
+{"text": "c'est quoi ce médicament, à quoi il sert ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "can I speak with the dietician", "intent": "ask_staff", "lang": "en"}
+{"text": "Mon lit est cassé, qui peut le réparer ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "what did the doctor say about my X-ray", "intent": "ask_staff", "lang": "en"}
+{"text": "comment on fait pour la prise en charge CNAM ?", "intent": "ask_staff", "lang": "fr"}
+{"text": "is my roommate going to be discharged soon", "intent": "ask_staff", "lang": "en"}
+{"text": "je peux prendre un jus ?", "intent": "ask_staff", "lang": "fr"}

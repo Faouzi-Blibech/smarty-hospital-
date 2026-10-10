@@ -1,0 +1,32 @@
+{
+  "train_rows": 1174,
+  "v1_weight": 0.3,
+  "c": 8.0,
+  "max_features": 15000,
+  "v1_eval": {
+    "accuracy": 0.889,
+    "n": 36
+  },
+  "misses": [
+    {
+      "text": "What am I supposed to swallow at bedtime?",
+      "expected": "next_dose",
+      "got": "next_visit"
+    },
+    {
+      "text": "Je dois avaler quoi ce midi ?",
+      "expected": "next_dose",
+      "got": "ask_staff"
+    },
+    {
+      "text": "There is blood everywhere on my bandage",
+      "expected": "urgent",
+      "got": "my_vitals"
+    },
+    {
+      "text": "À quoi sert ce sirop que l'infirmière m'a donné ?",
+      "expected": "ask_staff",
+      "got": "next_dose"
+    }
+  ]
+}

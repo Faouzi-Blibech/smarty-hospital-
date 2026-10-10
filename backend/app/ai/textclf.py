@@ -1,6 +1,6 @@
 """Trained text classifiers: character n-gram TF-IDF + multinomial logistic regression (owner: Faouzi).
 
-Used for triage urgency (`models/triage.v1.json`) and assistant intents (`models/intent.v1.json`). Trained with
+Used for triage urgency (`models/triage.v2.json`) and assistant intents (`models/intent.v2.json`). Trained with
 scikit-learn by `app/ai/training/train_textclf.py`, exported to plain JSON, and scored here in pure Python, so the
 API needs neither scikit-learn nor a pickle. Character n-grams cope with French accents, Arabic script and Darija
 spelling variants without a tokenizer.
@@ -33,7 +33,7 @@ def char_wb_ngrams(text: str, n_min: int, n_max: int) -> list[str]:
 
 @lru_cache
 def load(name: str) -> dict | None:
-    """`name` like "triage.v1"; None when that model file is not shipped."""
+    """`name` like "triage.v2"; None when that model file is not shipped."""
     path = MODELS / f"{name}.json"
     if not path.exists():
         return None

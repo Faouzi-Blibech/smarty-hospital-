@@ -1,0 +1,156 @@
+{"text": "sadri y9ous 9awi w el 3a9 yjini barcha, yeddi el isra ytnamel", "age": 59, "expected": 5, "lang": "darija_latin", "category": "red_flag_paraphrase", "flag": "chest_pain"}
+{"text": "صدري يوجعني برشا و يدي اليسار تنمل", "age": 62, "expected": 5, "lang": "darija_ar", "category": "red_flag_paraphrase", "flag": "chest_pain"}
+{"text": "Sudden facial droop and slurred speech", "age": 72, "expected": 5, "lang": "en", "category": "red_flag_explicit", "flag": "stroke_signs"}
+{"text": "التواء في الفم وضعف مفاجئ في الذراع الأيمن", "age": 66, "expected": 5, "lang": "ar", "category": "red_flag_paraphrase", "flag": "stroke_signs"}
+{"text": "wejhi tmayel w lsani ye9el, ma3adtch na3raf nahki", "age": 68, "expected": 5, "lang": "darija_latin", "category": "red_flag_paraphrase", "flag": "stroke_signs"}
+{"text": "ما عادش ينجم يرفع يدو اليمين و لسانو تقيل فجأة", "age": 71, "expected": 5, "lang": "darija_ar", "category": "red_flag_paraphrase", "flag": "stroke_signs"}
+{"text": "Heavy bleeding that will not stop after a deep cut", "age": 34, "expected": 5, "lang": "en", "category": "red_flag_explicit", "flag": "severe_bleeding"}
+{"text": "نزيف شديد لا يتوقف من الساق", "age": 50, "expected": 5, "lang": "ar", "category": "red_flag_explicit", "flag": "severe_bleeding"}
+{"text": "dem barcha yodhrob men rajli w ma yawe9ch", "age": 52, "expected": 5, "lang": "darija_latin", "category": "red_flag_paraphrase", "flag": "severe_bleeding"}
+{"text": "الدم يسيل برشا من يدو و ما يوقفش", "age": 40, "expected": 5, "lang": "darija_ar", "category": "red_flag_paraphrase", "flag": "severe_bleeding"}
+{"text": "Difficulté à respirer, lèvres bleues", "age": 48, "expected": 5, "lang": "fr", "category": "red_flag_explicit", "flag": "breathing"}
+{"text": "gasping, can only say two words at a time", "age": 66, "expected": 5, "lang": "en", "category": "red_flag_paraphrase", "flag": "breathing"}
+{"text": "nafsi mabin 9a3ed yji, nkhenek", "age": 44, "expected": 5, "lang": "darija_latin", "category": "red_flag_paraphrase", "flag": "breathing"}
+{"text": "فقد الوعي فجأة أثناء الصلاة", "age": 64, "expected": 5, "lang": "ar", "category": "red_flag_explicit", "flag": "loss_of_consciousness"}
+{"text": "she collapsed in the kitchen and would not wake up", "age": 78, "expected": 5, "lang": "en", "category": "red_flag_paraphrase", "flag": "loss_of_consciousness"}
+{"text": "طاح و غاب على الدنيا مدة دقيقتين", "age": 55, "expected": 5, "lang": "darija_ar", "category": "red_flag_paraphrase", "flag": "loss_of_consciousness"}
+{"text": "Pregnant, 28 weeks, vaginal bleeding since this morning", "age": 29, "expected": 5, "lang": "en", "category": "red_flag_explicit", "flag": "pregnancy_bleeding"}
+{"text": "حامل في الشهر السابع ولدي نزيف", "age": 27, "expected": 5, "lang": "ar", "category": "red_flag_explicit", "flag": "pregnancy_bleeding"}
+{"text": "mon test est positif et je perds du sang depuis hier avec des crampes", "age": 24, "expected": 5, "lang": "fr", "category": "red_flag_paraphrase", "flag": "pregnancy_bleeding"}
+{"text": "7amla fil chhar 3 w yji dem w nes7a9 fil kersh", "age": 26, "expected": 5, "lang": "darija_latin", "category": "red_flag_paraphrase", "flag": "pregnancy_bleeding"}
+{"text": "Baby 2 months old with fever 39", "age": 0, "expected": 4, "lang": "en", "category": "red_flag_explicit", "flag": "high_fever_child"}
+{"text": "طفل عمره شهرين حرارته 39", "age": 0, "expected": 4, "lang": "ar", "category": "red_flag_explicit", "flag": "high_fever_child"}
+{"text": "bebe 3andou 3 chhour w skhana 39", "age": 0, "expected": 4, "lang": "darija_latin", "category": "red_flag_explicit", "flag": "high_fever_child"}
+{"text": "ولدي صغير عنده سخانة عالية برشا و ما يرضعش", "age": 0, "expected": 4, "lang": "darija_ar", "category": "red_flag_paraphrase", "flag": "high_fever_child"}
+{"text": "I want to kill myself", "age": 22, "expected": 5, "lang": "en", "category": "red_flag_explicit", "flag": "suicide_self_harm"}
+{"text": "أفكر في الانتحار وأريد إنهاء حياتي", "age": 28, "expected": 5, "lang": "ar", "category": "red_flag_explicit", "flag": "suicide_self_harm"}
+{"text": "je n'en peux plus, tout le monde serait mieux sans moi", "age": 41, "expected": 5, "lang": "fr", "category": "red_flag_paraphrase", "flag": "suicide_self_harm"}
+{"text": "نحب نقتل روحي", "age": 26, "expected": 5, "lang": "darija_ar", "category": "red_flag_explicit", "flag": "suicide_self_harm"}
+{"text": "Il a avalé toute la boîte de somnifères", "age": 47, "expected": 5, "lang": "fr", "category": "red_flag_explicit", "flag": "overdose"}
+{"text": "تناولت كمية كبيرة من الأقراص عمدا", "age": 32, "expected": 5, "lang": "ar", "category": "red_flag_paraphrase", "flag": "overdose"}
+{"text": "ebni bela3 kol el 7bob mta3 el dwa w 9a3ed yna3es", "age": 14, "expected": 5, "lang": "darija_latin", "category": "red_flag_paraphrase", "flag": "overdose"}
+{"text": "شرب برشا دواء مرة واحدة و تقيا", "age": 37, "expected": 5, "lang": "darija_ar", "category": "red_flag_paraphrase", "flag": "overdose"}
+{"text": "Throat swelling and hives after eating peanuts", "age": 12, "expected": 5, "lang": "en", "category": "red_flag_explicit", "flag": "anaphylaxis"}
+{"text": "تورم في الحلق والوجه بعد تناول الجمبري", "age": 29, "expected": 5, "lang": "ar", "category": "red_flag_explicit", "flag": "anaphylaxis"}
+{"text": "après la pénicilline il a des plaques partout et la langue qui gonfle", "age": 8, "expected": 5, "lang": "fr", "category": "red_flag_paraphrase", "flag": "anaphylaxis"}
+{"text": "tnefekh wejhi w 7alqi men ba3d el 7out", "age": 23, "expected": 5, "lang": "darija_latin", "category": "red_flag_paraphrase", "flag": "anaphylaxis"}
+{"text": "Crise convulsive ce matin, il tremblait et bavait", "age": 11, "expected": 5, "lang": "fr", "category": "red_flag_explicit", "flag": "seizure"}
+{"text": "نوبة صرع وتشنجات منذ دقائق", "age": 20, "expected": 5, "lang": "ar", "category": "red_flag_explicit", "flag": "seizure"}
+{"text": "she went rigid, eyes rolled back, jerking for two minutes", "age": 7, "expected": 5, "lang": "en", "category": "red_flag_paraphrase", "flag": "seizure"}
+{"text": "طاح و بدا يرتعش و عينيه يبرمو", "age": 18, "expected": 5, "lang": "darija_ar", "category": "red_flag_paraphrase", "flag": "seizure"}
+{"text": "Je me suis trompé de médicament, j'ai pris les comprimés de ma mère", "age": 44, "expected": 4, "lang": "fr", "category": "red_flag_explicit", "flag": "medication_error"}
+{"text": "أخذت جرعة مضاعفة من الدواء بالخطأ", "age": 53, "expected": 4, "lang": "ar", "category": "red_flag_explicit", "flag": "medication_error"}
+{"text": "ghalatt w khdhit double dose mta3 el insuline", "age": 58, "expected": 4, "lang": "darija_latin", "category": "red_flag_explicit", "flag": "medication_error"}
+{"text": "nurse says wrong tablets were handed out and he already took them", "age": 73, "expected": 4, "lang": "en", "category": "red_flag_paraphrase", "flag": "medication_error"}
+{"text": "pas de douleur thoracique, juste un certificat médical", "age": 35, "expected": 1, "lang": "fr", "category": "negation", "flag": null}
+{"text": "no chest pain or breathing problems, here for a medication refill", "age": 50, "expected": 2, "lang": "en", "category": "negation", "flag": null}
+{"text": "denies shortness of breath, requests a sick note", "age": 29, "expected": 1, "lang": "en", "category": "negation", "flag": null}
+{"text": "لا يوجد ألم في الصدر، أريد فقط شهادة طبية", "age": 40, "expected": 1, "lang": "ar", "category": "negation", "flag": null}
+{"text": "بدون ضيق في التنفس، موعد متابعة روتينية", "age": 45, "expected": 2, "lang": "ar", "category": "negation", "flag": null}
+{"text": "ma 3andi 7ata waja3 fi sadri, jit bech n3adi certificat", "age": 33, "expected": 1, "lang": "darija_latin", "category": "negation", "flag": null}
+{"text": "ma fammech ghossa fi tnefes, nheb ken ordonnance jdida", "age": 56, "expected": 2, "lang": "darija_latin", "category": "negation", "flag": null}
+{"text": "ما عندي حتى وجع في صدري، جيت نجدد الوصفة", "age": 58, "expected": 2, "lang": "darija_ar", "category": "negation", "flag": null}
+{"text": "sans fièvre ni toux, je viens pour un vaccin de voyage", "age": 26, "expected": 1, "lang": "fr", "category": "negation", "flag": null}
+{"text": "never fainted, no seizures, needs a form for gym membership", "age": 31, "expected": 1, "lang": "en", "category": "negation", "flag": null}
+{"text": "pas de saignement, pas d'idées noires, bilan annuel", "age": 39, "expected": 1, "lang": "fr", "category": "negation", "flag": null}
+{"text": "ما فماش نزيف و ما فماش سخانة، جاي للمراجعة العادية", "age": 47, "expected": 1, "lang": "darija_ar", "category": "negation", "flag": null}
+{"text": "Request for a medical certificate for school sports", "age": 15, "expected": 1, "lang": "en", "category": "routine", "flag": null}
+{"text": "Prescription renewal for blood pressure tablets, well controlled", "age": 66, "expected": 2, "lang": "en", "category": "routine", "flag": null}
+{"text": "Need a letter for my employer confirming my visit", "age": 41, "expected": 1, "lang": "en", "category": "routine", "flag": null}
+{"text": "Annual check-up, no complaints", "age": 38, "expected": 1, "lang": "en", "category": "routine", "flag": null}
+{"text": "Please book a follow-up for my diabetes review", "age": 59, "expected": 2, "lang": "en", "category": "routine", "flag": null}
+{"text": "Vaccination records update", "age": 8, "expected": 1, "lang": "en", "category": "routine", "flag": null}
+{"text": "Mild seasonal allergies, sneezing in the mornings", "age": 24, "expected": 2, "lang": "en", "category": "routine", "flag": null}
+{"text": "presciption refill for cholestrol", "age": 55, "expected": 2, "lang": "en", "category": "routine", "flag": null}
+{"text": "Demande de certificat pour le permis de conduire", "age": 45, "expected": 1, "lang": "fr", "category": "routine", "flag": null}
+{"text": "Bilan de routine, aucune plainte", "age": 33, "expected": 1, "lang": "fr", "category": "routine", "flag": null}
+{"text": "Petite toux sèche depuis deux jours, pas de fièvre", "age": 27, "expected": 2, "lang": "fr", "category": "routine", "flag": null}
+{"text": "Rhume léger, nez qui coule", "age": 19, "expected": 2, "lang": "fr", "category": "routine", "flag": null}
+{"text": "Contrôle annuel de la vue", "age": 50, "expected": 1, "lang": "fr", "category": "routine", "flag": null}
+{"text": "check-up de routine, rien de spécial", "age": 82, "expected": 2, "lang": "fr", "category": "routine", "flag": null}
+{"text": "تجديد وصفة الدواء للسكري", "age": 61, "expected": 2, "lang": "ar", "category": "routine", "flag": null}
+{"text": "شهادة طبية للعمل", "age": 33, "expected": 1, "lang": "ar", "category": "routine", "flag": null}
+{"text": "فحص دوري سنوي بدون أي شكوى", "age": 40, "expected": 1, "lang": "ar", "category": "routine", "flag": null}
+{"text": "زكام خفيف وسعال بسيط", "age": 22, "expected": 2, "lang": "ar", "category": "routine", "flag": null}
+{"text": "طلب تقرير طبي للتأمين", "age": 47, "expected": 1, "lang": "ar", "category": "routine", "flag": null}
+{"text": "نحب شهادة طبية للخدمة", "age": 31, "expected": 1, "lang": "darija_ar", "category": "routine", "flag": null}
+{"text": "عندي زكام خفيف من يومين", "age": 25, "expected": 2, "lang": "darija_ar", "category": "routine", "flag": null}
+{"text": "جيت نعمل الفحص السنوي", "age": 45, "expected": 1, "lang": "darija_ar", "category": "routine", "flag": null}
+{"text": "nheb njaded el ordonnance mta3 tension, mchit mli7", "age": 63, "expected": 2, "lang": "darija_latin", "category": "routine", "flag": null}
+{"text": "nheb certificat medical lel khedma", "age": 30, "expected": 1, "lang": "darija_latin", "category": "routine", "flag": null}
+{"text": "3andi rho9a khfifa men yomin, ma 3andi 7ata skhana", "age": 28, "expected": 2, "lang": "darija_latin", "category": "routine", "flag": null}
+{"text": "bilan sanawi, 7ata chkeya", "age": 42, "expected": 1, "lang": "darija_latin", "category": "routine", "flag": null}
+{"text": "need un certificat médical svp pour le sport", "age": 17, "expected": 1, "lang": "fr", "category": "routine", "flag": null}
+{"text": "certificat", "age": 30, "expected": 1, "lang": "fr", "category": "routine", "flag": null}
+{"text": "refill", "age": 50, "expected": 2, "lang": "en", "category": "routine", "flag": null}
+{"text": "rendez-vous de suivi pour résultats d'analyse normaux", "age": 44, "expected": 2, "lang": "fr", "category": "routine", "flag": null}
+{"text": "طلب نسخة من نتائج التحاليل القديمة", "age": 36, "expected": 1, "lang": "ar", "category": "routine", "flag": null}
+{"text": "ndhef 3al asnen, nheb nkhalles rendez-vous", "age": 29, "expected": 1, "lang": "darija_latin", "category": "routine", "flag": null}
+{"text": "حبوب الشباب في الوجه من شهور", "age": 17, "expected": 1, "lang": "darija_ar", "category": "routine", "flag": null}
+{"text": "rash on my elbow for weeks, not painful", "age": 32, "expected": 2, "lang": "en", "category": "routine", "flag": null}
+{"text": "tension bien contrôlée, juste pour la prochaine ordonnance", "age": 70, "expected": 2, "lang": "fr", "category": "routine", "flag": null}
+{"text": "Fever 39 for four days in an elderly man", "age": 78, "expected": 4, "lang": "en", "category": "borderline", "flag": null}
+{"text": "Lump in the breast found two weeks ago", "age": 44, "expected": 3, "lang": "en", "category": "borderline", "flag": null}
+{"text": "Blood in the urine since this morning", "age": 35, "expected": 3, "lang": "en", "category": "borderline", "flag": null}
+{"text": "Severe headache, the worst of my life, came on in seconds", "age": 40, "expected": 4, "lang": "en", "category": "borderline", "flag": null}
+{"text": "Fall at home, hip pain, cannot put weight on the leg", "age": 82, "expected": 4, "lang": "en", "category": "borderline", "flag": null}
+{"text": "Palpitations on and off for a week", "age": 45, "expected": 3, "lang": "en", "category": "borderline", "flag": null}
+{"text": "Diabetic with a foot wound turning black", "age": 63, "expected": 4, "lang": "en", "category": "borderline", "flag": null}
+{"text": "mild chest tightness after climbing stairs, goes away on resting", "age": 66, "expected": 4, "lang": "en", "category": "borderline", "flag": null}
+{"text": "twisted ankle yesterday, swollen but I can walk", "age": 28, "expected": 2, "lang": "en", "category": "borderline", "flag": null}
+{"text": "burning when urinating, no fever", "age": 31, "expected": 3, "lang": "en", "category": "borderline", "flag": null}
+{"text": "new confusion in my elderly mother since last night", "age": 84, "expected": 4, "lang": "en", "category": "borderline", "flag": null}
+{"text": "Vomissements et diarrhée depuis 3 jours chez un bébé de 1 an", "age": 1, "expected": 4, "lang": "fr", "category": "borderline", "flag": null}
+{"text": "Douleur abdominale intense côté droit depuis hier, avec fièvre", "age": 22, "expected": 4, "lang": "fr", "category": "borderline", "flag": null}
+{"text": "Perte de poids de 8 kg en 2 mois", "age": 58, "expected": 3, "lang": "fr", "category": "borderline", "flag": null}
+{"text": "Maux de tête fréquents depuis une semaine", "age": 36, "expected": 3, "lang": "fr", "category": "borderline", "flag": null}
+{"text": "ألم في البطن مع قيء منذ يومين", "age": 33, "expected": 3, "lang": "ar", "category": "borderline", "flag": null}
+{"text": "حمى شديدة 39 منذ ثلاثة أيام عند رجل مسن", "age": 79, "expected": 4, "lang": "ar", "category": "borderline", "flag": null}
+{"text": "دوخة متكررة وخفقان في القلب", "age": 60, "expected": 3, "lang": "ar", "category": "borderline", "flag": null}
+{"text": "عندي سخانة 39 من 4 أيام و نرجف", "age": 47, "expected": 3, "lang": "darija_ar", "category": "borderline", "flag": null}
+{"text": "طاح من الدرج و ساقو توجعو برشا", "age": 70, "expected": 4, "lang": "darija_ar", "category": "borderline", "flag": null}
+{"text": "3andi waja3 fil kersh men lyouma w nrja3", "age": 30, "expected": 3, "lang": "darija_latin", "category": "borderline", "flag": null}
+{"text": "9a3ed ensa3el 3 semayen w 9a3ed na9es fil wazn", "age": 55, "expected": 3, "lang": "darija_latin", "category": "borderline", "flag": null}
+{"text": "sadri yewja3ni shwaya ki nemchi barcha", "age": 62, "expected": 4, "lang": "darija_latin", "category": "borderline", "flag": null}
+{"text": "ألم في الأذن منذ ثلاثة أيام بدون حرارة", "age": 12, "expected": 2, "lang": "ar", "category": "routine", "flag": null}
+{"text": "هل يمكن تحديد موعد لفحص الدم؟", "age": 35, "expected": 1, "lang": "ar", "category": "routine", "flag": null}
+{"text": "لا نزيف ولا ضيق تنفس، أحتاج فقط إلى وصفة للفيتامينات", "age": 30, "expected": 1, "lang": "ar", "category": "negation", "flag": null}
+{"text": "ألم في المعدة بعد الأكل منذ أسبوعين", "age": 41, "expected": 3, "lang": "ar", "category": "borderline", "flag": null}
+{"text": "ارتفاع الضغط 180 مع صداع", "age": 58, "expected": 4, "lang": "ar", "category": "borderline", "flag": null}
+{"text": "صداع نصفي متكرر منذ سنوات", "age": 29, "expected": 2, "lang": "ar", "category": "routine", "flag": null}
+{"text": "عندي كحة من أسبوع و شوية سخانة", "age": 35, "expected": 3, "lang": "darija_ar", "category": "borderline", "flag": null}
+{"text": "ضغطي مرتفع و نحس راسي يدور", "age": 66, "expected": 3, "lang": "darija_ar", "category": "borderline", "flag": null}
+{"text": "جيت نعمل تحليل دم عادي", "age": 34, "expected": 1, "lang": "darija_ar", "category": "routine", "flag": null}
+{"text": "وجيعة في ضهري من شهر", "age": 48, "expected": 2, "lang": "darija_ar", "category": "routine", "flag": null}
+{"text": "ما عنديش حتى مشكل، نحب برك ورقة للمدرسة", "age": 14, "expected": 1, "lang": "darija_ar", "category": "negation", "flag": null}
+{"text": "ما فماش سخانة و لا ضيق نفس، كان باش نبدل الوصفة", "age": 57, "expected": 2, "lang": "darija_ar", "category": "negation", "flag": null}
+{"text": "بنتي عندها حمى خفيفة و تسعل", "age": 4, "expected": 3, "lang": "darija_ar", "category": "borderline", "flag": null}
+{"text": "ولدي طاح من البسكلات و راسو يوجعو و يتقيا", "age": 9, "expected": 4, "lang": "darija_ar", "category": "borderline", "flag": null}
+{"text": "نحب نشوف دكتور الجلد على الحبوب", "age": 22, "expected": 1, "lang": "darija_ar", "category": "routine", "flag": null}
+{"text": "حاسس بحرقان في المعدة بعد الماكلة", "age": 39, "expected": 2, "lang": "darija_ar", "category": "routine", "flag": null}
+{"text": "مرتي حامل في الشهر الخامس و تحس بحركة قليلة", "age": 30, "expected": 4, "lang": "darija_ar", "category": "borderline", "flag": null}
+{"text": "نحب نجدد شهادة السواقة", "age": 52, "expected": 1, "lang": "darija_ar", "category": "routine", "flag": null}
+{"text": "nheb na3mel analyse mta3 dem 3adia", "age": 36, "expected": 1, "lang": "darija_latin", "category": "routine", "flag": null}
+{"text": "ma 3andi la skhana la 3raq fi sadri, bech n3adi radio mta3 eskolia", "age": 12, "expected": 1, "lang": "darija_latin", "category": "negation", "flag": null}
+{"text": "ma 3andich dem wala ghossa, jit lel controle", "age": 49, "expected": 1, "lang": "darija_latin", "category": "negation", "flag": null}
+{"text": "waja3 fi dhahri men chhar", "age": 47, "expected": 2, "lang": "darija_latin", "category": "routine", "flag": null}
+{"text": "bnayti 3andha skhana khfifa w tka7", "age": 4, "expected": 3, "lang": "darija_latin", "category": "borderline", "flag": null}
+{"text": "weldi w9a3 mel bisklet w yerja3 w rasou ywaj3ou", "age": 9, "expected": 4, "lang": "darija_latin", "category": "borderline", "flag": null}
+{"text": "el sokkar 3andi 3ali w 3ayyen barcha", "age": 62, "expected": 3, "lang": "darija_latin", "category": "borderline", "flag": null}
+{"text": "nheb nchouf docteur el jeld 3al 7bob", "age": 22, "expected": 1, "lang": "darija_latin", "category": "routine", "flag": null}
+{"text": "mratti 7amla w ma tet7arrekch barcha el bébé", "age": 30, "expected": 4, "lang": "darija_latin", "category": "borderline", "flag": null}
+{"text": "tension 3aliya 180 w sda3", "age": 58, "expected": 4, "lang": "darija_latin", "category": "borderline", "flag": null}
+{"text": "3andi harqa fil me3da ba3d el makla", "age": 39, "expected": 2, "lang": "darija_latin", "category": "routine", "flag": null}
+{"text": "Constipation depuis une semaine, sans douleur forte", "age": 45, "expected": 2, "lang": "fr", "category": "routine", "flag": null}
+{"text": "ma femme enceinte ne sent presque plus bouger le bébé depuis hier", "age": 30, "expected": 4, "lang": "fr", "category": "borderline", "flag": null}
+{"text": "ordonance pr tension svp", "age": 64, "expected": 2, "lang": "fr", "category": "routine", "flag": null}
+{"text": "Severe chest pain spreading to my jaw and left shoulder", "age": 60, "expected": 5, "lang": "en", "category": "red_flag_explicit", "flag": "chest_pain"}
+{"text": "ألم ضاغط في وسط الصدر منذ ساعة", "age": 54, "expected": 5, "lang": "ar", "category": "red_flag_explicit", "flag": "chest_pain"}
+{"text": "أعاني من صعوبة حادة في التنفس منذ الصباح", "age": 59, "expected": 5, "lang": "ar", "category": "red_flag_explicit", "flag": "breathing"}
+{"text": "Il s'est évanoui brusquement et ne répond plus", "age": 46, "expected": 5, "lang": "fr", "category": "red_flag_explicit", "flag": "loss_of_consciousness"}
+{"text": "pas d'essoufflement, je veux seulement renouveler mon ordonnance de vitamines", "age": 40, "expected": 1, "lang": "fr", "category": "negation", "flag": null}
+{"text": "لا إغماء ولا نوبات، أطلب فقط وصفة جديدة للفيتامينات", "age": 36, "expected": 1, "lang": "ar", "category": "negation", "flag": null}
+{"text": "Besoin d'un renouvellement de mon traitement contre le cholestérol", "age": 57, "expected": 2, "lang": "fr", "category": "routine", "flag": null}
+{"text": "renouvellement lunettes, rien d'autre", "age": 23, "expected": 1, "lang": "fr", "category": "routine", "flag": null}
+{"text": "نحب نبدل الوصفة متاع الضغط", "age": 61, "expected": 2, "lang": "darija_ar", "category": "routine", "flag": null}
+{"text": "persistent vomiting for 24 hours, cannot keep fluids down", "age": 27, "expected": 3, "lang": "en", "category": "borderline", "flag": null}
