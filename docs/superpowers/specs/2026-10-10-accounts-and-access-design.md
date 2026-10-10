@@ -149,6 +149,10 @@ still receives her doctor's patients' alerts.
 - The attending doctor calls `POST /patients/{id}/access` with `{doctor_id, expires_at}`, and
   `DELETE /patients/{id}/access/{doctor_id}` to revoke.
 - `can_access` (`app/auth/deps.py`) gains one rule: doctor = attending **or** holds an unexpired, unrevoked grant.
+- **Sharing is read-only** (decided 2026-10-10): the shared doctor reads everything the attending doctor reads
+  (record, vitals, exams, appointments, alerts, live updates) but writes nothing on that patient: no notes,
+  prescriptions, urgency changes, exam orders or device commands (403). Only the attending doctor or the admin can
+  share, revoke or issue codes.
 - Every check, grant and revoke goes through the existing audit.
 
 ## 7. Security controls (internet-facing)
