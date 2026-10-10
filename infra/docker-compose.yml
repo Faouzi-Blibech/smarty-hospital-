@@ -57,14 +57,27 @@ services:
       WARD_MAIL_FROM: ${WARD_MAIL_FROM:-Ward <ward@localhost>}
       N8N_CALLBACK_SECRET: ${N8N_CALLBACK_SECRET:-change-me-callback}
       N8N_EVENT_SECRET: ${N8N_EVENT_SECRET:-change-me-event}
-      WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-}                      # Meta WhatsApp Cloud API access token
-      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}  # the sender's phone number ID (not the number)
+      WAHA_URL: http://waha:3000
+      WAHA_API_KEY: ${WAHA_API_KEY:-change-me-waha}
       WARD_WHATSAPP_STAFF: ${WARD_WHATSAPP_STAFF:-}            # demo: staff numbers, comma-separated, e.g. 21612345678
       WARD_WHATSAPP_PATIENT: ${WARD_WHATSAPP_PATIENT:-}        # demo: the patient's number
     ports: ["${N8N_BIND:-0.0.0.0}:5678:5678"]
     volumes:
       - n8n-data:/home/node/.n8n
       - ../n8n/workflows:/ward-workflows:ro
+
+  waha:   # WhatsApp gateway (WAHA): a WhatsApp account linked by QR code, like WhatsApp Web. Dashboard: http://localhost:3010/dashboard
+    image: devlikeapro/waha:noweb   # NOWEB engine only: no bundled browser, smaller image
+    environment:
+      WHATSAPP_DEFAULT_ENGINE: NOWEB              # no browser: light on RAM
+      WAHA_API_KEY: ${WAHA_API_KEY:-change-me-waha}
+      WAHA_DASHBOARD_USERNAME: admin
+      WAHA_DASHBOARD_PASSWORD: ${WAHA_API_KEY:-change-me-waha}
+      WHATSAPP_RESTART_ALL_SESSIONS: "True"       # keep the linked session across restarts
+      WAHA_NOWEB_STORE_ENABLED: "True"
+    ports: ["127.0.0.1:3010:3000"]
+    volumes:
+      - waha-sessions:/app/.sessions
 
   api:
     build: ../backend
@@ -130,3 +143,4 @@ volumes:
   minio-data:
   n8n-data:
   caddy-data:
+  waha-sessions:

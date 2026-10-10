@@ -363,7 +363,7 @@ Partial score → severity:
   - Postgres RLS is the Day 4 stretch / production plan.
 - Exam result files live in MinIO and are never exposed by a public link. The API checks the role and the department or ward, logs the read, then streams the file.
 - Two things send data off the server:
-  - **Notifications (n8n).** WhatsApp (Meta Cloud API) and email (SMTP) are third-party services outside Tunisia.
+  - **Notifications (n8n).** WhatsApp (through the self-hosted WAHA gateway; the official Business API in production) and email (SMTP) are third-party services outside Tunisia.
     Staff alerts name the bed only, with no patient name, score, vitals or medication. Patient messages carry the
     patient's own appointment details. The doctor's digest email lists first names and summaries a doctor has
     already reviewed. A real deployment needs INPDP authorisation for these transfers (Law 2004-63).
