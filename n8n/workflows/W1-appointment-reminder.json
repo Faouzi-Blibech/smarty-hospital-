@@ -7,17 +7,25 @@
       "name": "From router",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [0, 0],
-      "parameters": { "inputSource": "passthrough" }
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
     },
     {
       "id": "c1b0d2e3-0000-4000-8000-000000000102",
       "name": "Plan reminder",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [240, 0],
+      "position": [
+        240,
+        0
+      ],
       "parameters": {
-        "jsCode": "// event appointment.confirmed: {appointment_id, patient_first_name, patient_telegram_chat_id, patient_email, slot_at, doctor_name}\n// Reminder goes out 24 h before the slot; if the slot is closer than that (demo), it goes out now.\nconst WEB = ($env.WEB_URL || 'http://localhost:3000').replace(/\\/$/, '');\nconst out = [];\nfor (const item of $input.all()) {\n  const d = item.json.data || {};\n  if (!d.slot_at || !d.appointment_id) continue;\n  const slot = DateTime.fromISO(d.slot_at).setZone('Africa/Tunis');\n  const remindAt = DateTime.max(slot.minus({ hours: 24 }), DateTime.now().plus({ seconds: 1 }));\n  const when = slot.toFormat(\"cccc d LLL 'at' HH:mm\");\n  const link = (a) => `${WEB}/patient/appointments/${d.appointment_id}?action=${a}`;\n  const text = `📅 Hi ${d.patient_first_name ?? ''}, reminder: your appointment is on ${when} with ${d.doctor_name ?? 'your doctor'}.\\nConfirm: ${link('confirm')}\\nCancel: ${link('cancel')}`;\n  out.push({ json: {\n    appointment_id: d.appointment_id,\n    wait_until: remindAt.toISO(),\n    chat_id: d.patient_telegram_chat_id ? String(d.patient_telegram_chat_id) : null,\n    email: d.patient_email || null,\n    subject: `Reminder: your appointment on ${when}`,\n    text,\n  } });\n}\nreturn out;"
+        "jsCode": "// event appointment.confirmed: {appointment_id, patient_first_name, patient_telegram_chat_id, patient_email, slot_at, doctor_name}\n// Reminder goes out 24 h before the slot; if the slot is closer than that (demo), it goes out now.\nconst WEB = ($env.WEB_URL || 'http://localhost:3000').replace(/\\/$/, '');\nconst out = [];\nfor (const item of $input.all()) {\n  const d = item.json.data || {};\n  if (!d.slot_at || !d.appointment_id) continue;\n  const slot = DateTime.fromISO(d.slot_at).setZone('Africa/Tunis');\n  const remindAt = DateTime.max(slot.minus({ hours: 24 }), DateTime.now().plus({ seconds: 1 }));\n  const when = slot.toFormat(\"cccc d LLL 'at' HH:mm\");\n  const link = (a) => `${WEB}/patient/appointments/${d.appointment_id}?action=${a}`;\n  const text = `Hi ${d.patient_first_name ?? ''}, reminder: your appointment is on ${when} with ${d.doctor_name ?? 'your doctor'}.\\nConfirm: ${link('confirm')}\\nCancel: ${link('cancel')}`;\n  out.push({ json: {\n    appointment_id: d.appointment_id,\n    wait_until: remindAt.toISO(),\n    chat_id: d.patient_telegram_chat_id ? String(d.patient_telegram_chat_id) : null,\n    email: d.patient_email || null,\n    subject: `Reminder: your appointment on ${when}`,\n    text,\n  } });\n}\nreturn out;"
       }
     },
     {
@@ -25,7 +33,10 @@
       "name": "Wait until 24 h before",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [480, 0],
+      "position": [
+        480,
+        0
+      ],
       "webhookId": "5b2f8e61-3a4d-4c7e-9f10-2d6a8b9c0e11",
       "parameters": {
         "resume": "specificTime",
@@ -34,40 +45,75 @@
     },
     {
       "id": "c1b0d2e3-0000-4000-8000-000000000104",
-      "name": "Has Telegram",
+      "name": "Has WhatsApp",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [720, -120],
-      "parameters": { "jsCode": "return $input.all().filter(i => i.json.chat_id);" }
+      "position": [
+        720,
+        -120
+      ],
+      "parameters": {
+        "jsCode": "// Demo routing: patient messages go to WARD_WHATSAPP_PATIENT (digits only, country code first).\nconst to = ($env.WARD_WHATSAPP_PATIENT || '').replace(/\\D/g, '');\nreturn to ? $input.all().map(i => ({ json: { ...i.json, to } })) : [];"
+      }
     },
     {
       "id": "c1b0d2e3-0000-4000-8000-000000000105",
-      "name": "Telegram",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [960, -120],
-      "onError": "continueRegularOutput",
+      "name": "WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        -120
+      ],
       "parameters": {
-        "chatId": "={{ $json.chat_id }}",
-        "text": "={{ $json.text }}",
-        "additionalFields": { "appendAttribution": false }
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.to, type: 'text', text: { preview_url: false, body: $json.text } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "timeout": 15000
+        }
       },
-      "credentials": { "telegramApi": { "id": "wardTelegramCred", "name": "ward-telegram" } }
+      "onError": "continueRegularOutput"
     },
     {
       "id": "c1b0d2e3-0000-4000-8000-000000000106",
       "name": "Has email",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [720, 120],
-      "parameters": { "jsCode": "return $input.all().filter(i => i.json.email);" }
+      "position": [
+        720,
+        120
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().filter(i => i.json.email);"
+      }
     },
     {
       "id": "c1b0d2e3-0000-4000-8000-000000000107",
       "name": "Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
-      "position": [960, 120],
+      "position": [
+        960,
+        120
+      ],
       "onError": "continueRegularOutput",
       "parameters": {
         "fromEmail": "={{ $env.WARD_MAIL_FROM }}",
@@ -75,24 +121,84 @@
         "subject": "={{ $json.subject }}",
         "emailFormat": "text",
         "text": "={{ $json.text }}",
-        "options": { "appendAttribution": false }
+        "options": {
+          "appendAttribution": false
+        }
       },
-      "credentials": { "smtp": { "id": "wardSmtpCred0001", "name": "ward-smtp" } }
+      "credentials": {
+        "smtp": {
+          "id": "wardSmtpCred0001",
+          "name": "ward-smtp"
+        }
+      }
     }
   ],
   "connections": {
-    "From router": { "main": [[{ "node": "Plan reminder", "type": "main", "index": 0 }]] },
-    "Plan reminder": { "main": [[{ "node": "Wait until 24 h before", "type": "main", "index": 0 }]] },
-    "Wait until 24 h before": {
-      "main": [[
-        { "node": "Has Telegram", "type": "main", "index": 0 },
-        { "node": "Has email", "type": "main", "index": 0 }
-      ]]
+    "From router": {
+      "main": [
+        [
+          {
+            "node": "Plan reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "Has Telegram": { "main": [[{ "node": "Telegram", "type": "main", "index": 0 }]] },
-    "Has email": { "main": [[{ "node": "Email", "type": "main", "index": 0 }]] }
+    "Plan reminder": {
+      "main": [
+        [
+          {
+            "node": "Wait until 24 h before",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait until 24 h before": {
+      "main": [
+        [
+          {
+            "node": "Has WhatsApp",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Has email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has email": {
+      "main": [
+        [
+          {
+            "node": "Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "settings": { "executionOrder": "v1", "timezone": "Africa/Tunis" },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Tunis"
+  },
   "pinData": {},
   "tags": []
 }

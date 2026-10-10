@@ -6,7 +6,8 @@ Self-hosted n8n runs in Docker at http://localhost:5678. The contract is `docs/c
 
 - `workflows/W<n>-<slug>.json`: exported workflows (n8n → ⋯ → Download). Commit them after every change.
 - Credentials are **never** exported. Recreate them on each machine:
-  - **Telegram API**: bot token from @BotFather (`/newbot`), credential name `ward-telegram`.
+  - **WhatsApp Cloud API** (no n8n credential, read from `.env`): `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`,
+    `WARD_WHATSAPP_STAFF` (comma-separated staff numbers) and `WARD_WHATSAPP_PATIENT`. See "WhatsApp setup" below.
   - **SMTP**: e.g. a Gmail app password, credential name `ward-smtp`.
   - **Header Auth** for callbacks to the API: name `ward-callback`, header `X-N8N-Secret`, value = `N8N_CALLBACK_SECRET` from `.env`.
 
@@ -32,21 +33,36 @@ done
 docker compose -f infra/docker-compose.yml restart n8n
 ```
 
-Then in the UI → Credentials, create (or edit) **`ward-telegram`** (bot token) and **`ward-smtp`** (e.g. Gmail: `smtp.gmail.com`, port 465, SSL, an app password). All Telegram/Email nodes point to them.
-If a Telegram or Email node shows the credential as missing (a credential created in the UI gets a new ID), open the workflow → the node → pick `ward-telegram` / `ward-smtp` → save + publish. One click, once per laptop.
+Then in the UI → Credentials, create (or edit) **`ward-smtp`** (e.g. Gmail: `smtp.gmail.com`, port 465, SSL, an app password). All Email nodes point to it.
+If an Email node shows the credential as missing (a credential created in the UI gets a new ID), open the workflow → the node → pick `ward-smtp` → save + publish. One click, once per laptop.
 
-Every Telegram/Email node uses `onError: continueRegularOutput`: one bad recipient (e.g. someone who never pressed /start on the bot, Telegram 403) doesn't stop the others.
+Every WhatsApp/Email node uses `onError: continueRegularOutput`: one bad recipient doesn't stop the others.
+
+## WhatsApp setup (about 20 minutes)
+
+1. https://developers.facebook.com/apps → Create app → type **Business** → add the **WhatsApp** product.
+2. WhatsApp → **API Setup**: copy the temporary access token (valid 24 h) and the **Phone number ID** into `.env`
+   as `WHATSAPP_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID`.
+3. Same page, "To": add each demo phone as a recipient (up to 5) and confirm the code WhatsApp sends to it.
+4. In `.env`: `WARD_WHATSAPP_STAFF=216xxxxxxxx,216yyyyyyyy` and `WARD_WHATSAPP_PATIENT=216zzzzzzzz` (digits only).
+5. **From each demo phone, send any message ("hi") to the test number.** Meta only delivers free-text messages to a
+   phone within 24 h of its last message to the business; do this the morning of the demo.
+6. Recreate n8n so it reads the new variables: `docker compose -f infra/docker-compose.yml --env-file .env up -d n8n`.
+
+**Privacy:** staff alerts name the bed only ("Ward: critical alert, bed C-12. Open Ward now."): no patient name,
+score, vitals or medication leaves the server. Patient messages carry the patient's own appointment details.
+WhatsApp is still a third-party service outside Tunisia: a real deployment needs INPDP authorisation for it.
 
 ## Workflows
 
 | File | ID | Status |
 |---|---|---|
 | `W0-router.json` | `wardRouterW00000` | ✅ checks `X-Ward-Secret`, drops unknown events, routes `alert.critical` → W4, `dose.missed` → W3, `appointment.confirmed` → W1, `appointment.cancelled` → W2, `patient.discharged` → W6 |
-| `W4-critical-alert.json` | `wardCritAlertW04` | ✅ one Telegram message per nurse + doctor chat ID |
-| `W3-missed-dose.json` | `wardMissedDoseW3` | ✅ Telegram to ward nurses + attending doctor, email to the doctor (contract v1.1 fields `doctor_chat_id`, `doctor_email`) |
-| `W1-appointment-reminder.json` | `wardApptRemindW1` | ✅ waits until `slot_at − 24h` (sends at once if the slot is sooner: demo trick), then Telegram + email to the patient with confirm/cancel links to `${WEB_URL}/patient/appointments/{id}?action=…` |
-| `W2-slot-backfill.json` | `wardBackfillW2xx` | Offers a freed slot to the event's `candidate` (Telegram + email, link previews off) with an accept link valid 2 h (n8n resume URL under `N8N_PUBLIC_URL`). On click: `backfill-accept` → HTML result page + confirmation, or "slot already taken" on 409. A used link answers 409. |
-| `W6-discharge-follow-up.json` | `wardFollowUpW6xx` | Calls `follow-up` (14 days) and, only if the backend created the appointment, tells the patient over Telegram + email that the follow-up is requested and the hospital will confirm the date. |
+| `W4-critical-alert.json` | `wardCritAlertW04` | ✅ one WhatsApp message per staff number, bed only |
+| `W3-missed-dose.json` | `wardMissedDoseW3` | ✅ WhatsApp to the staff numbers (bed and time only), email to the doctor (contract v1.1 field `doctor_email`) |
+| `W1-appointment-reminder.json` | `wardApptRemindW1` | ✅ waits until `slot_at − 24h` (sends at once if the slot is sooner: demo trick), then WhatsApp + email to the patient with confirm/cancel links to `${WEB_URL}/patient/appointments/{id}?action=…` |
+| `W2-slot-backfill.json` | `wardBackfillW2xx` | Offers a freed slot to the event's `candidate` (WhatsApp + email, link previews off) with an accept link valid 2 h (n8n resume URL under `N8N_PUBLIC_URL`). On click: `backfill-accept` → HTML result page + confirmation, or "slot already taken" on 409. A used link answers 409. |
+| `W6-discharge-follow-up.json` | `wardFollowUpW6xx` | Calls `follow-up` (14 days) and, only if the backend created the appointment, tells the patient over WhatsApp + email that the follow-up is requested and the hospital will confirm the date. |
 | `W5-doctor-daily-digest.json` | `wardDigestW5xxxx` | Every day at 07:30 Africa/Tunis (or on demand via its "Run now" trigger): `GET daily-digest`, then one email per doctor with an address and at least one admitted patient. Patients are listed by bed, highest NEWS2 first, with NEWS2 >= 5 flagged "review first" and summaries labelled as AI suggestions to review. Not called by the router. |
 
 ## Test
@@ -68,7 +84,7 @@ curl -X POST localhost:5678/webhook/ward-events -H "X-Ward-Secret: change-me-eve
 
 A far-away `slot_at` parks the W1 execution in **Waiting** until 24 h before the slot (visible under Executions).
 
-W2 (slot backfill): send the event, then open the `accept_url` (Executions → the waiting W2 run → "Plan offer" output, or the link in the Telegram/email):
+W2 (slot backfill): send the event, then open the `accept_url` (Executions → the waiting W2 run → "Plan offer" output, or the link in the WhatsApp message/email):
 
 ```bash
 curl -X POST localhost:5678/webhook/ward-events -H "X-Ward-Secret: change-me-event" -H "Content-Type: application/json" -d '{"event":"appointment.cancelled","ts":"x","data":{"appointment_id":"a-0003","slot_at":"<ISO slot>","doctor_id":"u-0001","doctor_name":"Dr Trabelsi","candidate":{"appointment_id":"a-0007","patient_first_name":"Sami","patient_telegram_chat_id":"<chat id>","patient_email":"<you@mail>"}}}'

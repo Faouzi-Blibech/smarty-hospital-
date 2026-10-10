@@ -4,7 +4,7 @@ Authenticated by the `X-N8N-Secret` header only (no JWT); n8n is not the source 
 goes through the same appointment rules as the web app.
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Request
@@ -12,12 +12,11 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.ai import copilot
 from app.db import get_db
 from app.errors import ApiError, not_found
 from app.ids import new_id
 from app.integrations import n8n
-from app.models import Admission, AiSummary, Appointment, Note, Patient, Prescription, User, Vital
+from app.models import Admission, AiSummary, Appointment, Patient, User
 from app.routers.appointments import cancel
 from app.services import appointments as A
 from app.services.integrations import callback_secret_ok, digest_entries
@@ -88,18 +87,16 @@ def backfill_accept(body: BackfillIn, db: Session = Depends(get_db)) -> dict:
     return {"status": status}
 
 
-def _summary_text(db: Session, p: Patient, now: datetime) -> str:
-    """Latest stored AI summary, else a fresh one over the last 24 h (not stored; it still needs review)."""
+NOT_REVIEWED = "Summary not reviewed yet. Open Ward to review it."
+
+
+def _summary_text(db: Session, p: Patient) -> str:
+    """The latest AI summary a doctor has reviewed; unreviewed AI text never leaves the server."""
     stored = db.scalar(select(AiSummary).where(AiSummary.patient_id == p.id)
                        .order_by(AiSummary.created_at.desc()).limit(1))
-    if stored is not None:
+    if stored is not None and stored.human_confirmed_by:
         return stored.ai_suggested["summary"]
-    since = now - timedelta(hours=24)
-    vitals = db.scalars(select(Vital).where(Vital.patient_id == p.id, Vital.ts >= since).order_by(Vital.ts)).all()
-    notes = db.scalars(select(Note).where(Note.patient_id == p.id, Note.created_at >= since)
-                       .order_by(Note.created_at)).all()
-    rxs = db.scalars(select(Prescription).where(Prescription.patient_id == p.id)).all()
-    return copilot.summarize(**copilot.summary_inputs(p, vitals, notes, rxs))["summary"]
+    return NOT_REVIEWED
 
 
 @router.get("/daily-digest")
@@ -109,7 +106,6 @@ def daily_digest(doctor_id: str | None = None, db: Session = Depends(get_db)) ->
         doctors = doctors.where(User.id == doctor_id)
     doctors = db.scalars(doctors).all()
     wanted = {d.id: d for d in doctors}
-    now = datetime.now(UTC)
     rows = []
     admitted = db.execute(select(Admission, Patient).join(Patient, Patient.id == Admission.patient_id)
                           .where(Admission.discharged_at.is_(None)).order_by(Admission.bed)).all()
@@ -118,7 +114,7 @@ def daily_digest(doctor_id: str | None = None, db: Session = Depends(get_db)) ->
         if doctor is None:
             continue
         v = latest_vital(db, p.id)
-        rows.append((doctor, p, adm.bed, v.news2 if v else None, _summary_text(db, p, now)))
+        rows.append((doctor, p, adm.bed, v.news2 if v else None, _summary_text(db, p)))
     return digest_entries(rows, doctors=doctors)
 
 

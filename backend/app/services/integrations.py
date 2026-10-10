@@ -17,10 +17,11 @@ def digest_entries(rows: list[tuple], *, doctors: list) -> list[dict]:
     """`daily-digest` body: one entry per doctor that has at least one admitted patient.
 
     rows: (doctor, patient, bed, news2, summary) for each admitted patient; doctors fixes the output order.
+    Patients appear by first name only (n8n-webhooks contract).
     """
     by_doctor: dict[str, list[dict]] = {}
     for doctor, patient, bed, news2, summary in rows:
         by_doctor.setdefault(doctor.id, []).append(
-            {"name": f"{patient.first_name} {patient.last_name}", "bed": bed, "news2": news2, "summary": summary})
+            {"name": patient.first_name, "bed": bed, "news2": news2, "summary": summary})
     return [{"doctor": {"id": d.id, "name": d.name, "email": d.email}, "patients": by_doctor[d.id]}
             for d in doctors if d.id in by_doctor]

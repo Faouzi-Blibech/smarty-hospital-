@@ -42,7 +42,7 @@ flowchart TB
     BSU["Bedside Unit<br/>ESP32 + OLED + servo + RTC<br/>(listener)"]
     SIM["simulator/<br/>(vitals, nurse taps, call-nurse)"]
     PWA["Next.js PWA<br/>doctor · nurse · admin · patient"]
-    TG["Telegram / email"]
+    TG["WhatsApp / email"]
   end
 
   subgraph CONN["Connectivity"]
@@ -175,15 +175,15 @@ sequenceDiagram
   N->>S: Badge tap → vitals {nurse_rfid} (simulated)
   S->>S: Early warning (NEWS2 partial + trend)
   alt abnormal
-    S-->>N: WS alert + Telegram (n8n W4)
-    S-->>D: WS alert + Telegram
+    S-->>N: WS alert + WhatsApp (n8n W4)
+    S-->>D: WS alert + WhatsApp
   end
   D->>S: Daily review with AI summary
   A->>S: Discharge
   S-->>P: Follow-up booked (n8n W6) · home care in app
 ```
 
-**Golden demo path:** the journey above, plus a **simulated abnormal vital** that fires an alert on the dashboard and on Telegram.
+**Golden demo path:** the journey above, plus a **simulated abnormal vital** that fires an alert on the dashboard and on WhatsApp.
 
 ## 5. Single-visit pathway (exams before the visit)
 
@@ -362,7 +362,12 @@ Partial score → severity:
   - Every read of a patient record appends an `audit_log` row: records, vitals, doses, exams, result files, AI summaries and assistant questions.
   - Postgres RLS is the Day 4 stretch / production plan.
 - Exam result files live in MinIO and are never exposed by a public link. The API checks the role and the department or ward, logs the read, then streams the file.
-- No data leaves the server unless `LLM_PROVIDER` is set (default `none`).
+- Two things send data off the server:
+  - **Notifications (n8n).** WhatsApp (Meta Cloud API) and email (SMTP) are third-party services outside Tunisia.
+    Staff alerts name the bed only, with no patient name, score, vitals or medication. Patient messages carry the
+    patient's own appointment details. The doctor's digest email lists first names and summaries a doctor has
+    already reviewed. A real deployment needs INPDP authorisation for these transfers (Law 2004-63).
+  - **The optional LLM**, off by default (`LLM_PROVIDER=none`).
   - When it is set, `llm.py` first replaces names, phone numbers and IDs with placeholders.
   - `LLM_PROVIDER=local` sends nothing off the machine (Ollama).
   - `groq` calls the Groq API with an open-weight model (`openai/gpt-oss-120b`).

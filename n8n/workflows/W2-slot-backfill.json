@@ -30,7 +30,7 @@
     },
     {
       "id": "d2c0e1f2-0000-4000-8000-000000000203",
-      "name": "Has Telegram",
+      "name": "Has WhatsApp",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -38,33 +38,44 @@
         -160
       ],
       "parameters": {
-        "jsCode": "return $input.all().filter(i => i.json.chat_id);"
+        "jsCode": "// Demo routing: patient messages go to WARD_WHATSAPP_PATIENT (digits only, country code first).\nconst to = ($env.WARD_WHATSAPP_PATIENT || '').replace(/\\D/g, '');\nreturn to ? $input.all().map(i => ({ json: { ...i.json, to } })) : [];"
       }
     },
     {
       "id": "d2c0e1f2-0000-4000-8000-000000000204",
-      "name": "Telegram offer",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
+      "name": "WhatsApp offer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         720,
         -160
       ],
       "parameters": {
-        "chatId": "={{ $json.chat_id }}",
-        "text": "={{ $json.text }}",
-        "additionalFields": {
-          "appendAttribution": false,
-          "disable_web_page_preview": true
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.to, type: 'text', text: { preview_url: false, body: $json.text } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "timeout": 15000
         }
       },
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "telegramApi": {
-          "id": "wardTelegramCred",
-          "name": "ward-telegram"
-        }
-      }
+      "onError": "continueRegularOutput"
     },
     {
       "id": "d2c0e1f2-0000-4000-8000-000000000205",
@@ -215,7 +226,7 @@
     },
     {
       "id": "d2c0e1f2-0000-4000-8000-000000000212",
-      "name": "Has Telegram (result)",
+      "name": "Has WhatsApp (result)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -223,33 +234,44 @@
         240
       ],
       "parameters": {
-        "jsCode": "return $input.all().filter(i => i.json.chat_id);"
+        "jsCode": "// Demo routing: patient messages go to WARD_WHATSAPP_PATIENT (digits only, country code first).\nconst to = ($env.WARD_WHATSAPP_PATIENT || '').replace(/\\D/g, '');\nreturn to ? $input.all().map(i => ({ json: { ...i.json, to } })) : [];"
       }
     },
     {
       "id": "d2c0e1f2-0000-4000-8000-000000000213",
-      "name": "Telegram result",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
+      "name": "WhatsApp result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         1680,
         240
       ],
       "parameters": {
-        "chatId": "={{ $json.chat_id }}",
-        "text": "={{ $json.text }}",
-        "additionalFields": {
-          "appendAttribution": false,
-          "disable_web_page_preview": true
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.to, type: 'text', text: { preview_url: false, body: $json.text } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "timeout": 15000
         }
       },
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "telegramApi": {
-          "id": "wardTelegramCred",
-          "name": "ward-telegram"
-        }
-      }
+      "onError": "continueRegularOutput"
     },
     {
       "id": "d2c0e1f2-0000-4000-8000-000000000214",
@@ -308,7 +330,7 @@
       "main": [
         [
           {
-            "node": "Has Telegram",
+            "node": "Has WhatsApp",
             "type": "main",
             "index": 0
           },
@@ -319,17 +341,6 @@
           },
           {
             "node": "Wait for accept (2 h)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Has Telegram": {
-      "main": [
-        [
-          {
-            "node": "Telegram offer",
             "type": "main",
             "index": 0
           }
@@ -389,7 +400,7 @@
             "index": 0
           },
           {
-            "node": "Has Telegram (result)",
+            "node": "Has WhatsApp (result)",
             "type": "main",
             "index": 0
           },
@@ -401,22 +412,33 @@
         ]
       ]
     },
-    "Has Telegram (result)": {
+    "Has email (result)": {
       "main": [
         [
           {
-            "node": "Telegram result",
+            "node": "Email result",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Has email (result)": {
+    "Has WhatsApp": {
       "main": [
         [
           {
-            "node": "Email result",
+            "node": "WhatsApp offer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has WhatsApp (result)": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp result",
             "type": "main",
             "index": 0
           }

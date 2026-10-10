@@ -6,6 +6,7 @@ Interactions come from a curated rule list, never from the LLM.
 """
 
 import json
+import re
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
@@ -76,13 +77,18 @@ def template_summary(vitals: list[dict], notes: list[str], meds: list[str], inte
     return "\n".join(lines)
 
 
+def _numbers(text: str) -> set[str]:
+    return set(re.findall(r"\d+(?:\.\d+)?", text))
+
+
 def summarize(vitals: list[dict], notes: list[str], meds: list[str], names: list[str]) -> dict:
     interactions = check_interactions(meds)
     summary, source = template_summary(vitals, notes, meds, interactions), "rules"
     if get_settings().llm_provider != "none":
         try:
-            summary = complete_json("summary", summary, _LlmSummary, names=names).summary
-            source = "llm"
+            rewritten = complete_json("summary", summary, _LlmSummary, names=names).summary
+            if _numbers(rewritten) <= _numbers(summary):  # no new or changed number may reach the doctor
+                summary, source = rewritten, "llm"
         except LLMUnavailable:
             pass
     return {"summary": summary, "interactions": interactions, "source": source,

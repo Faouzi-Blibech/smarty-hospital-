@@ -24,9 +24,12 @@ class LLMUnavailable(Exception):
     pass
 
 
-_PATTERNS = [  # order matters: emails, then international phones, then CIN before local phones
+_PATTERNS = [  # order matters: emails, dates, international phones, INS and CIN before local phones
     (re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+"), "[EMAIL]"),
+    (re.compile(r"\b\d{4}-\d{2}-\d{2}\b"), "[DATE]"),
+    (re.compile(r"\b\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\b"), "[DATE]"),
     (re.compile(r"(?:\+|\b00)216[\s.-]?\d{2}[\s.-]?\d{3}[\s.-]?\d{3}\b"), "[PHONE]"),
+    (re.compile(r"\b\d{13}\b"), "[INS]"),  # national health identifier
     (re.compile(r"\b\d{8}\b"), "[CIN]"),
     (re.compile(r"\b\d{2}[\s.-]\d{3}[\s.-]\d{3}\b"), "[PHONE]"),
     (re.compile(r"\b[a-z]{1,3}-\d{4,6}\b", re.IGNORECASE), "[ID]"),  # p-0001, rx-0001, d-000123, adm-0001

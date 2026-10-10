@@ -14,10 +14,11 @@ from pydantic import BaseModel
 
 from app.ai import textclf
 
-RULES = Path(__file__).parent / "rules" / "red_flags.v2.json"
+RULES = Path(__file__).parent / "rules" / "red_flags.v1.json"
 SCALE = Path(__file__).parent / "rules" / "triage_scale.v1.json"
 ELDERLY_AGE = 75
-LOW_CONFIDENCE = 0.5  # below this the model is unsure; we say so but never change the urgency
+UNSURE_BELOW = 0.5  # model confidence under this, with no red flag: raised to UNSURE_URGENCY for a person to review
+UNSURE_URGENCY = 3
 
 
 class TriageResult(BaseModel):
@@ -37,8 +38,10 @@ _ARABIC_VARIANTS = str.maketrans({"ى": "ي", "ة": "ه", "ـ": None})
 def _flags() -> list[dict]:
     flags = json.loads(RULES.read_text(encoding="utf-8"))["flags"]
     for f in flags:
-        # Each keyword becomes a tuple of terms that must all appear; a plain string is a one-term tuple.
-        f["norm_keywords"] = [tuple(_normalize(t) for t in (k["all"] if isinstance(k, dict) else [k]))
+        # Each keyword becomes a tuple of terms that must all appear (a plain string is a one-term tuple),
+        # or a compiled regular expression for {"regex": ...}.
+        f["norm_keywords"] = [re.compile(k["regex"]) if isinstance(k, dict) and "regex" in k
+                              else tuple(_normalize(t) for t in (k["all"] if isinstance(k, dict) else [k]))
                               for k in f["keywords"]]
     return flags
 
@@ -50,9 +53,13 @@ def _normalize(text: str) -> str:
     return re.sub(r"\s+", " ", kept).strip()
 
 
+def _hit(k, t: str) -> bool:
+    return bool(k.search(t)) if isinstance(k, re.Pattern) else all(term in t for term in k)
+
+
 def match_red_flags(text: str) -> list[dict]:
     t = _normalize(text)
-    return [f for f in _flags() if any(all(term in t for term in k) for k in f["norm_keywords"])]
+    return [f for f in _flags() if any(_hit(k, t) for k in f["norm_keywords"])]
 
 
 def rule_floor(text: str) -> int:
@@ -84,8 +91,9 @@ def triage(referral_text: str, symptoms: list[str], age: int | None) -> TriageRe
         conf = round(conf, 2)
         reasons.append(f"Similar referrals were urgency {model_u} (model confidence {conf:.0%})")
         urgency = max(urgency, model_u)
-        if not matched and conf < LOW_CONFIDENCE:
-            reasons.append(f"Model unsure ({conf:.0%}): read the referral before confirming")
+        if conf < UNSURE_BELOW and not matched and urgency < UNSURE_URGENCY:
+            urgency = UNSURE_URGENCY
+            reasons.append(f"Model unsure ({conf:.0%}): raised to {UNSURE_URGENCY} for a person to review")
     if (age or 0) >= ELDERLY_AGE and urgency < 2:
         urgency = 2
         reasons.append(f"Age {age}: routine requests are raised to urgency 2")
