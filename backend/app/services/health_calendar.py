@@ -1,7 +1,7 @@
 """Health calendar rules (spec 2026-10-10-health-calendar-design.md): audience matching, per-category opt-out,
 push recipients and the `health_event.upcoming` payload (n8n-webhooks 1.4). Routers stay thin."""
 
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -19,6 +19,11 @@ CATEGORIES = (
 )
 ROLES = ("patient", "nurse", "doctor", "admin")
 _TITLES = {"dr", "dr.", "nurse", "mme", "m.", "mr", "mrs", "pr", "pr."}
+
+
+def _today() -> date:
+    """Today in Africa/Tunis (UTC+1, no DST)."""
+    return (datetime.now(UTC) + timedelta(hours=1)).date()
 
 
 def age_on(dob: date, on: date) -> int:
