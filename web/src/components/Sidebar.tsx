@@ -54,6 +54,7 @@ export const NAV: Record<StaffRole, NavItem[]> = {
     { key: "waitlist", label: "shared.navWaitlist", href: "/admin/waitlist", count: NAV_COUNTS.admin.waitlist },
     { key: "devices", label: "shared.navDevices", href: "/admin/devices", count: NAV_COUNTS.admin.devices },
     { key: "staff", label: "shared.navStaff", href: "/admin/staff", count: NAV_COUNTS.admin.staff },
+    { key: "pending", label: "accounts.navPending", href: "/admin/pending" },
     { key: "password", label: "auth.navPassword", href: "/admin/password" },
   ],
 };
