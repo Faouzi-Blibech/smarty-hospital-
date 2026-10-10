@@ -180,3 +180,12 @@ def doctor_directory(request: Request, db: Session = Depends(get_db)) -> list[di
     enforce(request, "directory", DIRECTORY_LIMITS)
     rows = db.scalars(select(User).where(User.role == "doctor", User.status == "active").order_by(User.name))
     return [{"id": u.id, "name": u.name} for u in rows]
+
+
+@router.post("/auth/logout", status_code=204)
+def logout(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> Response:
+    """Ends this device's session: the browser drops its token and the server records it. Tokens are stateless, so a
+    copied token stays valid until it expires (JWT_EXPIRE_HOURS) — the user chose device-only logout (2026-10-10)."""
+    audit(db, user, "logout", "user", user.id, ip=client_ip(request))
+    db.commit()
+    return Response(status_code=204)

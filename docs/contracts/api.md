@@ -33,6 +33,7 @@ Added in 1.9 (spec `docs/superpowers/specs/2026-10-10-accounts-and-access-design
 | `POST /auth/reset` | anyone | `{email, code, new_password}` → 204, or generic 400 `invalid_code` |
 | `POST /auth/login` | anyone | adds 403 `account_pending` / `account_disabled` / `account_rejected` and 423 `account_locked`, only after the password is correct |
 | `POST /auth/change-password` | logged-in user | `{current_password, new_password}` → 204 |
+| `POST /auth/logout` | logged-in user | 204; audit row. Device-only: the client deletes its token; tokens are not revoked server-side |
 | `GET /doctors/directory` | anyone | doctor display names and ids only, for the sign-up "I work with" picker. Rate-limited, no emails. → `[{id, name}]` |
 | `GET /users?status=pending` | admin (all), doctor (his requests) | `status` is `pending` (default) or `rejected` → list of `pending_out` |
 | `POST /users/{id}/approve` | admin, doctor | admin: `{role, ward?}`, role in doctor/nurse/admin. Doctor: role nurse only, into his team (403 otherwise). → `admin_out` |
@@ -352,7 +353,7 @@ Still proposed: `GET /offers/{id}`, `POST /offers/{id}/accept` and `GET /patient
 
 ## Changelog
 
-- **1.9** (2026-10-10): accounts — register/reset/change-password, doctor directory, account approval (/users*), doctor team, enrollment codes, patient sharing; login error codes; JWT exp 8 h
+- **1.9** (2026-10-10): accounts — register/reset/change-password, doctor directory, account approval (/users*), doctor team, enrollment codes, patient sharing; login error codes; JWT exp 8 h; logout
 
 - **1.8** (2026-10-09): proposes the exam and notebook routes above and the new `Appointment`/`triage` fields (spec 2026-10-09). Nothing earlier changes. Needs a 👍 from Wali.
 
