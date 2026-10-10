@@ -137,6 +137,7 @@ export const doctor = messages({
     reviewedByAt: "✓ Reviewed by {name}, {time}",
     undo: "Undo",
     markReviewed: "Mark as reviewed",
+    sharedReadOnly: "Shared with you, read only.",
     reviewError: "Couldn’t save the review. The server didn’t answer — try again.",
 
     // exam suggestions
@@ -288,6 +289,7 @@ export const doctor = messages({
     reviewedByAt: "✓ Revu par {name}, {time}",
     undo: "Annuler",
     markReviewed: "Marquer comme revu",
+    sharedReadOnly: "Partagé avec vous, en lecture seule.",
     reviewError: "Impossible d'enregistrer la revue. Le serveur n'a pas répondu — réessayez.",
 
     examsLoadError: "Impossible de charger les examens suggérés.",
@@ -434,6 +436,7 @@ export const doctor = messages({
     reviewedByAt: "✓ تمت المراجعة بواسطة {name}، {time}",
     undo: "تراجع",
     markReviewed: "تحديد كمراجَع",
+    sharedReadOnly: "مُشارَك معك للقراءة فقط.",
     reviewError: "تعذّر حفظ المراجعة. لم يستجب الخادم — حاول مرة أخرى.",
 
     examsLoadError: "تعذّر تحميل الفحوصات المقترحة.",

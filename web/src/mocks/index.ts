@@ -5,7 +5,7 @@ import type { Alert, AiSummary, Appointment, Device, Dose, ExamOrder, HomeCarePl
 import { ALERTS } from "./alerts";
 import { PATIENT_APPOINTMENTS, WAITLIST } from "./appointments";
 import { DOSES, NOTES, PRESCRIPTIONS, SUMMARIES } from "./clinical";
-import { BOARD_BED_ORDER, DEVICES, PATIENTS, STAFF } from "./people";
+import { BOARD_BED_ORDER, DEVICES, PATIENTS, STAFF, USERS } from "./people";
 import { HOME_CARE, OFFERS } from "./patient";
 import { VITALS } from "./vitals";
 import { examFixtures } from "./exams";
@@ -43,6 +43,8 @@ export interface MockStore {
   pending: PendingUser[];
   team: UserAdmin[];
   grants: Record<string, PatientAccessGrant[]>;
+  /** Patient records that already have an account (the real API enforces one account per record). */
+  linkedPatients: string[];
   seq: { rx: number; dose: number; note: number; user: number };
 }
 
@@ -67,6 +69,7 @@ export function createStore(): MockStore {
     pending: PENDING,
     team: TEAM,
     grants: GRANTS,
+    linkedPatients: [USERS.patient.patient_id],
     seq: { rx: PRESCRIPTIONS.length, dose: DOSES.length, note: Object.values(NOTES).flat().length, user: 100 },
   });
 }

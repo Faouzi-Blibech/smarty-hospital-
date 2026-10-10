@@ -299,3 +299,12 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.sharedBanner {
+  padding: 10px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface-2, var(--bg));
+  color: var(--ink);
+  font-size: 14px;
+}

@@ -23,6 +23,7 @@ import type {
   Dose,
   ExamOrder,
   HomeCarePlan,
+  Hospital,
   LoginResponse,
   Me,
   MedRoundGroup,
@@ -101,6 +102,18 @@ function expireSession(): void {
   if (typeof window !== "undefined" && window.location.pathname !== "/") window.location.assign("/?expired=1");
 }
 
+/**
+ * Shared 401 rule for every authenticated call. /auth/* is skipped (login errors are form errors), except
+ * /auth/change-password: there `bad_credentials` is a wrong current password (form error), any other 401 is a dead token.
+ */
+function handleUnauthorized(path: string, hadToken: boolean, code?: string): void {
+  const authForm = path.startsWith("/auth/") && !(path === "/auth/change-password" && code !== "bad_credentials");
+  if (authForm) return;
+  // No token at all (e.g. Back after logging out): plain sign-in, no "session ended" notice.
+  if (hadToken) expireSession();
+  else if (typeof window !== "undefined" && window.location.pathname !== "/") window.location.assign("/");
+}
+
 async function http<T>(method: string, path: string, body?: unknown): Promise<T> {
   const token = getToken();
   const res = await fetch(`${BASE}${path}`, {
@@ -110,11 +123,7 @@ async function http<T>(method: string, path: string, body?: unknown): Promise<T>
   });
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { detail?: string; code?: string };
-    if (res.status === 401 && !path.startsWith("/auth/")) {
-      // No token at all (e.g. Back after logging out): plain sign-in, no "session ended" notice.
-      if (token) expireSession();
-      else if (typeof window !== "undefined" && window.location.pathname !== "/") window.location.assign("/");
-    }
+    if (res.status === 401) handleUnauthorized(path, !!token, err.code);
     throw new ApiError(res.status, err.code ?? "http_error", err.detail ?? res.statusText);
   }
   // Some endpoints (assign, discharge) have no response body in api.md.
@@ -127,6 +136,7 @@ async function upload<T>(path: string, form: FormData): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form });
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { detail?: string; code?: string };
+    if (res.status === 401) handleUnauthorized(path, !!token, err.code);
     throw new ApiError(res.status, err.code ?? "http_error", err.detail ?? res.statusText);
   }
   return (await res.json()) as T;
@@ -226,7 +236,7 @@ function userAdmin(s: MockStore, id: string): UserAdmin {
   const t = s.team.find((u) => u.id === id);
   if (t) return t;
   const m = s.staff.find((u) => u.id === id) ?? notFound(`User ${id}`);
-  return { id: m.id, name: m.name, email: m.email, role: m.role, status: m.status, ward: m.ward, supervisor_id: null };
+  return { id: m.id, name: m.name, email: m.email, role: m.role, status: m.status, ward: m.ward, supervisor_id: null, requested_role: null, requested_doctor_id: null };
 }
 
 function setStatus(s: MockStore, id: string, status: AccountStatus, as: "admin" | "doctor"): UserAdmin {
@@ -239,22 +249,20 @@ function setStatus(s: MockStore, id: string, status: AccountStatus, as: "admin" 
   return userAdmin(s, id);
 }
 
-/** POST /auth/register → always the same generic 202. Mock: weak password → 422; enrollment codes per MOCK_CODES. */
+/** POST /auth/register → always the same generic 202. Mock: weak password → 422; `doctor` role with a requested doctor → 422. */
 export function registerAccount(req: RegisterRequest): Promise<RegisterResponse> {
   if (USE_MOCKS)
     return mock((s) => {
       if (req.password.length < 10) throw new ApiError(422, "weak_password", "Password must be at least 10 characters.");
-      if (req.enrollment_code) {
-        const c = req.enrollment_code.toUpperCase();
-        if (c === MOCK_CODES.enrollTaken) throw new ApiError(409, "already_enrolled", "This patient already has an account.");
-        if (c !== MOCK_CODES.enroll) throw new ApiError(400, "invalid_code", "Invalid or expired code.");
-      } else if (!s.pending.some((p) => p.email === req.email)) {
+      if (req.role === "doctor" && req.requested_doctor_id) throw new ApiError(422, "validation_error", "A doctor can't pick a doctor.");
+      if (!s.pending.some((p) => p.email === req.email)) {
         s.seq.user += 1;
         s.pending.push({
           id: `u-${String(s.seq.user).padStart(4, "0")}`,
           name: req.name,
           email: req.email,
           note: req.note ?? null,
+          requested_role: req.role,
           requested_doctor_id: req.requested_doctor_id ?? null,
           requested_doctor_name: s.directory.find((d) => d.id === req.requested_doctor_id)?.name ?? null,
           status: "pending",
@@ -286,6 +294,12 @@ export function changePassword(req: ChangePasswordRequest): Promise<void> {
   return http<void>("POST", "/auth/change-password", req);
 }
 
+/** GET /hospital (no auth): this install's hospital name. */
+export function getHospital(): Promise<Hospital> {
+  if (USE_MOCKS) return mock(() => ({ name: "Ward Hospital" }));
+  return http<Hospital>("GET", "/hospital");
+}
+
 /** GET /doctors/directory (no auth): ids and names only. */
 export function getDoctorDirectory(): Promise<DoctorRef[]> {
   if (USE_MOCKS) return mock((s) => s.directory);
@@ -301,18 +315,37 @@ export function listUsers(status: "pending" | "rejected", opts: ViewerOpts = {})
   return http<PendingUser[]>("GET", `/users?status=${status}`);
 }
 
-/** POST /users/{id}/approve. A doctor may only send role "nurse" (ward ignored). */
+/**
+ * POST /users/{id}/approve `{role, ward?, patient_id?}`. A doctor may only grant patient or nurse (ward ignored).
+ * Patient role: `patient_id` links an existing record (404 unknown, 409 already has an account); omitted = new record.
+ */
 export function approveUser(id: string, req: ApproveRequest, opts: ViewerOpts = {}): Promise<UserAdmin> {
   if (USE_MOCKS)
     return mock((s) => {
       const as = opts.as ?? "admin";
       const p = s.pending.find((u) => u.id === id) ?? notFound(`User ${id}`);
-      if (as === "doctor" && req.role !== "nurse") throw new ApiError(403, "forbidden", "A doctor can only approve nurses.");
-      const ward = as === "doctor" ? null : (req.ward ?? null);
+      if (as === "doctor" && req.role !== "nurse" && req.role !== "patient") throw new ApiError(403, "forbidden", "A doctor can only approve patients and nurses.");
+      if (req.role === "patient" && req.patient_id) {
+        const rec = s.patients.find((x) => x.id === req.patient_id) ?? notFound(`Patient ${req.patient_id}`);
+        if (as === "doctor" && rec.attending_doctor_id !== USERS.doctor.id) throw new ApiError(403, "forbidden", "Not your patient");
+        if (s.linkedPatients.includes(rec.id)) throw new ApiError(409, "conflict", "This patient already has an account.");
+        s.linkedPatients.push(rec.id);
+      }
+      const ward = as === "doctor" || req.role !== "nurse" ? null : (req.ward ?? null);
       s.pending = s.pending.filter((u) => u.id !== id);
-      s.staff.push({ id: p.id, name: p.name, email: p.email, role: req.role, ward, scope: ward ?? "—", last_login_at: null, status: "active" });
-      const out: UserAdmin = { id: p.id, name: p.name, email: p.email, role: req.role, status: "active", ward, supervisor_id: as === "doctor" ? USERS.doctor.id : null };
-      if (as === "doctor") s.team.push(out);
+      if (req.role !== "patient") s.staff.push({ id: p.id, name: p.name, email: p.email, role: req.role, ward, scope: ward ?? "—", last_login_at: null, status: "active" });
+      const out: UserAdmin = {
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        role: req.role === "patient" ? null : req.role,
+        status: "active",
+        ward,
+        supervisor_id: as === "doctor" && req.role === "nurse" ? USERS.doctor.id : null,
+        requested_role: p.requested_role,
+        requested_doctor_id: p.requested_doctor_id,
+      };
+      if (as === "doctor" && req.role === "nurse") s.team.push(out);
       return out;
     });
   return http<UserAdmin>("POST", `/users/${enc(id)}/approve`, req);
@@ -325,7 +358,7 @@ export function rejectUser(id: string, opts: ViewerOpts = {}): Promise<UserAdmin
       const p = s.pending.find((u) => u.id === id) ?? notFound(`User ${id}`);
       if ((opts.as ?? "admin") === "doctor" && p.requested_doctor_id !== USERS.doctor.id) throw new ApiError(403, "forbidden", "Not your request");
       p.status = "rejected";
-      return { id: p.id, name: p.name, email: p.email, role: null, status: "rejected" as const, ward: null, supervisor_id: null };
+      return { id: p.id, name: p.name, email: p.email, role: null, status: "rejected" as const, ward: null, supervisor_id: null, requested_role: p.requested_role, requested_doctor_id: p.requested_doctor_id };
     });
   return http<UserAdmin>("POST", `/users/${enc(id)}/reject`, {});
 }
@@ -356,17 +389,6 @@ export function issueResetCode(userId: string): Promise<OneTimeCode> {
 export function getMyTeam(): Promise<UserAdmin[]> {
   if (USE_MOCKS) return mock((s) => s.team);
   return http<UserAdmin[]>("GET", "/doctors/me/team");
-}
-
-/** POST /patients/{id}/enrollment-code → shown once. Mock: p-0001 already has an account (409). */
-export function issueEnrollmentCode(patientId: string): Promise<OneTimeCode> {
-  if (USE_MOCKS)
-    return mock((s) => {
-      s.patients.find((p) => p.id === patientId) ?? notFound(`Patient ${patientId}`);
-      if (patientId === USERS.patient.patient_id) throw new ApiError(409, "already_enrolled", "This patient already has an account.");
-      return mockCode();
-    });
-  return http<OneTimeCode>("POST", `/patients/${enc(patientId)}/enrollment-code`, {});
 }
 
 /** GET /patients/{id}/access */
@@ -455,15 +477,22 @@ export interface PatientListItem {
   device_id: string | null;
 }
 
-/** GET /patients?q= (admin branch: matches name or ID). Mock: every patient matching the query. */
-export function searchPatients(q: string): Promise<PatientListItem[]> {
+/**
+ * GET /patients?q= (admin: every record by name or ID; doctor: his normal scope). `unlinked` adds `unlinked=true`
+ * (records with no account). Mock: `as: "doctor"` keeps only Dr Trabelsi's patients.
+ */
+export function searchPatients(q: string, opts: ViewerOpts & { unlinked?: boolean } = {}): Promise<PatientListItem[]> {
   const needle = q.trim().toLowerCase();
   const pick = (p: PatientListItem) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name, ward: p.ward, bed: p.bed, device_id: p.device_id });
   if (USE_MOCKS)
     return mock((s) =>
-      s.patients.filter((p) => !needle || p.id.toLowerCase().includes(needle) || `${p.first_name} ${p.last_name}`.toLowerCase().includes(needle)).map(pick),
+      s.patients
+        .filter((p) => opts.as !== "doctor" || p.attending_doctor_id === USERS.doctor.id)
+        .filter((p) => !opts.unlinked || !s.linkedPatients.includes(p.id))
+        .filter((p) => !needle || p.id.toLowerCase().includes(needle) || `${p.first_name} ${p.last_name}`.toLowerCase().includes(needle))
+        .map(pick),
     );
-  return http<PatientListItem[]>("GET", `/patients?q=${encodeURIComponent(q.trim())}`);
+  return http<PatientListItem[]>("GET", `/patients?q=${encodeURIComponent(q.trim())}${opts.unlinked ? "&unlinked=true" : ""}`);
 }
 
 /** GET /patients/{id}/vitals?from=&to= — oldest first, default last 24 h. */
@@ -825,7 +854,10 @@ export async function examFileUrl(resultId: string): Promise<string> {
   const res = await fetch(`${BASE}/exam-results/${encodeURIComponent(resultId)}/file`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (!res.ok) throw new ApiError(res.status, "http_error", res.statusText);
+  if (!res.ok) {
+    if (res.status === 401) handleUnauthorized("/exam-results/file", !!token);
+    throw new ApiError(res.status, "http_error", res.statusText);
+  }
   return URL.createObjectURL(await res.blob());
 }
 

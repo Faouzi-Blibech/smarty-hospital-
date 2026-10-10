@@ -319,13 +319,23 @@ export interface StaffMember {
 
 export type AccountStatus = "pending" | "active" | "disabled" | "rejected";
 
+/** The roles a person can ask for on /register (`admin` is never a sign-up choice). */
+export type SignupRole = "patient" | "nurse" | "doctor";
+/** The roles an approver can grant (only an admin may grant `admin`). */
+export type GrantRole = SignupRole | "admin";
+
 export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
+  role: SignupRole;
   note?: string;
+  /** Patients and nurses only; sending it with `role: "doctor"` is a 422. */
   requested_doctor_id?: string;
-  enrollment_code?: string;
+}
+/** GET /hospital (public): this install's hospital. */
+export interface Hospital {
+  name: string;
 }
 export interface RegisterResponse {
   status: "received";
@@ -350,14 +360,18 @@ export interface PendingUser {
   name: string;
   email: string;
   note: string | null;
+  requested_role: SignupRole | null;
   requested_doctor_id: string | null;
-  requested_doctor_name: string | null;
+  /** UI extension: resolved from the doctor directory when the server doesn't send it. */
+  requested_doctor_name?: string | null;
   status: "pending" | "rejected";
   created_at: string;
 }
 export interface ApproveRequest {
-  role: "doctor" | "nurse" | "admin";
+  role: GrantRole;
   ward?: string | null;
+  /** Patient role only: link to this existing record; omit to create a new record from the request's name. */
+  patient_id?: string | null;
 }
 export interface UserAdmin {
   id: string;
@@ -367,6 +381,9 @@ export interface UserAdmin {
   status: AccountStatus;
   ward: string | null;
   supervisor_id: string | null;
+  /** Set on pending and rejected requests. */
+  requested_role: SignupRole | null;
+  requested_doctor_id: string | null;
 }
 /** Shown once to the issuer; never stored by the UI. */
 export interface OneTimeCode {
