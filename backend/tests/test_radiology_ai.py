@@ -124,3 +124,24 @@ def test_render_french_uses_spaced_colon():
     d = radiology.RadiographDraft.model_validate(DRAFT)
     text = radiology.render(d, "fr")
     assert "Conclusion : No acute" in text and "Résultats :" in text and "(élevée)" in text
+
+
+def test_prepare_image_rescales_16_bit():
+    im = Image.new("I;16", (64, 64))
+    im.putdata([(i % 64) * 4000 // 63 for i in range(64 * 64)])
+    buf = io.BytesIO()
+    im.save(buf, format="PNG")
+    lo, hi = Image.open(io.BytesIO(radiology.prepare_image(buf.getvalue()))).getextrema()
+    assert hi - lo > 100
+
+
+def test_read_pixel_bomb_is_failed():
+    buf = io.BytesIO()
+    Image.new("L", (8000, 8000)).save(buf, format="PNG")
+    assert radiology.read(buf.getvalue(), "")[0] == "failed"
+
+
+def test_read_http_500_is_unavailable(monkeypatch, local_vision):
+    monkeypatch.setattr(llm.httpx, "post", lambda url, timeout, json: FakeResp("", 500))
+    status, ai = radiology.read(jpeg_with_exif(), "")
+    assert status == "unavailable" and ai["reason"] == "vision model unavailable"

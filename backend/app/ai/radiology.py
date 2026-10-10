@@ -56,10 +56,27 @@ def _label(title: str, lang: str, value: str = "") -> str:
     return f"{title}{sep} {value}" if value else f"{title}{sep}"
 
 
+MAX_PIXELS = 50_000_000
+
+
+def _to_grey(im: Image.Image) -> Image.Image:
+    """8-bit grey; 16-bit / float images are rescaled to their real range first (convert("L") would clip them)."""
+    if im.mode.startswith(("I", "F")):
+        im = im.convert("I") if im.mode != "I" else im
+        lo, hi = im.getextrema()
+        scale = 255 / (hi - lo) if hi > lo else 1
+        im = im.point(lambda v: (v - lo) * scale)
+    return im.convert("L")
+
+
 def prepare_image(data: bytes) -> bytes:
     """Decode, apply EXIF orientation, grey-scale, fit in MAX_SIDE, re-encode as a fresh PNG (no metadata)."""
     with Image.open(io.BytesIO(data)) as im:
-        im = ImageOps.exif_transpose(im).convert("L")
+        if im.width * im.height > MAX_PIXELS:
+            raise ValueError("image too large")
+        if im.format == "JPEG":
+            im.draft("L", (MAX_SIDE * 2, MAX_SIDE * 2))
+        im = _to_grey(ImageOps.exif_transpose(im))
         im.thumbnail((MAX_SIDE, MAX_SIDE))
         out = io.BytesIO()
         im.save(out, format="PNG")
@@ -104,7 +121,8 @@ def read(data: bytes, hint: str = "") -> tuple[str, dict]:
                                      f"Language: {LANG_NAME[lang]}. Requested exam: {hint or 'radiograph'}.",
                                      RadiographDraft)
     except llm.LLMUnavailable as e:
-        return "unavailable", template(lang, str(e))
+        bad = any(k in str(e).lower() for k in ("validation", "json", "expecting"))
+        return "unavailable", template(lang, "invalid model output" if bad else "vision model unavailable")
     return "ready", {"source": "llm", "model": s.llm_vision_model, **d.model_dump(),
                      "draft_text": render(d, lang), "disclaimer": DISCLAIMER}
 
