@@ -11,12 +11,12 @@
   - One WebSocket hook for live frames.
 - **AI:**
   - Reworked 2026-10-06 (spec: `docs/superpowers/specs/2026-10-06-ai-rework-design.md`). Hand-coded rules plus small trained models decide; no LLM is needed.
-  - Triage = red-flag rules + a trained char n-gram classifier. Assistant = Laya (optional) + the same kind of classifier, templated answers. Copilot = templates + rule interactions.
+  - Triage = red-flag rules + a trained char n-gram classifier. Assistant = keyword rules + the same kind of classifier, templated answers. Copilot = templates + rule interactions.
   - An optional open LLM (`LLM_PROVIDER=groq|local`) may rewrite the copilot summary through `llm.py`. It strips PII, times out at 15 s and raises `LLMUnavailable`; the template text is kept then.
   - `source` is `"model"`, `"rules"` or `"llm"`.
 - **n8n:** one router workflow on `/webhook/ward-events` that fans out on `event`.
 
-**Tech stack:** Next.js 16 + React 19 + TypeScript (strict) + Tailwind v4 + Recharts · Python 3.12, FastAPI, Pydantic v2, scikit-learn (training only), optional Laya, httpx (Groq or Ollama, optional), MinIO · n8n self-hosted, Telegram Bot API, SMTP.
+**Tech stack:** Next.js 16 + React 19 + TypeScript (strict) + Tailwind v4 + Recharts · Python 3.12, FastAPI, Pydantic v2, scikit-learn (training only), httpx (Groq or Ollama, optional), MinIO · n8n self-hosted, Telegram Bot API, SMTP.
 
 **Spec:** `docs/superpowers/specs/2026-10-05-ward-foundation-design.md` · read also `CLAUDE.md`, `docs/architecture.md`, `TEAM_PLAN.md` and all of `docs/contracts/` (you own `api.md` → Appointments/AI/Integrations and all of `n8n-webhooks.md`).
 
@@ -461,14 +461,13 @@ Built ahead against the contracts (all DB-free and tested): `app/services/appoin
   - `POST /ai/summary/{patient_id}/review` (`apply_review`)
   - `POST /ai/assistant` (patient): the caller's own today's doses, next appointment, latest vital → `assistant.answer(q, assistant_context(...))`; the response carries `intent` and `source` too
   - `summary_inputs` takes notes and vitals oldest-first, so the router loads them oldest-first
-  - call `laya_intent.preload()` at startup (first Laya load takes about 50 s; skip it when `LAYA_ENABLED=false` or Laya is not installed)
 - [ ] Mount the three routers in `app/main.py` (one-line PR to Wali, he owns `main.py`).
 - [ ] API tests with Wali's `client` fixture and `tests/helpers.login` for each route above, including the 403s from the role matrix and the 409s.
 - [ ] Run W2/W5/W6 against the real API (no stub): `WARD_API_URL` back to the default.
 
 ### Task 11 (stretch): Patient assistant
 
-- [ ] `POST /ai/assistant`: built (rework 2026-10-06). It classifies the question into an intent (`next_dose`, `next_visit`, `my_vitals`, `ask_staff`, `urgent`) with Laya plus a trained classifier, then fills a template from the caller's own record. A red-flag question gets the URGENT message with no model call. No LLM, no diagnosis; otherwise "Please ask your nurse".
+- [ ] `POST /ai/assistant`: built (rework 2026-10-06). It classifies the question into an intent (`next_dose`, `next_visit`, `my_vitals`, `ask_staff`, `urgent`) with keyword rules plus a trained classifier, then fills a template from the caller's own record. A red-flag question gets the URGENT message with no model call. No LLM, no diagnosis; otherwise "Please ask your nurse".
 
 ### Single-visit exams (doctor feedback 2026-10-09)
 

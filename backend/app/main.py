@@ -1,6 +1,5 @@
 import asyncio
 import socket
-import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -8,7 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app import errors
-from app.ai import laya_intent
 from app.config import check_secrets, get_settings
 from app.db import engine
 from app.iot import publisher
@@ -25,8 +23,6 @@ async def lifespan(_: FastAPI):
     hub.loop = asyncio.get_running_loop()
     client = relay.start()
     publisher.use(client)  # publish on the client that connected at startup
-    # Laya takes ~50 s to load: warm it in the background so the API answers at once (rules/model until then)
-    threading.Thread(target=laya_intent.preload, daemon=True).start()
     yield
     client.loop_stop()
     client.disconnect()

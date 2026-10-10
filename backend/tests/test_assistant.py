@@ -92,7 +92,6 @@ def test_ask_staff_intent(monkeypatch):
 
 @pytest.fixture()
 def no_models(monkeypatch):
-    monkeypatch.setattr(A.laya_intent, "classify", lambda q: None)
     monkeypatch.setattr(A.textclf, "load", lambda name: None)
 
 
@@ -107,20 +106,11 @@ def test_keyword_path_with_no_models(no_models, q, intent):
 
 
 def test_low_confidence_becomes_ask_staff(monkeypatch):
-    monkeypatch.setattr(A.laya_intent, "classify", lambda q: None)
     monkeypatch.setattr(A.textclf, "load", lambda name: {})
     monkeypatch.setattr(A.textclf, "predict_proba",
                         lambda m, t: {"next_dose": 0.3, "next_visit": 0.25, "ask_staff": 0.25,
                                       "urgent": 0.1, "my_vitals": 0.1})
     assert A.classify_intent("whatever") == ("ask_staff", 0.3, "model")
-
-
-def test_averages_available_maps(monkeypatch):
-    monkeypatch.setattr(A.laya_intent, "classify", lambda q: {"next_dose": 0.2, "my_vitals": 0.8})
-    monkeypatch.setattr(A.textclf, "load", lambda name: {})
-    monkeypatch.setattr(A.textclf, "predict_proba", lambda m, t: {"next_dose": 0.6, "my_vitals": 0.4})
-    intent, conf, src = A.classify_intent("x")
-    assert (intent, src) == ("my_vitals", "model") and conf == pytest.approx(0.6)
 
 
 def test_context_without_data():
@@ -133,7 +123,6 @@ def test_context_without_data():
     ("Do I have any more tablets to take this evening?", "next_dose"),
     ("Can I go on holiday after my operation?", "ask_staff"),
 ])
-def test_shipped_intent_model_classifies_unseen_questions(monkeypatch, question, intent):
-    monkeypatch.setattr(A.laya_intent, "classify", lambda q: None)
+def test_shipped_intent_model_classifies_unseen_questions(question, intent):
     got, _conf, _source = A.classify_intent(question)  # one-topic questions are answered by keyword rules
     assert got == intent
