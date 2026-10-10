@@ -7,11 +7,26 @@
 
 Tunisian hospitals today:
 - Patients who need care fast often get appointments 6–12 months away.
+- A patient usually sees the doctor twice: a first visit to be told which exams to do, a second one with the results for the diagnosis and treatment.
 - Doctors and nurses log, search and re-read paper records every day.
 - Patient, nurse, doctor and administration have no shared system.
 
-**Ward automates the patient process**: no paper, fewer no-shows, urgency-aware booking and automatic follow-ups.
+**Ward automates the patient process**:
+- no paper
+- exams done before the visit, so one consultation is enough
+- fewer no-shows
+- urgency-aware booking
+- automatic follow-ups
+
 Shorter waits are the *result*. We do not claim to "solve the waitlist".
+
+**Where Ward fits.** Doctors we showed the demo to (2026-10-09) already use a doctor-only system, and the national
+programme is rolling out:
+- electronic records and PACS imaging in public hospitals
+- Sahetna.tn for citizens, keyed on the national health identifier (INS)
+
+Ward does not replace these. It connects the four roles around one patient and automates the steps between them; in
+production it would use the INS as the patient identifier and exchange records with these systems.
 
 **Locked principles:**
 - **Human in the loop:** AI suggests and a human confirms.
@@ -39,15 +54,16 @@ flowchart TB
     WRK["MQTT ingestion worker"]
     VIT["Vitals & Alerts"]
     APT["Appointments & Waitlist"]
+    EXM["Exams (single visit)<br/>suggest · order · upload · read"]
     REC["Patient records"]
     RX["Prescriptions & Med schedule"]
-    AI["AI engine<br/>triage · early warning · copilot<br/>no-show · assistant<br/>(rules + trained models)"]
-    LLM["ai/llm.py<br/>optional open LLM (off by default)<br/>(PII stripped)"]
+    AI["AI engine<br/>triage · exam suggestions · early warning<br/>copilot · no-show · assistant<br/>(rules + trained models)"]
+    LLM["ai/llm.py<br/>optional open LLM (off by default)<br/>Groq gpt-oss-120b or Ollama · PII stripped"]
   end
 
   subgraph DATA["Data (hospital's own server)"]
     PG[("PostgreSQL<br/>+ TimescaleDB")]
-    MINIO[("MinIO<br/>documents")]
+    MINIO[("MinIO<br/>exam result files")]
     AUD[("audit_log")]
   end
 
@@ -59,10 +75,10 @@ flowchart TB
   WRK --> VIT
   RX -->|retained schedule| MQ
   PWA <-->|HTTPS + WS| API
-  API --- VIT & APT & REC & RX & AI
+  API --- VIT & APT & EXM & REC & RX & AI
   AI --> LLM
-  VIT & APT & REC & RX & WRK --> PG
-  REC --> MINIO
+  VIT & APT & EXM & REC & RX & WRK --> PG
+  EXM --> MINIO
   API --> AUD
   API -->|events| N8N
   N8N -->|callbacks| API
@@ -99,11 +115,16 @@ flowchart LR
     UC17["Assign beds & devices"]
     UC18["Staff accounts & roles"]
     UC19["Hospital dashboard"]
+    UC20["Do exams before the visit"]
+    UC21["Order or drop suggested exams"]
+    UC22["Upload exam results (own department)"]
+    UC23["Read results at the visit"]
+    UC24["Ask the case notebook (planned)"]
   end
 
-  P --- UC1 & UC2 & UC3 & UC4 & UC5 & UC6
-  N --- UC7 & UC8 & UC9 & UC10
-  D --- UC11 & UC12 & UC13 & UC14 & UC9
+  P --- UC1 & UC2 & UC3 & UC4 & UC5 & UC6 & UC20
+  N --- UC7 & UC8 & UC9 & UC10 & UC22
+  D --- UC11 & UC12 & UC13 & UC14 & UC9 & UC21 & UC23 & UC24
   A --- UC16 & UC17 & UC18 & UC19 & UC14
 ```
 
@@ -120,15 +141,23 @@ sequenceDiagram
   actor A as Admin
   actor D as Doctor
   actor N as Nurse
+  actor X as Department nurse
   participant S as System + AI
   participant B as Bedside Unit
 
   P->>S: Request appointment (app / reception)
   S->>S: Triage: red-flag rules + trained classifier → urgency 1–5
-  S-->>A: AI-ranked waitlist
+  S->>S: Exam rules → suggested exams (e.g. ECG, troponin, chest X-ray)
+  S-->>D: Request with suggested exams
+  D->>S: Order the exams to keep (the rest are dropped)
+  S-->>P: "Before your visit" checklist (n8n W7)
+  P->>X: Does the exams (Imaging / Laboratory / Cardiology)
+  X->>S: Uploads the result file + short report
+  S-->>D: Results ready (n8n W8)
+  S-->>A: AI-ranked waitlist with exam progress
   A->>S: Confirm booking (may override urgency)
   S-->>P: Confirmation + 24h reminder (n8n W1)
-  D->>S: Consultation → prescription + care plan
+  D->>S: Single consultation with the results → prescription + care plan
   S->>B: Retained MQTT schedule (med_doses)
   B-->>S: schedule_ack
   Note over B: Dose time (RTC, works offline)
@@ -149,7 +178,39 @@ sequenceDiagram
 
 **Golden demo path:** the journey above, plus a **simulated abnormal vital** that fires an alert on the dashboard and on Telegram.
 
-## 5. Hardware: Smart Bedside Unit (listener: OLED + servo + RTC)
+## 5. Single-visit pathway (exams before the visit)
+
+Built from the doctors' feedback of 2026-10-09. Design: `docs/superpowers/specs/2026-10-09-single-visit-and-case-notebook-design.md`.
+
+```mermaid
+stateDiagram-v2
+  [*] --> suggested: exam rules on a new request
+  suggested --> ordered: doctor orders it
+  suggested --> cancelled: doctor drops it
+  ordered --> done: department nurse uploads the result
+  ordered --> cancelled: doctor cancels
+  done --> [*]
+```
+
+- **Suggestions are rules, not a model.**
+  - `backend/app/ai/rules/exam_bundles.v1.json` maps red flags and keywords (French, English, Arabic) to exam sets, at most 4 per request. Example: chest pain gives ECG, troponin and a chest X-ray.
+  - Rows are stored with `ai_suggested.source = "rules"`.
+  - The sets are illustrative, for the hospital's doctors to review.
+- **A doctor orders.** Only a doctor moves an exam from `suggested` to `ordered` (`human_confirmed_by`). Unticked suggestions are dropped. Any other transition is a 409 `bad_status`.
+- **The performing department uploads.**
+  - A nurse whose ward is the exam's `department` (Imaging, Laboratory or Cardiology) sees it in the **Exams** worklist.
+  - The nurse uploads a PDF, JPEG or PNG of at most 15 MB, plus a short report line.
+  - The file goes to MinIO under `exams/{exam}/{result}/{name}`.
+- **Who sees what:**
+  - **Doctor and nurse:** they read results and open files through `GET /exam-results/{id}/file`, which is audited and sent with `nosniff`.
+  - **Admin:** status only.
+  - **Patient:** ordered and done exams only. Never suggestions, AI fields or files.
+- **Events:** `exam.ordered` (n8n W7, tells the patient where to go) and `exam.results_ready` (W8, tells the ordering doctor, once, when the last exam is done).
+- **Booking:** staff still pick the slot. The waitlist shows "Exams 2/3" so they can book once the results are in.
+- **Triage scale label:** our urgency 1–5 is shown with the hospital's triage-scale level from `rules/triage_scale.v1.json`, e.g. "Tri 1 · FRENCH". It is marked "(to confirm)" until the doctors confirm which scale they use.
+- **Out of scope:** AI reading images or lab values, and a DICOM viewer. PACS integration is the production path.
+
+## 6. Hardware: Smart Bedside Unit (listener: OLED + servo + RTC)
 
 The bedside unit is a **listener**. It receives the schedule and commands, shows them, turns a servo to the dose's
 pill slot and acknowledges. It has **no vital-sign sensors**: vitals, nurse taps and call-nurse come from
@@ -191,7 +252,7 @@ flowchart LR
 - Up to 8 pending events are queued in RAM and sent on reconnect; the server deduplicates on `msg_id`.
 - An MQTT last-will reports offline status.
 
-## 6. AI layer (human in the loop)
+## 7. AI layer (human in the loop)
 
 ```mermaid
 flowchart LR
@@ -203,7 +264,8 @@ flowchart LR
     Q["Patient question"]
   end
   subgraph Mods["backend/app/ai/"]
-    T["1 · Triage<br/>red-flag rules + trained char n-gram classifier"]
+    T["1 · Triage<br/>red-flag rules + trained char n-gram classifier<br/>+ hospital scale label"]
+    EX["4 · Exam suggestions<br/>rules: red flags + keywords → exam set"]
     EW["2 · Early warning<br/>NEWS2 partial + z-score"]
     CP["3 · Doctor copilot<br/>templated summary + rule interactions<br/>(optional open LLM rewrite)"]
     NS["5 · No-show model<br/>LogReg on Kaggle dataset"]
@@ -212,11 +274,13 @@ flowchart LR
   W["llm.py wrapper (optional)<br/>strip PII · LLM_PROVIDER · open models only"]
   subgraph Human["Human confirms"]
     HA["Admin / doctor<br/>confirms waitlist order"]
+    HX["Doctor orders<br/>or drops exams"]
     HN["Nurse + doctor<br/>ack alert"]
     HD["Doctor reviews summary"]
     HO["Admin can override booking"]
   end
   REF --> T --> HA
+  REF --> EX --> HX
   VS --> EW --> HN
   H24 --> CP --> HD
   HIST --> NS --> HO
@@ -229,14 +293,21 @@ flowchart LR
 | 1 | Triage | Faouzi | Red-flag rules alone (`source: "rules"`); with the trained model, `source: "model"` |
 | 2 | Early warning | Wali | Pure rules, so it is its own fallback |
 | 3 | Doctor copilot | Faouzi | Templated summary from min/max/latest vitals + the curated interaction list (this is the default; an open LLM only rewrites it when `LLM_PROVIDER` is set) |
+| 4 | Exam suggestions | Faouzi | Pure rules (`source: "rules"`), so it is its own fallback |
 | 5 | No-show model | Hedi | Base rate (≈0.20) |
 | 6 | Patient assistant | Faouzi | Keyword intent rules, then the same templated answers from the DB; otherwise "Please ask your nurse" |
 
 **How the modules decide:**
 - **Triage:** urgency = max(red-flag floor, trained classifier, 2 if age ≥ 75). The model can raise urgency above the floor, never lower it.
 - **Assistant:** a red-flag question gets the URGENT message with no model call. Otherwise the intent is the average of Laya (base model, zero-shot, optional install) and a trained char n-gram classifier. Low confidence means "ask staff". The answer is a template filled from the caller's own record.
-- **Copilot:** the summary and the interaction list come from templates and a curated rule file. An optional open LLM (Groq or Ollama) may rewrite the text.
+- **Copilot:** the summary and the interaction list come from templates and a curated rule file.
+  - The summary is cached 10 minutes and stored in `ai_summaries`. The doctor marks it reviewed, or undoes that.
+  - An optional open LLM may rewrite the text. Our setup is Groq with `openai/gpt-oss-120b`, an open-weight model; Ollama works for fully local use. If the call fails, the template text is served (`source: "rules"`).
+- **Exam suggestions:** red-flag ids from triage plus keywords in three languages pick exam bundles, at most 4 exams. The doctor orders or drops each one (section 5).
 - **Early warning and no-show:** unchanged (Wali and Hedi).
+- **Case notebook (planned):** see `docs/superpowers/plans/2026-10-09-case-notebook.md`.
+  - The doctor asks questions about one patient. Answers come only from that patient's record (notes, exam reports, prescriptions, vitals summary, referral) and cite their sources.
+  - Without an LLM it returns the best-matching passages (BM25). With an LLM it writes a short answer that may cite only those passages; anything else falls back.
 
 **Measured on hand-written sets (synthetic, small):**
 
@@ -277,10 +348,21 @@ Partial score → severity:
 
 **Trend:** a rolling z-score over the patient's last 30 readings; |z| ≥ 3 on HR or SpO2 raises a `trend` alert (medium).
 
-## 7. Data and privacy
+## 8. Data and privacy
 
 - Everything runs from one `docker compose` on the hospital's server.
-- RBAC is enforced in FastAPI dependencies. Every read of a patient record appends an `audit_log` row. Postgres RLS is the Day 4 stretch / production plan.
-- No data leaves the server unless `LLM_PROVIDER` is set (default `none`). When it is, `llm.py` replaces names, phone numbers and IDs with placeholders first. `LLM_PROVIDER=local` sends nothing off the machine (Ollama); `groq` calls the Groq API with an open model.
+- RBAC is enforced in FastAPI dependencies.
+  - Every read of a patient record appends an `audit_log` row: records, vitals, doses, exams, result files, AI summaries and assistant questions.
+  - Postgres RLS is the Day 4 stretch / production plan.
+- Exam result files live in MinIO and are never exposed by a public link. The API checks the role and the department or ward, logs the read, then streams the file.
+- No data leaves the server unless `LLM_PROVIDER` is set (default `none`).
+  - When it is set, `llm.py` first replaces names, phone numbers and IDs with placeholders.
+  - `LLM_PROVIDER=local` sends nothing off the machine (Ollama).
+  - `groq` calls the Groq API with an open-weight model (`openai/gpt-oss-120b`).
+  - Only the doctor's summary text uses it today. Tests always run with `LLM_PROVIDER=none`.
 - Laya, when installed, runs locally on the CPU; its weights are downloaded once from the Hugging Face Hub. `snapshot_download` contacts the Hub on each process start (metadata only), so set `HF_HUB_OFFLINE=1` after the first download.
 - Seed data is synthetic (`backend/app/seed.py`).
+  - Staff: one doctor, a Cardiology nurse, an Internal Medicine nurse, an Imaging nurse and a Laboratory nurse, plus one admin.
+  - 12 patients, of whom one is admitted with 48 h of vitals and one prescription.
+  - 10 appointment requests with their suggested exams.
+  - `python -m app.seed` is safe to re-run: on an existing database it only adds missing staff accounts.
