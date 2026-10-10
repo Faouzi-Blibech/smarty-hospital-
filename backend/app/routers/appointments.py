@@ -7,11 +7,11 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.ai.exams import suggest_exams
-from app.auth.deps import require_roles
+from app.auth.deps import check_appointment_access, require_roles
 from app.db import get_db
 from app.errors import ApiError, forbidden, not_found
 from app.ids import new_id
@@ -143,9 +143,13 @@ def create(body: AppointmentIn, request: Request, user: User = Depends(require_r
 
 
 @router.get("/waitlist")
-def waitlist(user: User = Depends(require_roles("admin", "doctor")), db: Session = Depends(get_db)) -> list[dict]:
+def waitlist(request: Request, user: User = Depends(require_roles("admin", "doctor")),
+             db: Session = Depends(get_db)) -> list[dict]:
     rows = db.scalars(select(Appointment).where(Appointment.status == "requested")).all()
-    return [to_out(db, a, user) for a in A.waitlist(rows)]
+    audit(db, user, "read", "waitlist", "list", ip=_ip(request))
+    out = [to_out(db, a, user) for a in A.waitlist(rows)]
+    db.commit()
+    return out
 
 
 @router.get("")
@@ -157,6 +161,10 @@ def list_appointments(request: Request, patient_id: str | None = None, status: s
             raise forbidden("not your appointments")
         patient_id = user.patient_id
     stmt = select(Appointment)
+    if user.role == "doctor":  # pending requests are the pool; everything else only for own patients / bookings
+        mine = select(Patient.id).where(Patient.attending_doctor_id == user.id)
+        stmt = stmt.where(or_(Appointment.status == "requested", Appointment.doctor_id == user.id,
+                              Appointment.patient_id.in_(mine)))
     if patient_id:
         stmt = stmt.where(Appointment.patient_id == patient_id)
     if status:
@@ -165,16 +173,17 @@ def list_appointments(request: Request, patient_id: str | None = None, status: s
     # soonest slot first, then unbooked requests newest first
     rows = sorted(rows, key=lambda a: (a.slot_at is None, a.slot_at or datetime.min.replace(tzinfo=UTC),
                                        -a.created_at.timestamp()))
-    if patient_id:
-        audit(db, user, "read", "appointments", patient_id, patient_id=patient_id, ip=_ip(request))
-        db.commit()
-    return [to_out(db, a, user) for a in rows]
+    audit(db, user, "read", "appointments", patient_id or "list", patient_id=patient_id, ip=_ip(request))
+    out = [to_out(db, a, user) for a in rows]
+    db.commit()
+    return out
 
 
 @router.patch("/{appointment_id}")
-def override(appointment_id: str, body: OverrideIn, user: User = Depends(require_roles("admin", "doctor")),
-             db: Session = Depends(get_db)) -> dict:
+def override(appointment_id: str, body: OverrideIn, request: Request,
+             user: User = Depends(require_roles("admin", "doctor")), db: Session = Depends(get_db)) -> dict:
     a = _load(db, appointment_id)
+    check_appointment_access(db, user, a, write=True, ip=_ip(request))
     A.apply_override(a, body.urgency_final, user_id=user.id)
     db.flush()
     out = to_out(db, a, user)
@@ -183,9 +192,10 @@ def override(appointment_id: str, body: OverrideIn, user: User = Depends(require
 
 
 @router.post("/{appointment_id}/confirm")
-def confirm(appointment_id: str, body: ConfirmIn, user: User = Depends(require_roles("admin", "doctor")),
-            db: Session = Depends(get_db)) -> dict:
+def confirm(appointment_id: str, body: ConfirmIn, request: Request,
+            user: User = Depends(require_roles("admin", "doctor")), db: Session = Depends(get_db)) -> dict:
     a = _load(db, appointment_id)
+    check_appointment_access(db, user, a, write=True, ip=_ip(request))
     doctor = db.get(User, body.doctor_id)
     if doctor is None or doctor.role != "doctor":
         raise ApiError(422, "invalid", "doctor_id: not a doctor")

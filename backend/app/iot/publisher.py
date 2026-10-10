@@ -9,6 +9,7 @@ import threading
 import paho.mqtt.client as mqtt
 
 from app.config import get_settings
+from app.iot import mqtt_auth
 
 log = logging.getLogger("ward.publisher")
 
@@ -28,6 +29,7 @@ def _get():
         if _client is None:
             s = get_settings()
             c = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=f"ward-api-pub-{os.getpid()}")
+            mqtt_auth.apply_credentials(c, s)
             c.connect_async(s.mqtt_host, s.mqtt_port)
             c.loop_start()
             _client = c

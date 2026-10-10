@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from app import errors
 from app.ai import laya_intent
-from app.config import get_settings
+from app.config import check_secrets, get_settings
 from app.db import engine
 from app.iot import publisher
 from app.routers import ai, alerts, appointments, auth, devices, doses, exams, integrations, patients, prescriptions, staff
@@ -21,6 +21,7 @@ from app.ws.hub import hub
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    check_secrets(get_settings())
     hub.loop = asyncio.get_running_loop()
     client = relay.start()
     publisher.use(client)  # publish on the client that connected at startup

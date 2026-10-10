@@ -6,11 +6,11 @@ from sqlalchemy.orm import Session
 
 from app.auth.deps import check_patient_access, require_roles
 from app.db import get_db
-from app.errors import ApiError, not_found
+from app.errors import ApiError, forbidden, not_found
 from app.ids import new_id
 from app.integrations import n8n
 from app.iot import publisher
-from app.models import Admission, Device, Patient, User
+from app.models import Admission, Device, MedDose, Patient, User
 from app.schemas import AssignIn, CommandIn, iso
 from app.services import schedule
 from app.services.audit import audit
@@ -100,6 +100,18 @@ def command(device_id: str, body: CommandIn, request: Request,
             user: User = Depends(require_roles("doctor", "nurse", "admin")), db: Session = Depends(get_db)) -> dict:
     if db.get(Device, device_id) is None:
         raise not_found("device")
-    audit(db, user, "create", "device_command", device_id, ip=_ip(request))
+    if user.role == "admin":
+        if body.type == "dispense_now":  # releasing medication is a clinical action
+            raise forbidden("admins cannot dispense medication")
+        audit(db, user, "create", "device_command", device_id, ip=_ip(request))
+    else:
+        adm = db.scalar(select(Admission).where(Admission.device_id == device_id, Admission.discharged_at.is_(None)))
+        if adm is None:
+            raise forbidden("this unit is not assigned to a patient")
+        check_patient_access(db, user, adm.patient_id, write=True, resource="device_command", ip=_ip(request))
+        if body.dose_id:
+            dose = db.get(MedDose, body.dose_id)
+            if dose is None or dose.patient_id != adm.patient_id:
+                raise ApiError(422, "invalid", "dose_id: not a dose of this unit's patient")
     db.commit()
     return {"published": publisher.publish_command(device_id, body.model_dump(exclude_none=True))}
