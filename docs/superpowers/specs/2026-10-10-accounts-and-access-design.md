@@ -191,6 +191,7 @@ API is ever scaled out, the limits move to the proxy or Redis.
 | `POST /auth/reset` | anyone | `{email, code, new_password}` → 204, or generic 400 |
 | `POST /auth/login` | anyone | adds 403 `account_pending` / `account_disabled` / 423 `account_locked`, only after the password is correct |
 | `POST /auth/change-password` | logged-in user | `{current_password, new_password}` |
+| `POST /auth/logout` | logged-in user | 204 + audit row. Ends **this device's** session only (user decision, 2026-10-10): the client deletes its token, and tokens are not revoked server-side, so a copied token stays valid until it expires |
 | `GET /doctors/directory` | anyone | doctor display names and ids only, for the sign-up "I work with" picker. Rate-limited, no emails. |
 | `GET /users?status=pending` | admin (all), doctor (his requests) | pending list: name, email, note, created_at |
 | `POST /users/{id}/approve` | admin, doctor | admin: `{role, ward?}`, role in doctor/nurse/admin. Doctor: role nurse only, into his team (403 otherwise). |
