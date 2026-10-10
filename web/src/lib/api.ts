@@ -1145,7 +1145,7 @@ function mockPrefs(s: MockStore, role: Role): HealthPrefs {
 }
 
 function withFlags(s: MockStore, role: Role, ev: Omit<HealthEvent, "matches_me" | "following">): HealthEvent {
-  return { ...ev, matches_me: mockMatches(s, role, ev), following: mockPrefs(s, role).following[ev.category] };
+  return { ...ev, matches_me: mockMatches(s, role, ev), following: mockPrefs(s, role).following[ev.category as HealthCategory] };
 }
 
 function mockEvent(s: MockStore, id: string) {
@@ -1216,7 +1216,7 @@ export function notifyHealthEvent(id: string): Promise<{ recipients: number }> {
       const ev = mockEvent(s, id);
       ev.announced_at = now().toISOString().replace(/\.\d{3}Z$/, "Z");
       const roles: Role[] = ["patient", "nurse", "doctor", "admin"];
-      const people = roles.filter((r) => mockMatches(s, r, ev) && mockPrefs(s, r).following[ev.category]);
+      const people = roles.filter((r) => mockMatches(s, r, ev) && mockPrefs(s, r).following[ev.category as HealthCategory]);
       return { recipients: people.length };
     });
   return http<{ recipients: number }>("POST", `/health-events/${enc(id)}/notify`);

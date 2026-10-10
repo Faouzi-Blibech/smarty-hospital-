@@ -7,7 +7,8 @@ import type { Key } from "@/i18n/messages";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { LogoutButton } from "./LogoutButton";
 import { getHealthEvents } from "@/lib/api";
-import { addDays, badgeCount, todayIso } from "@/lib/healthCalendar";
+import { addDays, badgeCount, todayIso, weatherEvents } from "@/lib/healthCalendar";
+import { loadHealthWatch } from "@/components/calendar/useHealthEvents";
 import { USE_MOCKS } from "@/lib/time";
 import { initialsOf, useMe } from "@/lib/useMe";
 import { NAV_COUNTS } from "@/mocks";
@@ -102,8 +103,8 @@ export function Sidebar({ role, active, live = true, counts }: SidebarProps) {
   const [calCount, setCalCount] = useState<number | null>(null);
   useEffect(() => {
     let alive = true;
-    getHealthEvents({ role, from: todayIso(), to: addDays(todayIso(), 7) }).then(
-      (ev) => alive && setCalCount(badgeCount(ev, todayIso())),
+    Promise.all([getHealthEvents({ role, from: todayIso(), to: addDays(todayIso(), 7) }), loadHealthWatch(role)]).then(
+      ([ev, watch]) => alive && setCalCount(badgeCount([...weatherEvents(watch, role), ...ev], todayIso())),
       () => undefined,
     );
     return () => {

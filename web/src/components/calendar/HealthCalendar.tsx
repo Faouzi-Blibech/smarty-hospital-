@@ -1,7 +1,8 @@
 "use client";
 
-// The health calendar: a month grid of Tunisian public-health days and campaigns,
-// the selected event, what's coming up, and the categories this person follows.
+// The health calendar: a month grid of Tunisian public-health days and campaigns plus the weather-health alerts
+// for the next days (one-day "weather" entries with the groups and patients at risk), the selected event, what's
+// coming up, the forecast, health news, and the categories this person follows.
 // Staff pages use the full layout; the patient tab uses `compact`; admins get `editable`.
 import { useEffect, useMemo, useState } from "react";
 import { useT } from "@/i18n/I18nProvider";
@@ -23,6 +24,7 @@ import {
 import { HEALTH_CATEGORIES, type HealthCategory, type HealthEvent, type HealthPrefs, type Role } from "@/lib/types";
 import { EventForm } from "./EventForm";
 import { useHealthEvents } from "./useHealthEvents";
+import { ForecastCard, NewsCard, WeatherDetail } from "./WeatherCards";
 import styles from "./HealthCalendar.module.css";
 
 export interface HealthCalendarProps {
@@ -52,7 +54,7 @@ function tunisDate(ts: string): string {
 
 export function HealthCalendar({ role, editable = false, compact = false }: HealthCalendarProps) {
   const { t, lang } = useT();
-  const { events, failed, reload } = useHealthEvents(role);
+  const { events, watch, failed, reload } = useHealthEvents(role);
   const today = todayIso();
   const canEdit = editable && !compact;
 
@@ -228,13 +230,14 @@ export function HealthCalendar({ role, editable = false, compact = false }: Heal
       </h2>
       <span className={styles.when}>{fmtRange(selected, lang)}</span>
       {textOf(selected.description, lang) ? <p className={styles.desc}>{textOf(selected.description, lang)}</p> : null}
+      <WeatherDetail ev={selected} role={role} />
       {selected.organizer ? <span className={styles.meta}>{t("calendar.organizer", { org: selected.organizer })}</span> : null}
       {selected.source_url ? (
         <a className={styles.link} href={selected.source_url} target="_blank" rel="noreferrer">
           {t("calendar.source")}
         </a>
       ) : null}
-      {canEdit ? (
+      {canEdit && !selected.weather ? (
         <>
           {selected.announced_at ? (
             <span className={styles.meta}>{t("calendar.announced", { date: fmtDay(tunisDate(selected.announced_at), lang) })}</span>
@@ -310,12 +313,18 @@ export function HealthCalendar({ role, editable = false, compact = false }: Heal
     </section>
   );
 
-  const honesty = <p className={styles.honesty}>{t("calendar.honesty")}</p>;
+  const honesty = (
+    <p className={styles.honesty}>
+      {t("calendar.honesty")}
+      {watch ? ` ${t("calendar.wxHonesty")}` : ""}
+    </p>
+  );
 
   if (compact) {
     return (
       <div className={`${styles.root} ${styles.compact}`}>
         {failed ? <ErrorCard variant="patient" title={t("calendar.loadError")} message={null} onRetry={reload} /> : null}
+        {watch ? <ForecastCard watch={watch} compact /> : null}
         {monthCard}
         {upcomingCard}
         {detail}
@@ -344,6 +353,8 @@ export function HealthCalendar({ role, editable = false, compact = false }: Heal
         ) : null}
       </header>
 
+      {watch && !failed ? <ForecastCard watch={watch} /> : null}
+
       {failed ? (
         <ErrorCard title={t("calendar.loadError")} onRetry={reload} secondaryLabel={null} />
       ) : (
@@ -366,6 +377,7 @@ export function HealthCalendar({ role, editable = false, compact = false }: Heal
             )}
             {upcomingCard}
             {followCard}
+            {watch ? <NewsCard watch={watch} /> : null}
           </div>
         </div>
       )}

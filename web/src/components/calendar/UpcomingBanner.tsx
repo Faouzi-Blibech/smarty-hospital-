@@ -1,6 +1,7 @@
 "use client";
 
-// "Octobre Rose · until 31 Oct": the next health event for me (active now or within 7 days),
+// "Octobre Rose · until 31 Oct": the next health event for me (active now or within 7 days; a weather-health alert
+// also shows its advice, e.g. "drink water often"),
 // tinted by its category, with a link to the calendar and a dismiss button (per tab session).
 import Link from "next/link";
 import { useState } from "react";
@@ -32,7 +33,9 @@ export function UpcomingBanner({ role, href }: UpcomingBannerProps) {
   const [closed, setClosed] = useState<string | null>(null);
   const today = todayIso();
   // Events load in an effect, so this only runs in the browser (no hydration mismatch).
-  const ev = events ? forMe(upcoming(events, today, 7))[0] : undefined;
+  // A weather-health alert for me comes first: it is about the next days and carries advice.
+  const mine = events ? forMe(upcoming(events, today, 7)) : [];
+  const ev = mine.find((e) => e.weather) ?? mine[0];
   if (!ev || closed === ev.id || wasDismissed(ev.id)) return null;
 
   const tone = CATEGORY_TONE[ev.category];
@@ -55,6 +58,11 @@ export function UpcomingBanner({ role, href }: UpcomingBannerProps) {
       <span className={styles.dot} style={{ background: tone.fg }} aria-hidden="true" />
       <span className={styles.body}>
         <span className={styles.text}>{t("calendar.banner", { title: textOf(ev.title, lang), when })}</span>
+        {ev.weather && textOf(ev.description, lang) ? (
+          <span className={styles.advice} dir="auto">
+            {textOf(ev.description, lang)}
+          </span>
+        ) : null}
         <Link href={href} className={styles.open} style={{ color: tone.fg }}>
           {t("calendar.bannerOpen")}
         </Link>
