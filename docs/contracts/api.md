@@ -1,6 +1,6 @@
 # REST + WebSocket contract — v1.0
 
-> **Version:** 1.12 (2026-10-10) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations, exams, notebook)
+> **Version:** 1.13 (2026-10-10) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations, exams, notebook)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Conventions
@@ -200,6 +200,14 @@ Codes (`reset-code`):
 
 `source` is `"model"` (a trained model decided), `"rules"` (deterministic rules only) or `"llm"` (the optional open LLM wrote the text) on every AI response, so the UI can show a badge.
 
+## Health watch (Faouzi)
+
+| Method + path | Who | Body / response |
+|---|---|---|
+| `GET /health-watch` | doctor, nurse, admin | `{"city","available","demo","days":[{date,tmax,tmin,apparent_max,precip,gusts,uv,dust_max,pm10_max,aqi_max}],"alerts":[{id,date,severity,value,groups[],title,staff,patient,at_risk[],at_risk_count}],"news":[{title,link,source,published,lang}],"updated_at"}`. Texts are `{en,fr,ar}`. `at_risk`: the patients this user can access whose age or history puts them in a group (audited `health_watch`); admin gets counts only. |
+| `GET /health-watch/me` | patient | Same forecast; alerts carry `patient` advice and `concerns_me`, no staff text, no news. |
+| `GET /integrations/n8n/health-watch` | n8n (`X-N8N-Secret`) | `{"city","demo","alerts":[{..., "staff","patient","at_risk_count"}]}`: no names. |
+
 ## Integrations (n8n callbacks — Faouzi)
 
 All are authenticated with the header `X-N8N-Secret: ${N8N_CALLBACK_SECRET}` (no JWT). See `n8n-webhooks.md`.
@@ -387,7 +395,8 @@ Still proposed: `GET /offers/{id}`, `POST /offers/{id}/accept` and `GET /patient
 
 ## Changelog
 
-- **1.12** (2026-10-10): health calendar — `GET/POST /health-events`, `PATCH/DELETE /health-events/{id}`, `POST /health-events/{id}/notify`, `GET/PUT /me/health-prefs`, n8n callbacks `GET /integrations/n8n/health-events/due` and `POST /integrations/n8n/health-events/{id}/announced`.
+- **1.13** (2026-10-10): health calendar — `GET/POST /health-events`, `PATCH/DELETE /health-events/{id}`, `POST /health-events/{id}/notify`, `GET/PUT /me/health-prefs`, n8n callbacks `GET /integrations/n8n/health-events/due` and `POST /integrations/n8n/health-events/{id}/announced`.
+- **1.12** (2026-10-10): health watch (`/health-watch`, `/health-watch/me`, `/integrations/n8n/health-watch`). Owner: Faouzi.
 - **1.11** (2026-10-10): staff AI assistant conversations (`/ai/conversations*`), stored server-side. Owner: Faouzi.
 - **1.10** (2026-10-10): `POST /ai/chat` (role assistants over one patient's record, any language, cited) and `POST /patients/{id}/reports` (doctor attaches a report). Owner: Faouzi.
 - **1.9** (2026-10-10): accounts — sign-up with a requested role and doctor (`role` required on register), `GET /hospital`, reset/change-password, doctor directory, account approval (/users*) that links or creates the patient record, `GET /patients?unlinked=`, doctor team, patient sharing; no enrollment codes (reset codes only); login error codes and length limits; JWT exp 8 h; logout; disabled accounts lose WebSockets and notifications

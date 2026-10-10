@@ -19,6 +19,7 @@ import type {
   ChatTurn,
   Conversation,
   ConversationMessage,
+  HealthWatch,
   ApproveRequest,
   ChangePasswordRequest,
   ConfirmAppointmentRequest,
@@ -745,6 +746,18 @@ export function sendConversationMessage(
   return http("POST", `/ai/conversations/${encodeURIComponent(id)}/messages`, {
     question, patient_id: opts.patientId, clear_patient: opts.clearPatient ?? false, lang: opts.lang,
   });
+}
+
+/** GET /health-watch (doctor, nurse, admin): forecast, weather-health alerts with at-risk patients, news. */
+export function getHealthWatch(): Promise<HealthWatch> {
+  if (USE_MOCKS) return Promise.reject(new ApiError(503, "needs_backend", "Health watch needs the real backend."));
+  return http<HealthWatch>("GET", "/health-watch");
+}
+
+/** GET /health-watch/me (patient): alerts with advice, marked when they concern this patient. */
+export function getMyHealthWatch(): Promise<HealthWatch> {
+  if (USE_MOCKS) return Promise.reject(new ApiError(503, "needs_backend", "Health watch needs the real backend."));
+  return http<HealthWatch>("GET", "/health-watch/me");
 }
 
 /** POST /patients/{id}/reports (doctor): attach a report (PDF, image or text) to the patient's case. */
