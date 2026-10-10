@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "Question asked to Laya for the patient assistant. Keys are the intents assistant.py answers; the descriptions are what the model reads. Changing a key or description means re-running make_data + finetune_laya.",
+  "note": "Intent labels for the patient assistant. Keys are the intents assistant.py answers; make_data.py reads them to build the training set. Changing a key or description means re-running make_data + the intent training.",
   "question": {
     "type": "choice",
     "instructions": "What is the hospital patient asking the bedside assistant for?",

@@ -1,13 +1,13 @@
 """Patient assistant (owner: Faouzi, plans/FAOUZI.md Task 11, stretch).
 
 Scoped to the caller's own record: the router loads only that patient's rows and passes them in. No LLM: a
-question is classified into one of five intents (Laya and/or the trained char n-gram model, keyword rules when
-neither is available) and answered from templated sentences. Red-flag questions never reach a model.
+question is classified into one of five intents (keyword rules, then the small trained char n-gram model, keyword
+rules again when the model is missing) and answered from templated sentences. Red-flag questions never reach a model.
 """
 
 from datetime import datetime, timedelta, timezone
 
-from app.ai import laya_intent, textclf
+from app.ai import textclf
 from app.ai.triage import _normalize, match_red_flags
 
 TUNIS = timezone(timedelta(hours=1))  # Africa/Tunis: UTC+1, no DST
@@ -56,23 +56,16 @@ def _rule_intent(question: str) -> str:
 
 def classify_intent(question: str) -> tuple[str, float, str]:
     """(intent, confidence, source): a question naming exactly one topic is answered by keyword rules;
-    otherwise the mean of the available model probabilities, else keyword rules."""
+    otherwise the char n-gram model (below MIN_CONFIDENCE: ask_staff), else keyword rules."""
     hits = _keyword_intents(question)
     if len(hits) == 1:
         return hits[0], 1.0, "rules"
-    maps = []
-    laya = laya_intent.classify(question)
-    if laya:
-        maps.append(laya)
     model = textclf.load("intent.v1")
-    if model is not None:
-        maps.append(textclf.predict_proba(model, _normalize(question)))
-    if not maps:
+    if model is None:
         return _rule_intent(question), 1.0, "rules"
-    keys = set().union(*maps)
-    avg = {k: sum(m.get(k, 0.0) for m in maps) / len(maps) for k in keys}
-    intent = max(avg, key=avg.get)
-    conf = avg[intent]
+    probs = textclf.predict_proba(model, _normalize(question))
+    intent = max(probs, key=probs.get)
+    conf = probs[intent]
     if conf < MIN_CONFIDENCE:
         intent = "ask_staff"
     return intent, conf, "model"
