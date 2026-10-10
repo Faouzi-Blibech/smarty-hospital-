@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "note": "Hard red-flag floor for triage. Text and keywords are normalized the same way: lowercase, all combining marks stripped (French accents, Arabic harakat/hamza), Arabic letter variants unified (ى→ي, ة→ه), tatweel removed, whitespace collapsed. A string keyword matches as a substring; {\"all\": [...]} matches when every term appears anywhere in the text. Errs towards raising urgency. Not clinically validated. v2 adds four flags (self_harm, anaphylaxis, seizure, overdose_poisoning) that are illustrative, for the hospital's doctors to confirm.",
+  "flags": [
+    {"id": "chest_pain", "min_urgency": 5, "keywords": ["douleur thoracique", "douleurs thoraciques", "douleur poitrine", "chest pain", "ألم في الصدر", "وجع في صدري", "waja3 fi sadri", "sadri yoja3ni", {"all": ["douleur", "poitrine"]}, {"all": ["ألم", "صدر"]}, {"all": ["وجع", "صدر"]}, {"all": ["pain", "chest"]}]},
+    {"id": "stroke_signs", "min_urgency": 5, "keywords": ["avc", "paralysie", "bouche deviee", "stroke", "شلل", "جلطة", "fama chalal"]},
+    {"id": "severe_bleeding", "min_urgency": 5, "keywords": ["hemorragie", "saignement abondant", "severe bleeding", "نزيف", "dam barcha"]},
+    {"id": "breathing", "min_urgency": 5, "keywords": ["dyspnee", "essoufflement", "difficulty breathing", "ضيق في التنفس", "ضيق التنفس", "ma najjamch nitnaffes", {"all": ["ضيق", "تنفس"]}, {"all": ["najjamch", "nitnaffes"]}, {"all": ["short", "breath"]}]},
+    {"id": "loss_of_consciousness", "min_urgency": 5, "keywords": ["perte de connaissance", "syncope", "fainted", "إغماء", "ghabt"]},
+    {"id": "pregnancy_bleeding", "min_urgency": 5, "keywords": [{"all": ["enceinte", "saignement"]}, {"all": ["pregnant", "bleeding"]}, {"all": ["حامل", "نزيف"]}]},
+    {"id": "high_fever_child", "min_urgency": 4, "keywords": [{"all": ["fievre", "nourrisson"]}, {"all": ["fievre", "bebe"]}, {"all": ["baby", "fever"]}, {"all": ["سخانة", "رضيع"]}]},
+    {"id": "self_harm", "min_urgency": 5, "keywords": ["suicid", "se tuer", "se suicider", "mettre fin a ma vie", "mettre fin a mes jours", "mettre fin a ses jours", "kill myself", "killing myself", "end my life", "want to die", "self-harm", "self harm", "harm myself", "انتحار", "انتحر", "ينتحر", "ننتحر", "نقتل روحي", "يقتل روحو", "نحب نموت", "n9atel rou7i", "nqatel rou7i", "y9atel rou7o", "nheb nmout", "nhib nmout"]},
+    {"id": "anaphylaxis", "min_urgency": 5, "keywords": ["anaphyla", "quincke", "oedeme de la gorge", {"all": ["gorge", "gonfl"]}, {"all": ["throat", "swell"]}, {"all": ["allerg", "respir"]}, {"all": ["allerg", "breath"]}, {"all": ["حساسية", "تنفس"]}, {"all": ["حلق", "تورم"]}, {"all": ["حلق", "انتفاخ"]}, {"all": ["7asasiya", "nitnaffes"]}, {"all": ["7assasiya", "nitnaffes"]}, {"all": ["7asasiya", "7alq"]}]},
+    {"id": "seizure", "min_urgency": 5, "keywords": ["convuls", "epilep", "seizure", "تشنج", "صرع", "sar3", "techennoj", "tchanoj", "tchannoj"]},
+    {"id": "overdose_poisoning", "min_urgency": 5, "keywords": ["overdose", "surdosage", "intoxication", "empoisonn", "poisoning", "too many pills", "too many tablets", "toute la boite", "tout la boite", "swallowed all", {"all": ["took", "paracetamol", "tablets"]}, {"all": ["swallowed", "pills"]}, {"all": ["swallowed", "tablets"]}, {"all": ["avale", "comprimes"]}, "تسمم", {"all": ["شرب", "برشا", "دواء"]}, {"all": ["bla3", "dwa"]}, {"all": ["bla3", "comprim"]}]}
+  ]
+}

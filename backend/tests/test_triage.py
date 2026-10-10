@@ -56,3 +56,59 @@ def test_scale_label_maps_our_urgency_to_the_hospital_scale():
     assert scale_label(5) == {"name": "FRENCH", "level": "Tri 1", "confirmed": False}
     assert scale_label(1)["level"] == "Tri 5"
     assert triage("douleur thoracique", [], 50).scale == scale_label(5)
+
+
+@pytest.mark.parametrize("text,flag", [
+    ("patient a fait une tentative de suicide hier", "self_harm"),
+    ("I want to kill myself, I have pills ready", "self_harm"),
+    ("il veut mettre fin a ses jours, idees suicidaires", "self_harm"),
+    ("أفكر في الانتحار", "self_harm"),
+    ("nheb nmout, n9atel rou7i", "self_harm"),
+    ("crise convulsive ce matin", "seizure"),
+    ("my son had a seizure for 5 minutes", "seizure"),
+    ("طفلي عنده تشنجات", "seizure"),
+    ("weldi 3andou sar3 w techennoj", "seizure"),
+    ("took 30 paracetamol tablets", "overdose_poisoning"),
+    ("suspicion d'intoxication medicamenteuse", "overdose_poisoning"),
+    ("il a avale tous les comprimes", "overdose_poisoning"),
+    ("ولدي تسمم بالدواء", "overdose_poisoning"),
+    ("chrab barcha dwa, bla3 dwa lkol", "overdose_poisoning"),
+    ("swelling of the throat after eating peanuts, hard to swallow", "anaphylaxis"),
+    ("choc anaphylactique apres piqure de guepe", "anaphylaxis"),
+    ("gorge qui gonfle apres un medicament", "anaphylaxis"),
+    ("عنده حساسية وما يقدرش يتنفس", "anaphylaxis"),
+    ("7asasiya w ma najjamch nitnaffes", "anaphylaxis"),
+])
+def test_v2_red_flags_floor_is_five(text, flag):
+    assert flag in [f["id"] for f in T.match_red_flags(text)]
+    r = T.triage(text, [], 30)
+    assert r.urgency == 5 and flag in r.red_flags
+
+
+@pytest.mark.parametrize("text", [
+    "routine checkup for blood pressure", "renouvellement d'ordonnance", "suivi diabete",
+    "I took my blood pressure at home", "mal de gorge depuis 3 jours", "bilan sanguin de routine",
+])
+def test_v2_flags_do_not_fire_on_routine_text(text):
+    new = {"self_harm", "anaphylaxis", "seizure", "overdose_poisoning"}
+    assert not new & {f["id"] for f in T.match_red_flags(text)}
+
+
+def _fake_model(monkeypatch, probs):
+    monkeypatch.setattr(T.textclf, "load", lambda name: {"fake": True})
+    monkeypatch.setattr(T.textclf, "predict_proba", lambda m, text: probs)
+
+
+def test_low_confidence_reason_when_model_unsure_and_no_flag(monkeypatch):
+    _fake_model(monkeypatch, {1: 0.27, 2: 0.25, 3: 0.2, 4: 0.28})
+    r = T.triage("renouvellement d'ordonnance", [], 30)
+    assert r.red_flags == [] and r.urgency == 4 and r.confidence == 0.28
+    assert "Model unsure (28%): read the referral before confirming" in r.reasons
+
+
+def test_no_low_confidence_reason_when_confident_or_flag_fires(monkeypatch):
+    _fake_model(monkeypatch, {1: 0.9, 2: 0.1})
+    assert not any("Model unsure" in x for x in T.triage("renouvellement d'ordonnance", [], 30).reasons)
+    _fake_model(monkeypatch, {1: 0.3, 2: 0.3, 3: 0.4})
+    r = T.triage("I want to kill myself", [], 30)
+    assert r.red_flags == ["self_harm"] and not any("Model unsure" in x for x in r.reasons)

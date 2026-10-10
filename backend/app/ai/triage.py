@@ -14,9 +14,10 @@ from pydantic import BaseModel
 
 from app.ai import textclf
 
-RULES = Path(__file__).parent / "rules" / "red_flags.v1.json"
+RULES = Path(__file__).parent / "rules" / "red_flags.v2.json"
 SCALE = Path(__file__).parent / "rules" / "triage_scale.v1.json"
 ELDERLY_AGE = 75
+LOW_CONFIDENCE = 0.5  # below this the model is unsure; we say so but never change the urgency
 
 
 class TriageResult(BaseModel):
@@ -83,6 +84,8 @@ def triage(referral_text: str, symptoms: list[str], age: int | None) -> TriageRe
         conf = round(conf, 2)
         reasons.append(f"Similar referrals were urgency {model_u} (model confidence {conf:.0%})")
         urgency = max(urgency, model_u)
+        if not matched and conf < LOW_CONFIDENCE:
+            reasons.append(f"Model unsure ({conf:.0%}): read the referral before confirming")
     if (age or 0) >= ELDERLY_AGE and urgency < 2:
         urgency = 2
         reasons.append(f"Age {age}: routine requests are raised to urgency 2")
