@@ -102,3 +102,27 @@ def test_to_out_by_role(db, seeded):
     doctor = db.get(User, "u-0001")
     full = R.to_out(db, r, doctor)
     assert full["ai_suggested"]["draft_text"] and full["hint"] == "Chest X-ray" and "confirmed_by_name" in full
+
+
+def test_read_raising_marks_failed(db, seeded, monkeypatch):
+    _, res = make_result(db)
+    r = R.enqueue(db, res, "")
+    R.claim_next(db)
+
+    def boom(data, hint):
+        raise RuntimeError("poison")
+
+    monkeypatch.setattr(R.radiology, "read", boom)
+    frame = R.process(db, r, get=lambda key: b"img")
+    assert r.status == "failed" and r.ai_suggested["source"] == "rules" and r.finished_at
+    assert frame["status"] == "failed"
+
+
+def test_missing_exam_result_marks_failed(db, seeded, monkeypatch):
+    _, res = make_result(db)
+    r = R.enqueue(db, res, "")
+    R.claim_next(db)
+    real_get = db.get
+    monkeypatch.setattr(db, "get", lambda model, key: None if model is type(res) else real_get(model, key))
+    frame = R.process(db, r, get=lambda key: b"img")
+    assert r.status == "failed" and r.ai_suggested["draft_text"] and frame["status"] == "failed"

@@ -44,14 +44,22 @@ def claim_next(db: Session) -> RadiographReading | None:
 
 def process(db: Session, r: RadiographReading, get=None) -> dict:
     get = get or storage.get
-    result = db.get(ExamResult, r.exam_result_id)
+    lang = get_settings().radiology_report_lang
     try:
-        data = get(result.file_key)
-    except Exception as e:
-        log.warning("reading %s: file unavailable: %s", r.id, e)
-        status, ai = "failed", radiology.template(get_settings().radiology_report_lang, "file unavailable")
-    else:
-        status, ai = radiology.read(data, r.hint)
+        result = db.get(ExamResult, r.exam_result_id)
+        try:
+            data = get(result.file_key)
+        except Exception as e:
+            log.warning("reading %s: file unavailable: %s", r.id, e)
+            status, ai = "failed", radiology.template(lang, "file unavailable")
+        else:
+            hint = r.hint
+            db.commit()  # do not hold a transaction open during the slow model call
+            status, ai = radiology.read(data, hint)
+    except Exception:
+        log.exception("reading %s: processing error", r.id)
+        db.rollback()
+        status, ai = "failed", radiology.template(lang, "processing error")
     r.status, r.ai_suggested, r.finished_at = status, ai, datetime.now(UTC)
     db.commit()
     return {"type": "radiograph_reading", "reading_id": r.id, "exam_result_id": r.exam_result_id,
