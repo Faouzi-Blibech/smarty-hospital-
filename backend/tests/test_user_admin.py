@@ -56,7 +56,7 @@ def test_doctor_limits(client, db):
 def test_approve_twice_is_409_and_bad_role_is_422(client, db):
     b = make_user(db, "b.t@ward.tn", role=None, status="pending")
     admin = login(client, "admin@ward.tn")
-    assert client.post(f"/users/{b.id}/approve", headers=admin, json={"role": "patient"}).status_code == 422
+    assert client.post(f"/users/{b.id}/approve", headers=admin, json={"role": "wizard"}).status_code == 422
     assert client.post(f"/users/{b.id}/approve", headers=admin, json={"role": "nurse"}).status_code == 200
     assert client.post(f"/users/{b.id}/approve", headers=admin, json={"role": "nurse"}).status_code == 409
 

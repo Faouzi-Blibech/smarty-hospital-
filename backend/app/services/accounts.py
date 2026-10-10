@@ -1,17 +1,21 @@
-"""Who may approve, reject, disable and enable whom (spec §6.2–6.5).
+"""Who may approve, reject, disable and enable whom (spec §6.2–6.5, signup-v2).
 
-Hospital admin: any account. Doctor: only requests that name him (approve as nurse only, into his team) and only his
-team members afterwards. Routers call these and then audit + commit."""
+Hospital admin: any account, any role. Doctor: only requests that name him, only as patient or nurse (a nurse joins
+his team; a patient is linked to one of his records or gets a new record with him as attending), and only his team
+members afterwards. Routers call these and then audit + commit."""
 
 from datetime import datetime
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.errors import ApiError, forbidden
-from app.models import Staff, User
+from app.errors import ApiError, forbidden, not_found
+from app.ids import new_id
+from app.models import Patient, Staff, User
 from app.schemas import iso
 
-STAFF_ROLES = ("doctor", "nurse", "admin")
+ROLES = ("patient", "nurse", "doctor", "admin")
+DOCTOR_MAY_APPROVE = ("patient", "nurse")
 
 
 def can_review(approver: User, target: User) -> bool:
@@ -20,27 +24,69 @@ def can_review(approver: User, target: User) -> bool:
     return approver.role == "doctor" and target.requested_doctor_id == approver.id
 
 
-def approve(db: Session, approver: User, target: User, role: str, ward: str | None, *, now: datetime) -> None:
+def has_account(db: Session, patient_id: str) -> bool:
+    """A patient record is taken while a non-disabled account is linked to it."""
+    return db.scalar(select(User.id).where(User.patient_id == patient_id, User.status != "disabled")
+                     .limit(1)) is not None
+
+
+def _split_name(name: str) -> tuple[str, str]:
+    first, _, last = name.strip().partition(" ")
+    return first, last.strip()
+
+
+def _patient_record(db: Session, approver: User, target: User, patient_id: str | None) -> tuple[Patient, bool]:
+    """(record to link, created?). An existing record must be free; a doctor may only link his own patients."""
+    if patient_id:
+        p = db.get(Patient, patient_id, with_for_update=True)  # the lock serialises two approvals of one record
+        if p is None:
+            raise not_found("patient")
+        if approver.role == "doctor" and p.attending_doctor_id != approver.id:
+            raise forbidden("not your patient")
+        if has_account(db, p.id):
+            raise ApiError(409, "conflict", "this patient record already has an account")
+        return p, False
+    if approver.role == "doctor":
+        attending = approver.id
+    else:
+        wanted = db.get(User, target.requested_doctor_id) if target.requested_doctor_id else None
+        attending = wanted.id if wanted and wanted.role == "doctor" and wanted.status == "active" else None
+    first, last = _split_name(target.name)
+    p = Patient(id=new_id(db, "p"), first_name=first, last_name=last, allergies=[], history="",
+                attending_doctor_id=attending)
+    db.add(p)
+    db.flush()
+    return p, True
+
+
+def approve(db: Session, approver: User, target: User, role: str, ward: str | None, *, now: datetime,
+            patient_id: str | None = None) -> tuple[Patient | None, bool]:
+    """Activates the account. Returns (the patient record it was linked to, whether that record was just created)."""
     if not can_review(approver, target):
         raise forbidden("this request is not addressed to you")
-    if role not in STAFF_ROLES:
-        raise ApiError(422, "invalid", "role: doctor, nurse or admin")
+    if role not in ROLES:
+        raise ApiError(422, "invalid", "role: patient, nurse, doctor or admin")
+    if patient_id and role != "patient":
+        raise ApiError(422, "invalid", "patient_id: only for the patient role")
     if target.status not in ("pending", "rejected"):
         raise ApiError(409, "bad_status", f"account is {target.status}")
     if approver.role == "doctor":
-        if role != "nurse":
-            raise forbidden("a doctor can only add nurses to his team")
+        if role not in DOCTOR_MAY_APPROVE:
+            raise forbidden("a doctor can only approve patients and nurses")
         ward, supervisor = None, approver.id
     else:
         supervisor = target.requested_doctor_id if role == "nurse" else None
+    patient, created = _patient_record(db, approver, target, patient_id) if role == "patient" else (None, False)
     target.role, target.status, target.approved_by, target.approved_at = role, "active", approver.id, now
-    if role != "admin":
+    target.patient_id = patient.id if patient else None
+    if role in ("doctor", "nurse"):
         st = db.get(Staff, target.id)
         if st is None:
             st = Staff(user_id=target.id)
             db.add(st)
-        st.ward, st.supervisor_id = ward, supervisor
+        st.ward, st.supervisor_id = ward, supervisor if role == "nurse" else None
     db.flush()
+    return patient, created
 
 
 def reject(approver: User, target: User) -> None:

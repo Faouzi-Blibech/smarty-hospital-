@@ -26,19 +26,19 @@ def _ip(request: Request) -> str:
 
 
 @router.get("")
-def list_patients(request: Request, ward: str | None = None, q: str | None = None,
+def list_patients(request: Request, ward: str | None = None, q: str | None = None, unlinked: bool = False,
                   user: User = Depends(require_roles("doctor", "nurse", "admin")),
                   db: Session = Depends(get_db)):
     if user.role == "admin":
-        rows = [PatientListItem(**P.list_item(db, p)) for p in P.search(db, ward=ward, q=q)]
+        rows = [PatientListItem(**P.list_item(db, p)) for p in P.search(db, ward=ward, q=q, unlinked=unlinked)]
     else:
         if user.role == "nurse":
             own, sup = nurse_scope(db, user)
             if ward and own and ward != own and not sup:
                 raise forbidden("another ward")
-            found = P.search(db, where=nurse_patient_filter(db, user), ward=ward, q=q)
+            found = P.search(db, where=nurse_patient_filter(db, user), ward=ward, q=q, unlinked=unlinked)
         else:
-            found = P.search(db, where=doctor_patient_filter(db, user), ward=ward, q=q)
+            found = P.search(db, where=doctor_patient_filter(db, user), ward=ward, q=q, unlinked=unlinked)
         rows = [PatientSummary(**P.summary(db, p)) for p in found]
         rows.sort(key=lambda r: (-(r.latest_news2 if r.latest_news2 is not None else -1), r.id))
     audit(db, user, "read", "patient_list", ward or "", ip=_ip(request))
