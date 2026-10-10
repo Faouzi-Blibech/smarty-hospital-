@@ -50,6 +50,10 @@ services:
       WARD_MAIL_FROM: ${WARD_MAIL_FROM:-Ward <ward@localhost>}
       N8N_CALLBACK_SECRET: ${N8N_CALLBACK_SECRET:-change-me-callback}
       N8N_EVENT_SECRET: ${N8N_EVENT_SECRET:-change-me-event}
+      WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-}                      # Meta WhatsApp Cloud API access token
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}  # the sender's phone number ID (not the number)
+      WARD_WHATSAPP_STAFF: ${WARD_WHATSAPP_STAFF:-}            # demo: staff numbers, comma-separated, e.g. 21612345678
+      WARD_WHATSAPP_PATIENT: ${WARD_WHATSAPP_PATIENT:-}        # demo: the patient's number
     ports: ["5678:5678"]
     volumes:
       - n8n-data:/home/node/.n8n

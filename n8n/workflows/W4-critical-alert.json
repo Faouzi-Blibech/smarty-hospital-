@@ -25,29 +25,41 @@
         0
       ],
       "parameters": {
-        "jsCode": "// event alert.critical: {alert_id, patient_first_name, bed, kind, news2, message, nurse_chat_ids[], doctor_chat_id}\nconst out = [];\nfor (const item of $input.all()) {\n  const d = item.json.data || {};\n  const ids = [...(d.nurse_chat_ids || []), d.doctor_chat_id].filter(Boolean).map(String);\n  const text = `🚨 Bed ${d.bed ?? '?'} · ${d.patient_first_name ?? 'Patient'} · NEWS2 ${d.news2 ?? '-'}: ${d.message ?? ''}`;\n  for (const chat_id of [...new Set(ids)]) out.push({ json: { chat_id, text, alert_id: d.alert_id } });\n}\nreturn out;"
+        "jsCode": "// event alert.critical: {alert_id, patient_first_name, bed, kind, news2, message, nurse_chat_ids[], doctor_chat_id}\n// The message names the bed only: no patient name, score or vitals leave the server.\n// Demo routing: staff alerts go to every number in WARD_WHATSAPP_STAFF (comma-separated, country code first).\nconst staff = () => [...new Set(($env.WARD_WHATSAPP_STAFF || '').split(',').map(s => s.replace(/\\D/g, '')).filter(Boolean))];\nconst out = [];\nfor (const item of $input.all()) {\n  const d = item.json.data || {};\n  const text = `Ward: critical alert, bed ${d.bed ?? '?'}. Open Ward now.`;\n  for (const to of staff()) out.push({ json: { to, text, alert_id: d.alert_id } });\n}\nreturn out;"
       }
     },
     {
       "id": "8a1d7c3b-2e44-4f10-8b6a-000000000403",
-      "name": "Telegram",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
+      "name": "WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         480,
         0
       ],
       "parameters": {
-        "chatId": "={{ $json.chat_id }}",
-        "text": "={{ $json.text }}",
-        "additionalFields": {
-          "appendAttribution": false
-        }
-      },
-      "credentials": {
-        "telegramApi": {
-          "id": "wardTelegramCred",
-          "name": "ward-telegram"
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.to, type: 'text', text: { preview_url: false, body: $json.text } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "timeout": 15000
         }
       },
       "onError": "continueRegularOutput"
@@ -69,7 +81,7 @@
       "main": [
         [
           {
-            "node": "Telegram",
+            "node": "WhatsApp",
             "type": "main",
             "index": 0
           }

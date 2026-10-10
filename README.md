@@ -27,7 +27,7 @@ and automates the steps between them.
 | For | What they get |
 |---|---|
 | **Patient** | A **bedside unit** (OLED screen) that shows medication reminders even offline and turns a servo to the right pill slot. A web app to request an appointment, see which exams to do **before the visit**, check doses and vitals, ask a simple assistant, and follow home care after discharge. |
-| **Nurse** | A live ward board with **early-warning alerts** (NEWS2-based) on screen and on Telegram, and a med-round checklist. Nurses of the performing department (Imaging, Laboratory, Cardiology) get an **exams worklist** and upload results to the patient's case. |
+| **Nurse** | A live ward board with **early-warning alerts** (NEWS2-based) on screen and on WhatsApp, and a med-round checklist. Nurses of the performing department (Imaging, Laboratory, Cardiology) get an **exams worklist** and upload results to the patient's case. |
 | **Doctor** | Patient list and record with vitals trends, prescriptions that go straight to the bedside unit, and adherence (which doses were taken or missed). The doctor also gets: <ul><li>an **AI daily summary** to review</li><li>**suggested exams** on each request, to order or drop</li><li>the uploaded results, ready at the visit</li></ul> |
 | **Admin** | An **AI-ranked waitlist** to confirm or override. Each row shows exam progress ("Exams 2/3") and the hospital triage-scale level. Also bed and device assignment, staff, and a dashboard. |
 
@@ -52,7 +52,7 @@ flowchart LR
   API --> DB
   API --> AI["AI: triage · exam suggestions · early warning<br/>copilot · no-show · assistant"]
   API --> S3[("MinIO<br/>exam results")]
-  API -->|events| N8N[n8n] -->|Telegram / email| People((Staff & patients))
+  API -->|events| N8N[n8n] -->|WhatsApp / email| People((Staff & patients))
 ```
 
 Full diagrams are in [`docs/architecture.md`](docs/architecture.md): use cases, patient journey, the single-visit pathway, hardware and the AI layer.
