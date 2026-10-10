@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.auth.deps import can_access, has_grant, staff_ward
 from app.models import Appointment, ExamResult, Patient, Staff, User
 from app.schemas import iso
+from app.services import accounts
 
 ALLOWED_TYPES = ("application/pdf", "image/jpeg", "image/png")
 MAX_BYTES = 15 * 1024 * 1024
@@ -116,8 +117,8 @@ def ordered_event(patient, appointment_id: str | None, orders: list) -> dict:
 
 
 def results_ready_event(db: Session, appointment_id: str, patient, doctor_id: str | None) -> dict:
-    doctor = db.get(User, doctor_id) if doctor_id else None
-    staff = db.get(Staff, doctor_id) if doctor_id else None
+    doctor = accounts.active_doctor(db, doctor_id)  # a disabled doctor gets no patient data
+    staff = db.get(Staff, doctor_id) if doctor else None
     return {"appointment_id": appointment_id, "patient_first_name": patient.first_name, "doctor_id": doctor_id,
             "doctor_name": doctor.name if doctor else None, "doctor_email": doctor.email if doctor else None,
             "doctor_chat_id": staff.telegram_chat_id if staff else None}

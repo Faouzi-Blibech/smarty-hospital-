@@ -199,8 +199,8 @@ def confirm(appointment_id: str, body: ConfirmIn, request: Request,
     a = _load(db, appointment_id)
     check_appointment_access(db, user, a, write=True, ip=_ip(request))
     doctor = db.get(User, body.doctor_id)
-    if doctor is None or doctor.role != "doctor":
-        raise ApiError(422, "invalid", "doctor_id: not a doctor")
+    if doctor is None or doctor.role != "doctor" or doctor.status != "active":
+        raise ApiError(422, "invalid", "doctor_id: not an active doctor")
     taken = db.scalar(select(Appointment.id).where(Appointment.status == "confirmed", Appointment.id != a.id,
                                                    Appointment.doctor_id == body.doctor_id,
                                                    Appointment.slot_at == body.slot_at).limit(1))

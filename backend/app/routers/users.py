@@ -17,6 +17,7 @@ from app.models import Staff, User
 from app.schemas import iso
 from app.services import accounts as A
 from app.services.audit import audit
+from app.ws.hub import hub
 
 router = APIRouter(tags=["users"])
 
@@ -78,7 +79,9 @@ def disable(user_id: str, request: Request, user: User = Depends(require_roles("
             db: Session = Depends(get_db)) -> dict:
     target = _target(db, user_id)
     A.set_active(db, user, target, False)
-    return _done(db, user, target, request)
+    out = _done(db, user, target, request)
+    hub.close_user(user_id)  # after the commit: a socket must not outlive the disable
+    return out
 
 
 @router.post("/users/{user_id}/enable")

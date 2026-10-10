@@ -10,7 +10,7 @@ from app.integrations import n8n
 from app.iot.ingest import active_patient_for_device, frame
 from app.models import Admission, Device, MedDose, Patient, Staff, User
 from app.schemas import iso
-from app.services import alerts
+from app.services import accounts, alerts
 from app.services.audit import audit
 from app.services.schedule import TUNIS
 
@@ -81,7 +81,7 @@ def _missed(db: Session, device_id: str, dose: MedDose, group: list[MedDose]) ->
     a = alerts.create_alert(db, p.id, device_id, "dose_missed", "medium", None,
                             f"Missed dose at {when}: {', '.join(meds)}", None)
     nurses, doctor_chat = alerts.chat_ids(db, p)
-    doctor = db.get(User, p.attending_doctor_id) if p.attending_doctor_id else None
+    doctor = accounts.active_doctor(db, p.attending_doctor_id)
     n8n.emit_after_commit(db, "dose.missed", {"dose_id": dose.id, "patient_id": p.id, "patient_first_name": p.first_name,
                              "bed": _bed(db, p.id), "meds": meds, "scheduled_at": iso(dose.scheduled_at),
                              "nurse_chat_ids": nurses, "doctor_chat_id": doctor_chat,

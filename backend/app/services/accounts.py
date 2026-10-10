@@ -18,6 +18,18 @@ ROLES = ("patient", "nurse", "doctor", "admin")
 DOCTOR_MAY_APPROVE = ("patient", "nurse")
 
 
+def active_doctor(db: Session, user_id: str | None) -> User | None:
+    """The user if he is an active doctor: the only kind that may receive patient data (alerts, digest, results)."""
+    u = db.get(User, user_id) if user_id else None
+    return u if u is not None and u.role == "doctor" and u.status == "active" else None
+
+
+def _decided_by_admin(db: Session, target: User) -> bool:
+    """Was the current disabled/rejected status set by an admin (or by someone unknown: rows from before 0005)?"""
+    by = db.get(User, target.status_changed_by) if target.status_changed_by else None
+    return by is None or by.role == "admin"
+
+
 def can_review(approver: User, target: User) -> bool:
     if approver.role == "admin":
         return True
@@ -49,8 +61,8 @@ def _patient_record(db: Session, approver: User, target: User, patient_id: str |
     if approver.role == "doctor":
         attending = approver.id
     else:
-        wanted = db.get(User, target.requested_doctor_id) if target.requested_doctor_id else None
-        attending = wanted.id if wanted and wanted.role == "doctor" and wanted.status == "active" else None
+        wanted = active_doctor(db, target.requested_doctor_id)
+        attending = wanted.id if wanted else None
     first, last = _split_name(target.name)
     p = Patient(id=new_id(db, "p"), first_name=first, last_name=last, allergies=[], history="",
                 attending_doctor_id=attending)
@@ -71,6 +83,8 @@ def approve(db: Session, approver: User, target: User, role: str, ward: str | No
     if target.status not in ("pending", "rejected"):
         raise ApiError(409, "bad_status", f"account is {target.status}")
     if approver.role == "doctor":
+        if target.status == "rejected" and _decided_by_admin(db, target):
+            raise forbidden("the hospital admin rejected this request")
         if role not in DOCTOR_MAY_APPROVE:
             raise forbidden("a doctor can only approve patients and nurses")
         ward, supervisor = None, approver.id
@@ -78,6 +92,7 @@ def approve(db: Session, approver: User, target: User, role: str, ward: str | No
         supervisor = target.requested_doctor_id if role == "nurse" else None
     patient, created = _patient_record(db, approver, target, patient_id) if role == "patient" else (None, False)
     target.role, target.status, target.approved_by, target.approved_at = role, "active", approver.id, now
+    target.status_changed_by = None
     target.patient_id = patient.id if patient else None
     if role in ("doctor", "nurse"):
         st = db.get(Staff, target.id)
@@ -94,7 +109,7 @@ def reject(approver: User, target: User) -> None:
         raise forbidden("this request is not addressed to you")
     if target.status != "pending":
         raise ApiError(409, "bad_status", f"account is {target.status}")
-    target.status = "rejected"
+    target.status, target.status_changed_by = "rejected", approver.id
 
 
 def can_manage(db: Session, actor: User, target: User) -> bool:
@@ -112,11 +127,13 @@ def set_active(db: Session, actor: User, target: User, active: bool) -> None:
     if active:
         if target.status != "disabled" or target.role is None:
             raise ApiError(409, "bad_status", f"account is {target.status}")
-        target.status = "active"
+        if actor.role == "doctor" and _decided_by_admin(db, target):
+            raise forbidden("the hospital admin disabled this account")
+        target.status, target.status_changed_by = "active", None
     else:
         if target.status == "disabled":
             raise ApiError(409, "bad_status", "account is already disabled")
-        target.status = "disabled"
+        target.status, target.status_changed_by = "disabled", actor.id
 
 
 def admin_out(db: Session, u: User) -> dict:
