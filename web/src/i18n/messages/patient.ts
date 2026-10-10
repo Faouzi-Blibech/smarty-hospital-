@@ -388,7 +388,7 @@ export const patient = messages({
     urgentTitle: "قد يكون الأمر عاجلًا. اتصل بممرضك الآن.",
     urgentSub: "إذا كنت خارج المستشفى، اتصل على 190.",
     answering: "المساعد يجيب",
-    chipPill: "متى موعد دوائي القادم؟",
+    chipPill: "متى الدواء القادم؟",
     chipAppt: "موعدي",
     chipChest: "وجع في صدري",
     askPlaceholder: "اسأل عن الأدوية أو المواعيد",

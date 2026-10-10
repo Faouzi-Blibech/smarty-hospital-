@@ -293,7 +293,7 @@ export const nurse = messages({
     metaPatients: "المرضى",
     metaExams: "الفحوصات",
     metaPatient: "المريض",
-    wardC: "الجناح C",
+    wardC: "القسم C",
     wardBoard: "لوحة الجناح",
     frozen: "القيم متوقفة عند {time}. إذا استمر ذلك، تحقّق من المرضى بنفسك.",
     boardSubOne: "{n} مرضى · سرير فارغ: {e} · الأعلى في NEWS2 أولًا",

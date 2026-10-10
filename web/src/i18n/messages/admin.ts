@@ -383,7 +383,7 @@ export const admin = messages({
     dashOffline: "{id} غير متصل",
     dashLastSeen: "آخر ظهور {time}",
     dashFirmware: "تحديث البرنامج الثابت للوحدة {id}",
-    dashFirmwareSub: "{from} ← {to} · يُثبَّت ليلًا",
+    dashFirmwareSub: "{from} → {to} · يُثبَّت ليلًا",
     dashSlotFreed: "موعد شاغر: {slot}",
     dashOffered: "عُرض على {name} · في انتظار الردّ",
     dashChartTitle: "طلبات المواعيد حسب اليوم · حسب درجة الاستعجال",
