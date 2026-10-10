@@ -19,6 +19,7 @@ import type {
   ChatTurn,
   Conversation,
   ConversationMessage,
+  HealthWatch,
   ApproveRequest,
   ChangePasswordRequest,
   ConfirmAppointmentRequest,
@@ -747,6 +748,18 @@ export function sendConversationMessage(
   });
 }
 
+/** GET /health-watch (doctor, nurse, admin): forecast, weather-health alerts with at-risk patients, news. */
+export function getHealthWatch(): Promise<HealthWatch> {
+  if (USE_MOCKS) return Promise.reject(new ApiError(503, "needs_backend", "Health watch needs the real backend."));
+  return http<HealthWatch>("GET", "/health-watch");
+}
+
+/** GET /health-watch/me (patient): alerts with advice, marked when they concern this patient. */
+export function getMyHealthWatch(): Promise<HealthWatch> {
+  if (USE_MOCKS) return Promise.reject(new ApiError(503, "needs_backend", "Health watch needs the real backend."));
+  return http<HealthWatch>("GET", "/health-watch/me");
+}
+
 /** POST /patients/{id}/reports (doctor): attach a report (PDF, image or text) to the patient's case. */
 export async function uploadReport(patientId: string, file: File, title: string, reportText = ""): Promise<ExamOrder> {
   if (USE_MOCKS) return Promise.reject(new ApiError(503, "needs_backend", "Uploading a report needs the real backend."));
@@ -1103,7 +1116,7 @@ export async function getMedRound(ward: string = DEFAULT_WARD): Promise<MedRound
   return groups.filter((g) => g.doses.length > 0);
 }
 
-// ── Health calendar (api.md 1.12) ──────────────────────────────────────────
+// ── Health calendar (api.md 1.13) ──────────────────────────────────────────
 
 /** The mock profile per role: Amira (F, 1972) is the patient; staff ignore sex/age limits. */
 function mockMatches(s: MockStore, role: Role, ev: Omit<HealthEvent, "matches_me" | "following">): boolean {
