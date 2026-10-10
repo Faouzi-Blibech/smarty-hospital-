@@ -101,6 +101,18 @@ function expireSession(): void {
   if (typeof window !== "undefined" && window.location.pathname !== "/") window.location.assign("/?expired=1");
 }
 
+/**
+ * Shared 401 rule for every authenticated call. /auth/* is skipped (login errors are form errors), except
+ * /auth/change-password: there `bad_credentials` is a wrong current password (form error), any other 401 is a dead token.
+ */
+function handleUnauthorized(path: string, hadToken: boolean, code?: string): void {
+  const authForm = path.startsWith("/auth/") && !(path === "/auth/change-password" && code !== "bad_credentials");
+  if (authForm) return;
+  // No token at all (e.g. Back after logging out): plain sign-in, no "session ended" notice.
+  if (hadToken) expireSession();
+  else if (typeof window !== "undefined" && window.location.pathname !== "/") window.location.assign("/");
+}
+
 async function http<T>(method: string, path: string, body?: unknown): Promise<T> {
   const token = getToken();
   const res = await fetch(`${BASE}${path}`, {
@@ -110,11 +122,7 @@ async function http<T>(method: string, path: string, body?: unknown): Promise<T>
   });
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { detail?: string; code?: string };
-    if (res.status === 401 && !path.startsWith("/auth/")) {
-      // No token at all (e.g. Back after logging out): plain sign-in, no "session ended" notice.
-      if (token) expireSession();
-      else if (typeof window !== "undefined" && window.location.pathname !== "/") window.location.assign("/");
-    }
+    if (res.status === 401) handleUnauthorized(path, !!token, err.code);
     throw new ApiError(res.status, err.code ?? "http_error", err.detail ?? res.statusText);
   }
   // Some endpoints (assign, discharge) have no response body in api.md.
@@ -127,6 +135,7 @@ async function upload<T>(path: string, form: FormData): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form });
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { detail?: string; code?: string };
+    if (res.status === 401) handleUnauthorized(path, !!token, err.code);
     throw new ApiError(res.status, err.code ?? "http_error", err.detail ?? res.statusText);
   }
   return (await res.json()) as T;
@@ -825,7 +834,10 @@ export async function examFileUrl(resultId: string): Promise<string> {
   const res = await fetch(`${BASE}/exam-results/${encodeURIComponent(resultId)}/file`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (!res.ok) throw new ApiError(res.status, "http_error", res.statusText);
+  if (!res.ok) {
+    if (res.status === 401) handleUnauthorized("/exam-results/file", !!token);
+    throw new ApiError(res.status, "http_error", res.statusText);
+  }
   return URL.createObjectURL(await res.blob());
 }
 
