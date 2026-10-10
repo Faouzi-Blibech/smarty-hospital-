@@ -98,7 +98,7 @@ export function StaffView() {
     const ward = WARDS.find((w) => w.value === draft.scope)?.ward ?? null;
     setStaff((s) => [
       ...(s ?? []),
-      { id: `u-new-${(s?.length ?? 0) + 1}`, name, email, role: draft.role, ward, scope: draft.scope, last_login_at: null },
+      { id: `u-new-${(s?.length ?? 0) + 1}`, name, email, role: draft.role, ward, scope: draft.scope, last_login_at: null, status: "pending" },
     ]);
     setDraft(EMPTY_DRAFT);
     setInvalid(false);
