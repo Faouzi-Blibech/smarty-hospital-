@@ -126,3 +126,22 @@ def test_context_without_data():
 def test_shipped_intent_model_classifies_unseen_questions(question, intent):
     got, _conf, _source = A.classify_intent(question)  # one-topic questions are answered by keyword rules
     assert got == intent
+
+
+@pytest.mark.parametrize("question", [
+    "Please come quickly, I need a nurse now", "I'm going to faint", "I fell and I can't get up", "help me",
+    "j'ai besoin d'une infirmière tout de suite", "au secours", "je vais m'évanouir", "je suis tombé dans la salle de bain",
+    "ساعدوني", "أريد ممرضة الآن", "سقطت وما نقدرش نوقف", "nheb infirmiere fisa3", "3awnouni", "bech nghmi",
+])
+def test_patient_side_urgency_wording_is_urgent(no_models, question):
+    assert A.classify_intent(question) == ("urgent", 1.0, "rules")
+    out = A.answer(question, ctx())
+    assert out["intent"] == "urgent" and out["answer"] in (A.URGENT, A.CRISIS)
+
+
+@pytest.mark.parametrize("question", [
+    "When is the doctor coming today?", "Can I have my medicine now?", "what time is my pill", "quand est mon rendez-vous",
+    "doctor jey wa9tech tawa", "is parking free", "What did the doctor say about my results?",
+])
+def test_ordinary_questions_are_not_urgent(no_models, question):
+    assert A.classify_intent(question)[0] != "urgent"

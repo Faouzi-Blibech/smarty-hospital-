@@ -1,14 +1,19 @@
 """Patient assistant (owner: Faouzi, plans/FAOUZI.md Task 11, stretch).
 
 Scoped to the caller's own record: the router loads only that patient's rows and passes them in. No LLM: a
-question is classified into one of five intents (keyword rules, then the small trained char n-gram model, keyword
-rules again when the model is missing) and answered from templated sentences. Red-flag questions never reach a model.
+question is classified into one of five intents (patient-side urgency wording, keyword rules, then the small trained
+char n-gram model, keyword rules again when the model is missing) and answered from templated sentences.
+Red-flag questions never reach a model.
 """
 
 from datetime import datetime, timedelta, timezone
+from functools import lru_cache
+from pathlib import Path
 
 from app.ai import textclf
-from app.ai.triage import _normalize, match_red_flags
+from app.ai.triage import _normalize, load_rules, match_red_flags, scan_rules
+
+PATIENT_URGENT = Path(__file__).parent / "rules" / "patient_urgent.v1.json"
 
 TUNIS = timezone(timedelta(hours=1))  # Africa/Tunis: UTC+1, no DST
 DOSE_WORDS = ("dose", "medic", "pill", "tablet", "comprime", "traitement", "dwa", "دواء", "حبوب")
@@ -43,6 +48,16 @@ def assistant_context(patient, doses_today: list, next_visit, latest_vital, *, n
             "next_visit": visit, "latest_vitals": vit, "names": [patient.first_name, patient.last_name]}
 
 
+@lru_cache
+def _urgent_rules() -> list[dict]:
+    return load_rules(PATIENT_URGENT)
+
+
+def _says_urgent(question: str) -> bool:
+    """A call for a nurse, a fall, fainting, cannot breathe, bleeding or unbearable pain happening now."""
+    return bool(scan_rules(_urgent_rules(), question)[0])
+
+
 def _keyword_intents(question: str) -> list[str]:
     q = _normalize(question)
     topics = (("next_dose", DOSE_WORDS), ("next_visit", VISIT_WORDS), ("my_vitals", VITAL_WORDS))
@@ -55,8 +70,10 @@ def _rule_intent(question: str) -> str:
 
 
 def classify_intent(question: str) -> tuple[str, float, str]:
-    """(intent, confidence, source): a question naming exactly one topic is answered by keyword rules;
-    otherwise the char n-gram model (below MIN_CONFIDENCE: ask_staff), else keyword rules."""
+    """(intent, confidence, source): patient-side urgency wording first, then a question naming exactly one topic is
+    answered by keyword rules; otherwise the char n-gram model (below MIN_CONFIDENCE: ask_staff), else keyword rules."""
+    if _says_urgent(question):
+        return "urgent", 1.0, "rules"
     hits = _keyword_intents(question)
     if len(hits) == 1:
         return hits[0], 1.0, "rules"
