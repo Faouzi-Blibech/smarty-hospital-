@@ -16,6 +16,8 @@ import type {
   CatalogueItem,
   ChatResponse,
   ChatTurn,
+  Conversation,
+  ConversationMessage,
   ApproveRequest,
   ChangePasswordRequest,
   ConfirmAppointmentRequest,
@@ -702,6 +704,41 @@ export function askAssistant(question: string): Promise<AssistantResponse> {
 export function askChat(question: string, opts: { patientId?: string; history?: ChatTurn[]; lang?: string } = {}): Promise<ChatResponse> {
   if (USE_MOCKS) return Promise.reject(new ApiError(503, "needs_backend", "The AI assistant needs the real backend (NEXT_PUBLIC_USE_MOCKS=0)."));
   return http<ChatResponse>("POST", "/ai/chat", { question, patient_id: opts.patientId, history: opts.history ?? [], lang: opts.lang });
+}
+
+const NEEDS_BACKEND = () => Promise.reject(new ApiError(503, "needs_backend", "The AI assistant needs the real backend (NEXT_PUBLIC_USE_MOCKS=0)."));
+
+/** GET /ai/conversations: the signed-in doctor's or nurse's conversations, newest first. */
+export function listConversations(): Promise<Conversation[]> {
+  if (USE_MOCKS) return NEEDS_BACKEND();
+  return http<Conversation[]>("GET", "/ai/conversations");
+}
+
+export function createConversation(): Promise<Conversation> {
+  if (USE_MOCKS) return NEEDS_BACKEND();
+  return http<Conversation>("POST", "/ai/conversations", {});
+}
+
+export function getConversation(id: string): Promise<Conversation> {
+  if (USE_MOCKS) return NEEDS_BACKEND();
+  return http<Conversation>("GET", `/ai/conversations/${encodeURIComponent(id)}`);
+}
+
+export function deleteConversation(id: string): Promise<void> {
+  if (USE_MOCKS) return NEEDS_BACKEND();
+  return http<void>("DELETE", `/ai/conversations/${encodeURIComponent(id)}`);
+}
+
+/** One question. `patientId`: the patient mentioned with @ (else the conversation's); `clearPatient`: a general question. */
+export function sendConversationMessage(
+  id: string,
+  question: string,
+  opts: { patientId?: string; clearPatient?: boolean; lang?: string } = {},
+): Promise<{ message: ConversationMessage; conversation: Conversation }> {
+  if (USE_MOCKS) return NEEDS_BACKEND();
+  return http("POST", `/ai/conversations/${encodeURIComponent(id)}/messages`, {
+    question, patient_id: opts.patientId, clear_patient: opts.clearPatient ?? false, lang: opts.lang,
+  });
 }
 
 /** POST /patients/{id}/reports (doctor): attach a report (PDF, image or text) to the patient's case. */

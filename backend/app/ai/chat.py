@@ -92,3 +92,28 @@ def answer(role: str, question: str, sources: list[rag.Source], *, names: list[s
         return _fallback(role, question, ps, patient_ctx)
     return {"answer": out.answer.strip(), "citations": [_cite(ctx[n - 1]) | {"n": n} for n in cited], "source": "llm",
             "unverified": unverified}
+
+
+GENERAL_OFFLINE = "The AI assistant is offline. Mention a patient with @ to search their record."
+
+
+class _LlmGeneral(BaseModel):
+    answer: str
+
+
+def answer_general(role: str, question: str, *, history: list[dict] = (), lang: str | None = None) -> dict:
+    """A staff question with no patient: general medical knowledge, no record, no citations."""
+    if get_settings().llm_provider == "none":
+        return {"answer": GENERAL_OFFLINE, "citations": [], "source": "rules"}
+    lines = [f"User role: {role}."]
+    if history:
+        lines.append("Conversation so far:")
+        lines += [f"{'User' if h['role'] == 'user' else 'Assistant'}: {h['text']}" for h in list(history)[-MAX_HISTORY:]]
+    if lang in LANG_NAMES:
+        lines.append(f"Interface language: {LANG_NAMES[lang]} (answer in the language of the question).")
+    lines.append(f"Question: {question}")
+    try:
+        out = complete_json("chat_general", "\n".join(lines), _LlmGeneral)
+    except LLMUnavailable:
+        return {"answer": GENERAL_OFFLINE, "citations": [], "source": "rules"}
+    return {"answer": out.answer.strip() or GENERAL_OFFLINE, "citations": [], "source": "llm"}

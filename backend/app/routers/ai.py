@@ -2,11 +2,12 @@
 rewrites the summary text through app/ai/llm.py. A human reviews every output (`human_confirmed_by`).
 """
 
+import re
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.ai import assistant, chat, copilot
@@ -15,7 +16,8 @@ from app.auth.deps import check_patient_access, require_roles
 from app.db import get_db
 from app.errors import ApiError, not_found
 from app.ids import new_id
-from app.models import AiSummary, Appointment, MedDose, Note, NotebookEntry, Patient, Prescription, User, Vital
+from app.models import (AiSummary, Appointment, ChatConversation, ChatMessage, MedDose, Note, NotebookEntry, Patient,
+                        Prescription, User, Vital)
 from app.services import record_sources
 from app.services.audit import audit
 from app.services.schedule import local_to_utc, today_local
@@ -189,3 +191,135 @@ def ask_chat(body: ChatIn, request: Request, user: User = Depends(require_roles(
     db.add(entry)
     db.commit()
     return {**out, "id": entry.id}
+
+
+# --- staff assistant conversations (sidebar "AI assistant" page) ------------------------------------------------
+
+class ConversationIn(BaseModel):
+    title: str = Field(default="", max_length=120)
+
+
+class MessageIn(BaseModel):
+    question: str = Field(min_length=1, max_length=2000)
+    patient_id: str | None = None  # the patient mentioned with @; omitted: the conversation's current patient
+    clear_patient: bool = False    # true: a general question, ignore the conversation's patient
+    lang: str | None = Field(default=None, pattern="^(en|fr|ar)$")
+
+
+def _conversation(db: Session, user: User, conversation_id: str) -> ChatConversation:
+    c = db.get(ChatConversation, conversation_id)
+    if c is None or c.user_id != user.id:
+        raise not_found("conversation")
+    return c
+
+
+def _messages(db: Session, c: ChatConversation) -> list[ChatMessage]:
+    return list(db.scalars(select(ChatMessage).where(ChatMessage.conversation_id == c.id)
+                           .order_by(ChatMessage.created_at, ChatMessage.id)))
+
+
+def _current_patient(msgs: list[ChatMessage]) -> str | None:
+    for m in reversed(msgs):
+        if m.role == "user":
+            return m.patient_id
+    return None
+
+
+def _patient_ref(db: Session, patient_id: str | None) -> dict | None:
+    p = db.get(Patient, patient_id) if patient_id else None
+    return {"id": p.id, "name": f"{p.first_name} {p.last_name}"} if p else None
+
+
+def _stamp(dt: datetime | None) -> str | None:
+    return dt.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ") if dt else None
+
+
+def _msg_out(db: Session, m: ChatMessage) -> dict:
+    return {"id": m.id, "role": m.role, "text": m.text, "patient": _patient_ref(db, m.patient_id),
+            "created_at": _stamp(m.created_at), **(m.meta or {})}
+
+
+def _conv_out(db: Session, c: ChatConversation, msgs: list[ChatMessage] | None = None) -> dict:
+    out = {"id": c.id, "title": c.title, "created_at": _stamp(c.created_at), "updated_at": _stamp(c.updated_at)}
+    if msgs is not None:
+        out["messages"] = [_msg_out(db, m) for m in msgs]
+        out["patient"] = _patient_ref(db, _current_patient(msgs))
+    return out
+
+
+@router.get("/conversations")
+def list_conversations(user: User = Depends(require_roles("doctor", "nurse")), db: Session = Depends(get_db)) -> list:
+    rows = db.scalars(select(ChatConversation).where(ChatConversation.user_id == user.id)
+                      .order_by(ChatConversation.updated_at.desc()).limit(100))
+    return [_conv_out(db, c) for c in rows]
+
+
+@router.post("/conversations", status_code=201)
+def create_conversation(body: ConversationIn, user: User = Depends(require_roles("doctor", "nurse")),
+                        db: Session = Depends(get_db)) -> dict:
+    c = ChatConversation(id=new_id(db, "cv"), user_id=user.id, title=body.title.strip())
+    db.add(c)
+    db.flush()
+    db.refresh(c)
+    out = _conv_out(db, c, [])
+    db.commit()
+    return out
+
+
+@router.get("/conversations/{conversation_id}")
+def get_conversation(conversation_id: str, request: Request, user: User = Depends(require_roles("doctor", "nurse")),
+                     db: Session = Depends(get_db)) -> dict:
+    c = _conversation(db, user, conversation_id)
+    msgs = _messages(db, c)
+    for pid in {m.patient_id for m in msgs if m.patient_id}:  # re-reading a patient's analysis is a record read
+        check_patient_access(db, user, pid, resource="ai_chat", ip=_ip(request))
+    out = _conv_out(db, c, msgs)
+    db.commit()
+    return out
+
+
+@router.delete("/conversations/{conversation_id}", status_code=204)
+def delete_conversation(conversation_id: str, user: User = Depends(require_roles("doctor", "nurse")),
+                        db: Session = Depends(get_db)) -> None:
+    c = _conversation(db, user, conversation_id)
+    db.execute(delete(ChatMessage).where(ChatMessage.conversation_id == c.id))
+    db.delete(c)
+    db.commit()
+
+
+@router.post("/conversations/{conversation_id}/messages")
+def send_message(conversation_id: str, body: MessageIn, request: Request,
+                 user: User = Depends(require_roles("doctor", "nurse")), db: Session = Depends(get_db)) -> dict:
+    """One question in a conversation. With a patient (mentioned now or earlier in the conversation): answered from
+    that patient's record (access-checked, audited, stored as a notebook entry). Without: a general question."""
+    c = _conversation(db, user, conversation_id)
+    msgs = _messages(db, c)
+    pid = None if body.clear_patient else (body.patient_id or _current_patient(msgs))
+    history = [{"role": m.role, "text": m.text} for m in msgs[-chat.MAX_HISTORY:]]
+    q = body.question.strip()
+    if pid:
+        p = check_patient_access(db, user, pid, resource="ai_chat", ip=_ip(request))
+        out = chat.answer(user.role, q, record_sources.build(db, p, user.role), names=[p.first_name, p.last_name],
+                          history=history, lang=body.lang)
+        db.add(NotebookEntry(id=new_id(db, "nb"), patient_id=p.id, user_id=user.id, question=q,
+                             ai_suggested={"answer": out["answer"], "source": out["source"], "role": user.role,
+                                           "citations": [x["source_id"] for x in out["citations"]]}))
+    else:
+        out = chat.answer_general(user.role, q, history=history, lang=body.lang)
+    now = datetime.now(UTC)
+    db.add(ChatMessage(id=new_id(db, "cm", width=6), conversation_id=c.id, role="user", text=q, patient_id=pid,
+                       created_at=now))
+    reply = ChatMessage(id=new_id(db, "cm", width=6), conversation_id=c.id, role="assistant", text=out["answer"],
+                        patient_id=pid, created_at=now + timedelta(milliseconds=1),
+                        meta={"citations": out["citations"], "source": out["source"],
+                              "unverified": out.get("unverified") or []})
+    db.add(reply)
+    if not c.title:
+        ref = _patient_ref(db, pid)
+        text = re.sub(r"\s+", " ", q.replace(f"@{ref['name']}", "") if ref else q).strip() or q
+        c.title = (f"{ref['name']} · " if ref else "") + (text[:60] + ("…" if len(text) > 60 else ""))
+    c.updated_at = now
+    db.flush()
+    result = {"message": _msg_out(db, reply), "conversation": _conv_out(db, c)}
+    db.commit()
+    return result

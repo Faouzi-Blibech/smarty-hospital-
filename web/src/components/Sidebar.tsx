@@ -40,6 +40,7 @@ export const NAV: Record<StaffRole, NavItem[]> = {
   doctor: [
     { key: "patients", label: "shared.navMyPatients", href: "/doctor", count: NAV_COUNTS.doctor.patients },
     { key: "requests", label: "shared.navRequests", href: "/doctor/requests", count: NAV_COUNTS.doctor.requests },
+    { key: "assistant", label: "shared.navAssistant", href: "/doctor/assistant" },
     { key: "team", label: "accounts.navTeam", href: "/doctor/team" },
     { key: "password", label: "auth.navPassword", href: "/doctor/password" },
   ],
@@ -49,6 +50,7 @@ export const NAV: Record<StaffRole, NavItem[]> = {
     { key: "meds", label: "shared.navMedRound", href: "/nurse/meds", count: NAV_COUNTS.nurse.meds },
     { key: "exams", label: "shared.navExams", href: "/nurse/exams" },
     { key: "patients", label: "shared.navPatients", href: "/nurse/patients", count: NAV_COUNTS.nurse.patients },
+    { key: "assistant", label: "shared.navAssistant", href: "/nurse/assistant" },
     { key: "password", label: "auth.navPassword", href: "/nurse/password" },
   ],
   admin: [

@@ -106,3 +106,27 @@ def test_doctor_uploads_a_report_that_the_chat_reads(client, monkeypatch):
     nurse = login(client, "nurse@ward.tn")
     assert client.post("/patients/p-0001/reports", headers=nurse,
                        files={"file": ("x.txt", b"x", "text/plain")}).status_code == 403
+
+
+def test_conversations_mentions_history_and_ownership(client):
+    doc = login(client, "doctor@ward.tn")
+    c = client.post("/ai/conversations", headers=doc, json={}).json()
+    assert c["id"].startswith("cv-") and c["messages"] == []
+    r = client.post(f"/ai/conversations/{c['id']}/messages", headers=doc,
+                    json={"question": "Summarise the stay", "patient_id": "p-0001"})
+    assert r.status_code == 200, r.text
+    assert r.json()["message"]["patient"]["id"] == "p-0001" and r.json()["conversation"]["title"]
+    # the patient stays attached to the conversation until another is mentioned or it is cleared
+    r = client.post(f"/ai/conversations/{c['id']}/messages", headers=doc, json={"question": "And the notes?"})
+    assert r.json()["message"]["patient"]["id"] == "p-0001"
+    r = client.post(f"/ai/conversations/{c['id']}/messages", headers=doc,
+                    json={"question": "What is the usual dose of paracetamol?", "clear_patient": True})
+    assert r.json()["message"]["patient"] is None and r.json()["message"]["source"] == "rules"
+    full = client.get(f"/ai/conversations/{c['id']}", headers=doc).json()
+    assert [m["role"] for m in full["messages"]] == ["user", "assistant"] * 3
+    assert [x["id"] for x in client.get("/ai/conversations", headers=doc).json()][0] == c["id"]
+    nurse = login(client, "nurse@ward.tn")
+    assert client.get(f"/ai/conversations/{c['id']}", headers=nurse).status_code == 404
+    assert client.post("/ai/conversations", headers=login(client, "patient@ward.tn"), json={}).status_code == 403
+    assert client.delete(f"/ai/conversations/{c['id']}", headers=doc).status_code == 204
+    assert client.get(f"/ai/conversations/{c['id']}", headers=doc).status_code == 404

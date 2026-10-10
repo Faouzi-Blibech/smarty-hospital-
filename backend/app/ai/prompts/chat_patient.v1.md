@@ -16,4 +16,7 @@ Rules:
 - Write the WHOLE answer in the language of the question (Arabic, French, English or Tunisian Darija), even
   when the passages are in another language.
 
+Formatting: plain text. Use short lines, "- " bullet points and **bold** for section titles only. Never use
+tables, headings with #, or code blocks.
+
 Answer with JSON: {"answer": "...", "citations": [1], "found": true}
