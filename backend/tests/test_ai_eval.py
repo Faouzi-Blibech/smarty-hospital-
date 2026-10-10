@@ -11,7 +11,7 @@ from tests.test_eval_leakage import _jsonl, leaks
 # Measured on the shipped triage.v2 / intent.v2 over the whole eval set (the dev half, 82 + 75 rows, plus the sealed
 # test half, 74 + 75 rows): urgent missed 1 + 0, intent accuracy (75 + 69) / 150. The old v1 models scored 12 and 0.727 on
 # the same set. Lower URGENT_MISSED_BASELINE / raise INTENT_ACCURACY_BASELINE when the models improve; never loosen.
-URGENT_MISSED_BASELINE = 1
+URGENT_MISSED_BASELINE = 0  # safety fix round: dev 0 + test 0 (second look)
 INTENT_ACCURACY_BASELINE = 0.96
 INTENT_TOLERANCE = 0.02
 
