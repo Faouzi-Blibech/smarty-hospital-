@@ -77,7 +77,7 @@ def classify_intent(question: str) -> tuple[str, float, str]:
     hits = _keyword_intents(question)
     if len(hits) == 1:
         return hits[0], 1.0, "rules"
-    model = textclf.load("intent.v1")
+    model = textclf.load("intent.v2")
     if model is None:
         return _rule_intent(question), 1.0, "rules"
     probs = textclf.predict_proba(model, _normalize(question))

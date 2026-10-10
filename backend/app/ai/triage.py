@@ -223,9 +223,9 @@ def triage(referral_text: str, symptoms: list[str], age: int | None) -> TriageRe
     reasons += [f"Red-flag wording denied, not applied: {f['id'].replace('_', ' ')}" for f in negated]
 
     urgency, model_u, conf = floor, None, None
-    model = textclf.load("triage.v1")
+    model = textclf.load("triage.v2")
     if model is not None:
-        probs = textclf.predict_proba(model, _normalize(full_text))
+        probs = textclf.predict_proba(model, model_text(full_text))
         model_u, conf = max(probs.items(), key=lambda kv: kv[1])
         conf = round(conf, 2)
         reasons.append(f"Similar referrals were urgency {model_u} (model confidence {conf:.0%})")

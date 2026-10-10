@@ -22,7 +22,7 @@ def test_char_wb_ngrams_match_scikit_learn():
 
 
 def test_triage_model_probabilities():
-    m = textclf.load("triage.v1")
+    m = textclf.load("triage.v2")
     assert m is not None
     p = textclf.predict_proba(m, "douleur thoracique depuis 2 jours")
     assert sorted(p) == [1, 2, 3, 4, 5]
@@ -34,6 +34,6 @@ def test_missing_model_is_none():
 
 
 def test_shipped_triage_model_scores_chest_pain_as_most_urgent():
-    m = textclf.load("triage.v1")
+    m = textclf.load("triage.v2")
     p = textclf.predict_proba(m, "douleur dans la poitrine depuis ce matin")
     assert max(p, key=p.get) == 5
