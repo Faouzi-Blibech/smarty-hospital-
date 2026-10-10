@@ -60,7 +60,7 @@
   width: 400px;
   flex: none;
   background: var(--paper);
-  border-left: 1px solid var(--line);
+  border-inline-start: 1px solid var(--line);
   padding: 30px 28px;
   display: flex;
   flex-direction: column;
@@ -154,7 +154,7 @@
     position: static;
     width: auto;
     min-height: 0;
-    border-left: none;
+    border-inline-start: none;
     border-top: 1px solid var(--line);
     align-self: stretch;
   }

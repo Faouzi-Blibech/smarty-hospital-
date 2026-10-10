@@ -3,11 +3,9 @@
 // Real-mode ward names for the admin screens. Devices carry no ward, so the ward comes
 // from the patients' `ward` (GET /patients). Mock mode keeps the design's "Ward C".
 import { useEffect, useState } from "react";
+import type { TFn } from "@/i18n/messages";
 import { getMyPatients } from "@/lib/api";
 import { USE_MOCKS } from "@/lib/time";
-
-/** The design's ward label (mock mode). */
-export const MOCK_WARD = "Ward C";
 
 /** patient id → ward ("Cardiology"). Empty in mock mode, while loading, or if the list fails. */
 export function usePatientWards(): Record<string, string> {
@@ -30,9 +28,9 @@ export function usePatientWards(): Record<string, string> {
   return wards;
 }
 
-/** The distinct wards of these patients, "Cardiology · Internal Medicine", or null when none is known. */
-export function wardsOf(patientIds: (string | null | undefined)[], wards: Record<string, string>): string | null {
-  if (USE_MOCKS) return MOCK_WARD;
+/** The distinct wards of these patients, "Cardiology · Internal Medicine", or null when none is known (mock mode: the design's "Ward C"). */
+export function wardsOf(patientIds: (string | null | undefined)[], wards: Record<string, string>, t: TFn): string | null {
+  if (USE_MOCKS) return t("admin.wardC");
   const names = [...new Set(patientIds.map((id) => (id ? wards[id] : undefined)).filter((w): w is string => !!w))];
   return names.length ? names.join(" · ") : null;
 }

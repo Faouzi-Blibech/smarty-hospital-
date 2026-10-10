@@ -120,18 +120,18 @@
 
 .select {
   appearance: none;
-  padding-right: 36px;
+  padding-inline-end: 36px;
   cursor: pointer;
 }
 
 .select:focus {
-  padding-right: 35px;
+  padding-inline-end: 35px;
 }
 
 .selectWrap::after {
   content: "▾";
   position: absolute;
-  right: 14px;
+  inset-inline-end: 14px;
   top: 50%;
   transform: translateY(-50%);
   font-size: 16px;
