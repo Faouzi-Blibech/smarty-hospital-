@@ -1,6 +1,6 @@
 # REST + WebSocket contract — v1.0
 
-> **Version:** 1.13 (2026-10-10) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations, exams, notebook)
+> **Version:** 1.14 (2026-10-10) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations, exams, notebook)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Conventions
@@ -246,6 +246,29 @@ Dated public-health events in Tunisia (Octobre Rose, flu campaign, HPV vaccinati
 
 Unknown id → 404 `not_found`; non-admin writes → 403. No patient data is read by these endpoints except the caller's own sex/date of birth for `matches_me`, so no `audit_log` row (the rule covers reads of a patient record). The admin "Notify now" writes `audit_log` (`action: "notify"`, `resource: "health_event"`).
 
+## Radiograph reading (1.14 — Wali)
+
+An AI draft report per radiograph image (JPEG/PNG of exam codes `chest_xray`, `xray`, `xray_outside`). The model only drafts; a doctor edits and confirms. Images are read by a local vision model only (`VISION_PROVIDER=local`); with none, the status is `unavailable` and the doctor writes the report. Statuses: `queued`, `running`, `ready`, `unavailable`, `failed`. Reading ids are `rr-0001`.
+
+`RadiographReading` (doctor view):
+```json
+{"id":"rr-0001","exam_result_id":"er-0901","patient_id":"p-0001","status":"ready","hint":"Chest X-ray",
+ "ai_suggested":{"source":"llm","model":"qwen3-vl:4b","region":"chest","projection":"PA","quality":"adequate",
+   "findings":["Clear lung fields"],"impression":"No acute abnormality seen.",
+   "possible_conditions":[{"name":"No acute cardiopulmonary disease","likelihood":"high","evidence":"normal lungs, heart size"}],
+   "urgent_flags":[],"recommendation":"","draft_text":"Technique : …","disclaimer":"AI draft from a prototype, not a diagnosis and not clinically validated. A doctor must review it."},
+ "final_text":null,"human_confirmed_by":null,"confirmed_by_name":null,"confirmed_at":null,
+ "created_at":"2026-10-10T09:00:00Z","finished_at":"2026-10-10T09:00:40Z"}
+```
+
+| Endpoint | Who | Notes |
+|---|---|---|
+| `GET /exam-results/{result_id}/reading` | doctor, nurse with result access | doctor: full reading (audit `read radiograph_reading`); nurse: `{id, exam_result_id, status}`; 404 when the result has no reading |
+| `PUT /exam-results/{result_id}/reading` | doctor with result access | `{"final_text": "1..20000 chars"}` → sets `final_text`, `human_confirmed_by`, `confirmed_at`; copies the text into `exam_results.report_text`; audit `update`; re-confirming edits it. Allowed in any status (a doctor may write before the AI finishes; the worker never overwrites `final_text`) |
+| `POST /patients/{patient_id}/radiographs` | doctor with write access | multipart `file` (JPEG/PNG ≤ 15 MB), `title` (default "Outside X-ray") → creates a done `Imaging` exam `xray_outside` + result + queued reading → `ExamOrder` (201) |
+
+`ExamOrder.results[]` gains `reading: {"id","status","confirmed"} | null`. New exam codes `xray` and `xray_outside` (department `Imaging`); `chest_xray` is also read. Uploading a radiograph through `POST /exams/{id}/results` enqueues a reading.
+
 ## Health
 
 `GET /health` → `{"status":"ok","db":true,"mqtt":true}` (public).
@@ -260,6 +283,7 @@ Unknown id → 404 `not_found`; non-admin writes → 403. No patient data is rea
 { "type": "call_nurse",    "data": { "patient_id": "p-0001", "device_id": "bsu-001", "bed": "C-12", "ts": "..." } }
 { "type": "dose_event",    "data": { "patient_id": "p-0001", "dose_id": "d-000123", "status": "dispensed|taken|missed", "method": "ir|button", "ts": "..." } }
 { "type": "device_status", "data": { "device_id": "bsu-001", "online": false, "ts": "..." } }
+{ "type": "radiograph_reading", "reading_id": "rr-0001", "exam_result_id": "er-0901", "patient_id": "p-0001", "status": "ready" }
 ```
 
 Filtering: a nurse receives frames for their ward, a doctor for their own patients, an admin only `device_status`. Patients do not connect.
@@ -395,6 +419,7 @@ Still proposed: `GET /offers/{id}`, `POST /offers/{id}/accept` and `GET /patient
 
 ## Changelog
 
+- **1.14** (2026-10-10): radiograph reading — `GET/PUT /exam-results/{id}/reading`, `POST /patients/{id}/radiographs`, `results[].reading`, exam codes `xray`/`xray_outside`, WS frame `radiograph_reading`.
 - **1.13** (2026-10-10): health calendar — `GET/POST /health-events`, `PATCH/DELETE /health-events/{id}`, `POST /health-events/{id}/notify`, `GET/PUT /me/health-prefs`, n8n callbacks `GET /integrations/n8n/health-events/due` and `POST /integrations/n8n/health-events/{id}/announced`.
 - **1.12** (2026-10-10): health watch (`/health-watch`, `/health-watch/me`, `/integrations/n8n/health-watch`). Owner: Faouzi.
 - **1.11** (2026-10-10): staff AI assistant conversations (`/ai/conversations*`), stored server-side. Owner: Faouzi.
