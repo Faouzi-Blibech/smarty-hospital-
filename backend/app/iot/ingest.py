@@ -1,7 +1,7 @@
 """MQTT ingestion as pure functions of (db, device_id, kind, payload) → WS frames (mqtt-topics.md v1.1).
 
 The worker owns the broker loop and the commit; everything here is testable without a broker.
-Each returned frame is the api.md WS envelope plus a routing `scope` {patient_id, ward, doctor_id}.
+Each returned frame is the api.md WS envelope plus a routing `scope` {patient_id, ward, doctor_id, shared_with}.
 """
 
 import logging
@@ -12,7 +12,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.ai.early_warning import score_news2
-from app.models import Admission, Device, IngestedMessage, Patient, Staff, Vital
+from app.models import Admission, Device, IngestedMessage, Patient, PatientAccess, Staff, Vital
 from app.schemas import iso
 
 log = logging.getLogger("ward.ingest")
@@ -21,10 +21,21 @@ KINDS = {"vitals", "events", "status"}
 VITAL_SOURCES = {"device", "simulator", "manual"}
 
 
+def shared_doctor_ids(db: Session, patient_id: str) -> list[str]:
+    """Doctors holding an active sharing grant for this patient (one query per frame, not per socket)."""
+    return list(db.scalars(select(PatientAccess.user_id).where(
+        PatientAccess.patient_id == patient_id, PatientAccess.revoked_at.is_(None),
+        PatientAccess.expires_at > datetime.now(UTC))))
+
+
 def scope_for(db: Session, patient_id: str | None) -> dict:
     p = db.get(Patient, patient_id) if patient_id else None
-    return {"patient_id": p.id if p else None, "ward": p.ward if p else None,
-            "doctor_id": p.attending_doctor_id if p else None}
+    scope = {"patient_id": p.id if p else None, "ward": p.ward if p else None,
+             "doctor_id": p.attending_doctor_id if p else None}
+    shared = shared_doctor_ids(db, p.id) if p else []
+    if shared:  # only present when a grant is live, so the plain scope shape is unchanged
+        scope["shared_with"] = shared
+    return scope
 
 
 def frame(db: Session, type_: str, data: dict, patient_id: str | None) -> dict:

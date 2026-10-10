@@ -5,7 +5,7 @@ doctor confirms it by acking (`acked_by` is the confirmer column).
 
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.ai.early_warning import News2Result, trend_z
@@ -50,11 +50,12 @@ def chat_ids(db: Session, p: Patient | None) -> tuple[list[str], str | None]:
     """(nurse chat ids of the patient's ward, attending doctor chat id) for n8n."""
     if p is None:
         return [], None
+    team = [Staff.supervisor_id == p.attending_doctor_id] if p.attending_doctor_id else []
     nurses = db.scalars(select(Staff.telegram_chat_id).join(User, User.id == Staff.user_id)
-                        .where(User.role == "nurse", Staff.ward == p.ward,
+                        .where(User.role == "nurse", User.status == "active", or_(Staff.ward == p.ward, *team),
                                Staff.telegram_chat_id.is_not(None))).all()
     doc = db.get(Staff, p.attending_doctor_id) if p.attending_doctor_id else None
-    return list(nurses), doc.telegram_chat_id if doc else None
+    return list(dict.fromkeys(nurses)), doc.telegram_chat_id if doc else None
 
 
 def _recent(db: Session, patient_id: str, kind: str, severity: str | None = None) -> bool:

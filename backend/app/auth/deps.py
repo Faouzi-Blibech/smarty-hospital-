@@ -95,7 +95,7 @@ def can_see_appointment(db: Session, user: User, a: Appointment) -> bool:
         if a.status == "requested" or a.doctor_id == user.id:
             return True
         p = db.get(Patient, a.patient_id)
-        return p is not None and p.attending_doctor_id == user.id
+        return p is not None and (p.attending_doctor_id == user.id or has_grant(db, user.id, p.id))
     return False
 
 

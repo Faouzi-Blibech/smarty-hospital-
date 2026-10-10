@@ -25,7 +25,7 @@ def wants(c: Client, frame: dict) -> bool:
         return (c.ward is not None and scope.get("ward") == c.ward) or (
             c.supervisor_id is not None and scope.get("doctor_id") == c.supervisor_id)
     if c.role == "doctor":
-        return scope.get("doctor_id") == c.user_id
+        return scope.get("doctor_id") == c.user_id or c.user_id in (scope.get("shared_with") or ())
     return False
 
 

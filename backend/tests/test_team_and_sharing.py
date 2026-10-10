@@ -90,3 +90,125 @@ def test_share_validation(client, db):
     for body in ({"doctor_id": doc2.id, "expires_at": far}, {"doctor_id": doc2.id, "expires_at": past},
                  {"doctor_id": "u-0002"}, {"doctor_id": "u-0001"}):
         assert client.post("/patients/p-0001/access", headers=h1, json=body).status_code == 422, body
+
+
+# ---- fix round 1 ----
+from sqlalchemy import select  # noqa: E402
+
+from app.models import Appointment, AuditLog, ExamOrder, Staff  # noqa: E402
+
+
+def _share(client, doc2, **extra):
+    return client.post("/patients/p-0001/access", headers=login(client, "doctor@ward.tn"),
+                       json={"doctor_id": doc2.id, **extra})
+
+
+def _audits(db, resource):
+    return [(a.action, a.resource_id) for a in db.scalars(
+        select(AuditLog).where(AuditLog.resource == resource).order_by(AuditLog.id))]
+
+
+def test_share_revoke_and_list_are_audited(client, db):
+    _, doc2, _, _ = _setup(db)
+    h1 = login(client, "doctor@ward.tn")
+    grant_id = _share(client, doc2)
+    assert grant_id.status_code == 200
+    client.get("/patients/p-0001/access", headers=h1)
+    client.delete(f"/patients/p-0001/access/{doc2.id}", headers=h1)
+    actions = [a for a, _ in _audits(db, "patient_access")]
+    assert actions == ["create", "read", "delete"]
+    row = db.scalars(select(AuditLog).where(AuditLog.resource == "patient_access")).first()
+    assert row.patient_id == "p-0001" and row.user_id == "u-0001"
+
+
+def test_expired_and_revoked_grants_are_excluded_from_lists(client, db):
+    _, doc2, _, _ = _setup(db)
+    h2, h1 = login(client, "doc2.t@ward.tn"), login(client, "doctor@ward.tn")
+    now = datetime.now(UTC)
+    alert = AL.create_alert(db, "p-0001", None, "trend", "medium", None, "shared alert", None)
+    db.add(PatientAccess(id="pa-9002", patient_id="p-0001", user_id=doc2.id, granted_by="u-0001",
+                         created_at=now - timedelta(days=31), expires_at=now - timedelta(days=1)))
+    db.flush()
+    assert "p-0001" not in {p["id"] for p in client.get("/patients", headers=h2).json()}
+    assert alert.id not in {a["id"] for a in client.get("/alerts", headers=h2).json()}
+    _share(client, doc2)
+    assert "p-0001" in {p["id"] for p in client.get("/patients", headers=h2).json()}
+    assert alert.id in {a["id"] for a in client.get("/alerts", headers=h2).json()}
+    client.delete(f"/patients/p-0001/access/{doc2.id}", headers=h1)
+    assert "p-0001" not in {p["id"] for p in client.get("/patients", headers=h2).json()}
+    assert alert.id not in {a["id"] for a in client.get("/alerts", headers=h2).json()}
+
+
+def test_shared_doctor_cannot_reshare(client, db):
+    _, doc2, _, _ = _setup(db)
+    doc3 = make_user(db, "doc3.t@ward.tn", role="doctor", ward="Cardiology")
+    _share(client, doc2)
+    r = client.post("/patients/p-0001/access", headers=login(client, "doc2.t@ward.tn"), json={"doctor_id": doc3.id})
+    assert r.status_code == 403
+
+
+def test_share_defaults_to_about_30_days(client, db):
+    _, doc2, _, _ = _setup(db)
+    exp = datetime.fromisoformat(_share(client, doc2).json()["expires_at"].replace("Z", "+00:00"))
+    assert timedelta(days=29, hours=23) < exp - datetime.now(UTC) <= timedelta(days=30)
+
+
+def test_second_share_replaces_the_first(client, db):
+    _, doc2, _, _ = _setup(db)
+    _share(client, doc2)
+    _share(client, doc2, expires_at=(datetime.now(UTC) + timedelta(days=5)).isoformat())
+    live = client.get("/patients/p-0001/access", headers=login(client, "doctor@ward.tn")).json()
+    assert [g["doctor_id"] for g in live] == [doc2.id]
+    rows = db.scalars(select(PatientAccess).where(PatientAccess.user_id == doc2.id)).all()
+    assert len(rows) == 2 and sum(r.revoked_at is None for r in rows) == 1
+
+
+def test_shared_doctor_reads_exams_and_appointments_until_revoked(client, db):
+    _, doc2, _, _ = _setup(db)
+    h2, h1 = login(client, "doc2.t@ward.tn"), login(client, "doctor@ward.tn")
+    appt = Appointment(id="ap-9001", patient_id="p-0001", status="confirmed", urgency_ai=2, doctor_id=None)
+    db.add(appt)
+    db.flush()
+    db.add(ExamOrder(id="ex-9001", patient_id="p-0001", appointment_id=appt.id, code="ecg", label="ECG",
+                     department="Cardiology", status="ordered", human_confirmed_by="u-0001",
+                     ordered_at=datetime.now(UTC)))
+    db.flush()
+    assert client.get(f"/appointments/{appt.id}/exams", headers=h2).status_code == 403
+    assert client.get("/appointments?patient_id=p-0001", headers=h2).json() == []
+    _share(client, doc2)
+    assert client.get("/appointments?patient_id=p-0001", headers=h2).json()[0]["id"] == appt.id
+    r = client.get(f"/appointments/{appt.id}/exams", headers=h2)
+    assert r.status_code == 200 and [e["id"] for e in r.json()] == ["ex-9001"]
+    assert [e["id"] for e in client.get("/patients/p-0001/exams", headers=h2).json()] == ["ex-9001"]
+    client.delete(f"/patients/p-0001/access/{doc2.id}", headers=h1)
+    assert client.get(f"/appointments/{appt.id}/exams", headers=h2).status_code == 403
+    assert client.get("/patients/p-0001/exams", headers=h2).status_code == 403
+
+
+def test_ws_frames_reach_a_shared_doctor():
+    shared = Client(ws=None, user_id="u-s", role="doctor", ward=None)
+    scope = {"ward": "Cardiology", "doctor_id": "u-0001", "shared_with": ["u-s"]}
+    assert wants(shared, {"type": "alert", "scope": scope})
+    assert not wants(shared, {"type": "alert", "scope": dict(scope, shared_with=[])})
+
+
+def test_scope_lists_only_live_grants(client, db):
+    from app.iot.ingest import scope_for
+
+    _, doc2, _, _ = _setup(db)
+    assert "shared_with" not in scope_for(db, "p-0001")
+    _share(client, doc2)
+    assert scope_for(db, "p-0001")["shared_with"] == [doc2.id]
+
+
+def test_chat_ids_include_team_nurses_once(client, db):
+    from app.services.alerts import chat_ids
+
+    team, _, mine, _ = _setup(db)
+    ward_nurse = make_user(db, "wn.t@ward.tn", role="nurse", ward="Cardiology", supervisor_id="u-0001")
+    db.get(Staff, team.id).telegram_chat_id = "T1"
+    db.get(Staff, ward_nurse.id).telegram_chat_id = "W1"
+    db.flush()
+    nurses, _doc = chat_ids(db, mine)
+    assert "T1" in nurses and "W1" in nurses and len(nurses) == len(set(nurses))
+    assert nurses.count("W1") == 1
