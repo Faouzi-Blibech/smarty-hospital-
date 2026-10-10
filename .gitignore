@@ -229,3 +229,7 @@ node_modules/
 .next/
 next-env.d.ts
 *.tsbuildinfo
+
+# local worktrees and subagent workspaces
+.worktrees/
+.superpowers/
