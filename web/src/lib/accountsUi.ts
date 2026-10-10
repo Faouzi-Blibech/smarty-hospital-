@@ -2,7 +2,8 @@
 import type { Lang } from "@/i18n/config";
 import type { Key } from "@/i18n/messages";
 import { ApiError } from "./api";
-import { dayLabel, now, tunisTime } from "./time";
+import { translate } from "@/i18n/messages";
+import { now, tunisDate, tunisDay, tunisTime } from "./time";
 
 export const MIN_PASSWORD = 10;
 /** The backend hashes at most 72 UTF-8 bytes. */
@@ -47,7 +48,7 @@ export type PasswordProblem = "short" | "long" | "personal" | "mismatch";
  * email, its local part or the name (ignoring spaces and case). The common-password list is backend-only.
  */
 export function passwordProblem(pw: string, confirm: string, email = "", name = ""): PasswordProblem | null {
-  if (pw.length < MIN_PASSWORD) return "short";
+  if ([...pw].length < MIN_PASSWORD) return "short";
   if (new TextEncoder().encode(pw).length > MAX_PASSWORD_BYTES) return "long";
   const p = pw.toLowerCase();
   const e = email.trim().toLowerCase();
@@ -58,7 +59,8 @@ export function passwordProblem(pw: string, confirm: string, email = "", name = 
   return null;
 }
 
-/** "Mon 5 Oct 09:10" in the hospital's time zone (Tunis), localized day label. */
+/** "Mon 5 Oct 09:10" in the hospital's time zone (Tunis); "Today 09:10" when the date is today. */
 export function fmtWhen(iso: string, lang: Lang): string {
-  return `${dayLabel(iso, now(), lang)} ${tunisTime(iso)}`;
+  const today = tunisDate(iso) === tunisDate(now().toISOString());
+  return `${today ? translate(lang, "common.today") : tunisDay(iso, lang)} ${tunisTime(iso)}`;
 }
