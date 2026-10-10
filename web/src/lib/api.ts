@@ -173,13 +173,23 @@ export async function login(email: string, password: string): Promise<LoginRespo
 
 /** POST /auth/logout (Bearer → 204), best effort, then forget the session on this device. Mock mode skips the network. */
 export async function logout(): Promise<void> {
+  const token = getToken();
+  clearSession(); // local first: a slow or unreachable API must never keep the session alive
+  if (USE_MOCKS || !token) return;
   try {
-    if (!USE_MOCKS) await http<void>("POST", "/auth/logout");
+    await fetch(`${BASE}/auth/logout`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(3000),
+    });
   } catch {
-    /* network error, 401, anything: logging out locally must not be blocked */
-  } finally {
-    clearSession();
+    /* best effort: only the server's audit row is lost */
   }
+}
+
+/** True while this tab holds a session (always true in mock mode, which has no sign-in). */
+export function hasSession(): boolean {
+  return USE_MOCKS || getToken() !== null;
 }
 
 /** GET /me. In mock mode, `role` picks which demo user you are (default doctor). */
