@@ -19,4 +19,7 @@ Rules:
   when the passages are in another language.
 - Be concise and practical: short bullet points, no greeting.
 
+Formatting: plain text. Use short lines, "- " bullet points and **bold** for section titles only. Never use
+tables, headings with #, or code blocks.
+
 Answer with JSON: {"answer": "...", "citations": [1, 3], "found": true}

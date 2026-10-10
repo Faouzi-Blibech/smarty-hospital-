@@ -25,3 +25,24 @@ class NotebookEntry(Base):
     ai_suggested: Mapped[dict] = mapped_column(JSONB)  # {answer, citations, source}
     human_confirmed_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ChatConversation(Base):
+    """A staff member's AI assistant conversation (doctor or nurse). Each message may be about one patient."""
+    __tablename__ = "chat_conversations"
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    title: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    conversation_id: Mapped[str] = mapped_column(ForeignKey("chat_conversations.id", ondelete="CASCADE"), index=True)
+    role: Mapped[str] = mapped_column(String)  # user | assistant
+    text: Mapped[str] = mapped_column(Text)
+    patient_id: Mapped[str | None] = mapped_column(ForeignKey("patients.id"))
+    meta: Mapped[dict | None] = mapped_column(JSONB)  # assistant: {citations, source, unverified}
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

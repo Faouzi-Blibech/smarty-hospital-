@@ -190,6 +190,29 @@ export interface ChatResponse {
   urgent?: boolean;
 }
 
+/** Staff assistant conversations (sidebar "AI assistant" page). */
+export interface PatientRef { id: string; name: string; }
+export interface ConversationMessage {
+  id: string;
+  role: ChatRole;
+  text: string;
+  patient: PatientRef | null;
+  created_at: string;
+  citations?: ChatCitation[];
+  source?: "llm" | "rules";
+  unverified?: string[];
+}
+export interface Conversation {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  /** Present on GET /ai/conversations/{id}. */
+  messages?: ConversationMessage[];
+  /** The patient the conversation is currently about. */
+  patient?: PatientRef | null;
+}
+
 // ── Appointments and waitlist ───────────────────────────────────────────────
 
 export type AppointmentStatus = "requested" | "confirmed" | "cancelled" | "done" | "no_show";
