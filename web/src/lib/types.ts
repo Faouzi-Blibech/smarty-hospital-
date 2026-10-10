@@ -176,6 +176,20 @@ export interface AssistantResponse {
   source: AiSource;
 }
 
+/** POST /ai/chat: role assistants over one patient's record. */
+export type ChatRole = "user" | "assistant";
+export interface ChatTurn { role: ChatRole; text: string; }
+export interface ChatCitation { n?: number; source_id: string; kind: string; title: string; ts: string | null; text: string; }
+export interface ChatResponse {
+  id: string;
+  answer: string;
+  citations: ChatCitation[];
+  source: "llm" | "rules";
+  /** Numbers in the answer that are not in the record: staff must check them. */
+  unverified?: string[];
+  urgent?: boolean;
+}
+
 // ── Appointments and waitlist ───────────────────────────────────────────────
 
 export type AppointmentStatus = "requested" | "confirmed" | "cancelled" | "done" | "no_show";

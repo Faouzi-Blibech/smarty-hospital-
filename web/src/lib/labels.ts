@@ -51,6 +51,7 @@ const DEPT_KEYS: Record<string, Key> = {
   Pediatrics: "shared.deptPediatrics",
   Pulmonology: "shared.deptPulmonology",
   "Internal Medicine": "shared.deptInternalMedicine",
+  Report: "shared.deptReport",
 };
 
 /** A department or specialty name in the interface language; unknown names are shown as written. */

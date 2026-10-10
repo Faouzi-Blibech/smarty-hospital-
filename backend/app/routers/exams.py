@@ -214,6 +214,39 @@ async def upload_result(exam_id: str, request: Request, file: UploadFile = File(
     return out
 
 
+REPORT_TYPES = (*E.ALLOWED_TYPES, "text/plain")
+
+
+@router.post("/patients/{patient_id}/reports", status_code=201)
+async def upload_report(patient_id: str, request: Request, file: UploadFile = File(...), title: str = Form(""),
+                        report_text: str = Form(""), user: User = Depends(require_roles("doctor")),
+                        db: Session = Depends(get_db)) -> dict:
+    """The doctor attaches a report (an outside letter, a lab printout...) to the patient's case. It is stored as
+    a done exam of department "Report", so it shows with the exams and the chat assistants can read its text."""
+    p = check_patient_access(db, user, patient_id, write=True, resource="report", ip=_ip(request))
+    data = await file.read(E.MAX_BYTES + 1)
+    if file.content_type not in REPORT_TYPES or len(data) > E.MAX_BYTES or not data:
+        raise ApiError(422, "bad_file", "upload a PDF, JPEG, PNG or text file of at most 15 MB")
+    text = report_text.strip()
+    if file.content_type == "text/plain":
+        text = (text + "\n" + data.decode("utf-8", errors="replace")).strip()
+    now = datetime.now(UTC)
+    o = ExamOrder(id=new_id(db, "ex"), patient_id=p.id, appointment_id=None, code="report",
+                  label=(title.strip() or E.safe_name(file.filename or "report"))[:120], department="Report",
+                  status="done", human_confirmed_by=user.id, ordered_at=now, done_at=now)
+    db.add(o)
+    rid, name = new_id(db, "er"), E.safe_name(file.filename or "")
+    key = f"exams/{o.id}/{rid}/{name}"
+    storage.put(key, data, file.content_type)
+    db.add(ExamResult(id=rid, exam_order_id=o.id, patient_id=p.id, uploaded_by=user.id, file_key=key, file_name=name,
+                      content_type=file.content_type, size_bytes=len(data), report_text=text[:20000]))
+    audit(db, user, "create", "report", rid, patient_id=p.id, ip=_ip(request))
+    db.flush()
+    out = E.to_out(db, o, user)
+    db.commit()
+    return out
+
+
 @router.get("/exam-results/{result_id}/file")
 def result_file(result_id: str, request: Request, user: User = Depends(require_roles("doctor", "nurse")),
                 db: Session = Depends(get_db)) -> Response:

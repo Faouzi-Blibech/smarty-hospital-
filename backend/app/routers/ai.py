@@ -9,13 +9,14 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.ai import assistant, copilot
+from app.ai import assistant, chat, copilot
 from app.ai.triage import triage
 from app.auth.deps import check_patient_access, require_roles
 from app.db import get_db
-from app.errors import not_found
+from app.errors import ApiError, not_found
 from app.ids import new_id
-from app.models import AiSummary, Appointment, MedDose, Note, Patient, Prescription, User, Vital
+from app.models import AiSummary, Appointment, MedDose, Note, NotebookEntry, Patient, Prescription, User, Vital
+from app.services import record_sources
 from app.services.audit import audit
 from app.services.schedule import local_to_utc, today_local
 
@@ -30,6 +31,18 @@ class TriageIn(BaseModel):
 
 class AssistantIn(BaseModel):
     question: str = Field(min_length=1, max_length=500)
+
+
+class ChatTurn(BaseModel):
+    role: str = Field(pattern="^(user|assistant)$")
+    text: str = Field(max_length=2000)
+
+
+class ChatIn(BaseModel):
+    question: str = Field(min_length=1, max_length=1000)
+    patient_id: str | None = None  # doctors and nurses: required; patients: always their own record
+    history: list[ChatTurn] = Field(default=[], max_length=12)
+    lang: str | None = Field(default=None, pattern="^(en|fr|ar)$")
 
 
 def _ip(request: Request) -> str:
@@ -125,12 +138,7 @@ def undo_review(patient_id: str, request: Request, user: User = Depends(require_
 
 # --- patient assistant -----------------------------------------------------------------------------------------
 
-@router.post("/assistant")
-def ask_assistant(body: AssistantIn, request: Request, user: User = Depends(require_roles("patient")),
-                  db: Session = Depends(get_db)) -> dict:
-    p = db.get(Patient, user.patient_id) if user.patient_id else None
-    if p is None:
-        raise not_found("patient")
+def _patient_ctx(db: Session, p: Patient) -> dict:
     now = datetime.now(UTC)
     day = today_local()
     doses = db.scalars(select(MedDose).where(MedDose.patient_id == p.id,
@@ -141,7 +149,43 @@ def ask_assistant(body: AssistantIn, request: Request, user: User = Depends(requ
                                                 Appointment.slot_at >= now)
                       .order_by(Appointment.slot_at).limit(1))
     vital = db.scalar(select(Vital).where(Vital.patient_id == p.id).order_by(Vital.ts.desc()).limit(1))
-    ctx = assistant.assistant_context(p, doses, visit, vital, now=now)
+    return assistant.assistant_context(p, doses, visit, vital, now=now)
+
+
+@router.post("/assistant")
+def ask_assistant(body: AssistantIn, request: Request, user: User = Depends(require_roles("patient")),
+                  db: Session = Depends(get_db)) -> dict:
+    p = db.get(Patient, user.patient_id) if user.patient_id else None
+    if p is None:
+        raise not_found("patient")
+    ctx = _patient_ctx(db, p)
     audit(db, user, "read", "assistant", p.id, patient_id=p.id, ip=_ip(request))
     db.commit()
     return assistant.answer(body.question, ctx)
+
+
+# --- role chat assistants (RAG over one patient's record) ---------------------------------------------------------
+
+@router.post("/chat")
+def ask_chat(body: ChatIn, request: Request, user: User = Depends(require_roles("doctor", "nurse", "patient")),
+             db: Session = Depends(get_db)) -> dict:
+    """Doctor: summaries and possible conditions to consider; nurse: care questions; patient: their own care.
+    Every answer is stored as a notebook entry (AI suggestion, reviewable) and the read is audited."""
+    if user.role == "patient":
+        p = db.get(Patient, user.patient_id) if user.patient_id else None
+        if p is None:
+            raise not_found("patient")
+        audit(db, user, "read", "ai_chat", p.id, patient_id=p.id, ip=_ip(request))
+    else:
+        if not body.patient_id:
+            raise ApiError(422, "patient_required", "patient_id is required")
+        p = check_patient_access(db, user, body.patient_id, resource="ai_chat", ip=_ip(request))
+    out = chat.answer(user.role, body.question.strip(), record_sources.build(db, p, user.role),
+                      names=[p.first_name, p.last_name], history=[t.model_dump() for t in body.history],
+                      lang=body.lang, patient_ctx=_patient_ctx(db, p) if user.role == "patient" else None)
+    entry = NotebookEntry(id=new_id(db, "nb"), patient_id=p.id, user_id=user.id, question=body.question.strip(),
+                          ai_suggested={"answer": out["answer"], "source": out["source"], "role": user.role,
+                                        "citations": [c["source_id"] for c in out["citations"]]})
+    db.add(entry)
+    db.commit()
+    return {**out, "id": entry.id}

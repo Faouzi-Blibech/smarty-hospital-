@@ -1,6 +1,6 @@
 # REST + WebSocket contract — v1.0
 
-> **Version:** 1.9 (2026-10-10) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations, exams, notebook)
+> **Version:** 1.10 (2026-10-10) · **Owners:** Wali (core, IoT, alerts), Faouzi (appointments, AI, integrations, exams, notebook)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Conventions
@@ -192,6 +192,8 @@ Codes (`reset-code`):
 | `POST /ai/triage` | admin, doctor | `{"referral_text","symptoms[]","age"}` → `{"urgency":1-5,"reasons[]","red_flags[]","model_urgency","confidence","source"}`. `model_urgency` and `confidence` are null when no trained model is loaded. Preview only, nothing stored |
 | `GET /ai/summary/{patient_id}` | doctor | → `{"summary","interactions":[{"drugs":[a,b],"severity","note"}],"source","generated_at","human_confirmed_by"}` (cached 10 min; `human_confirmed_by` is null until a doctor reviews it, and the UI shows "needs review" until then) |
 | `POST /ai/summary/{patient_id}/review` | doctor | Marks the latest summary as reviewed (`human_confirmed_by`) |
+| `POST /ai/chat` | doctor, nurse, patient | `{"question","patient_id?","history?":[{"role":"user"\|"assistant","text"}],"lang?":"en"\|"fr"\|"ar"}` → `{"id","answer","citations":[{"n?","source_id","kind","title","ts","text"}],"source":"llm"\|"rules","unverified?":[..],"urgent?"}`. Answers only from one patient's record (RAG), in the language of the question. Doctor and nurse: `patient_id` required, access-checked and audited (`ai_chat`); patient: own record. Stored as a `notebook_entries` row. |
+| `POST /patients/{id}/reports` | doctor (write access) | multipart `file` (PDF, JPEG, PNG or text, ≤ 15 MB), `title?`, `report_text?` → the `ExamOrder` (department `"Report"`, status `done`). The chat reads the text of PDF and text reports. |
 | `POST /ai/assistant` *(stretch)* | patient | `{"question"}` → `{"answer","sources[]","intent","source"}`, scoped to the caller's own record |
 
 `source` is `"model"` (a trained model decided), `"rules"` (deterministic rules only) or `"llm"` (the optional open LLM wrote the text) on every AI response, so the UI can show a badge.
@@ -356,6 +358,7 @@ Still proposed: `GET /offers/{id}`, `POST /offers/{id}/accept` and `GET /patient
 
 ## Changelog
 
+- **1.10** (2026-10-10): `POST /ai/chat` (role assistants over one patient's record, any language, cited) and `POST /patients/{id}/reports` (doctor attaches a report). Owner: Faouzi.
 - **1.9** (2026-10-10): accounts — sign-up with a requested role and doctor (`role` required on register), `GET /hospital`, reset/change-password, doctor directory, account approval (/users*) that links or creates the patient record, `GET /patients?unlinked=`, doctor team, patient sharing; no enrollment codes (reset codes only); login error codes and length limits; JWT exp 8 h; logout; disabled accounts lose WebSockets and notifications
 
 - **1.8** (2026-10-09): proposes the exam and notebook routes above and the new `Appointment`/`triage` fields (spec 2026-10-09). Nothing earlier changes. Needs a 👍 from Wali.

@@ -11,6 +11,7 @@ import { ErrorCard } from "@/components/shared/ErrorCard";
 import { NotesPanel } from "@/components/shared/NotesPanel";
 import { AccessPanel } from "@/components/shared/AccessPanel";
 import { ExamsPanel } from "@/components/shared/ExamsPanel";
+import { ChatPanel } from "@/components/shared/ChatPanel";
 import { LIVE_JITTER, useLiveTick } from "@/components/shared/useLiveTick";
 import { Toast, useToast } from "@/components/Toast";
 import { addNote, getDoses, getNotes, getPatient, getPrescriptions, getVitals } from "@/lib/api";
@@ -147,6 +148,7 @@ export function PatientDetail({ id }: { id: string }) {
                   excludeIds={[me.id]}
                 />
               ) : null}
+              <ChatPanel patientId={id} role="doctor" canUpload={!shared} />
               <ExamsPanel patientId={id} />
               <DailySummary readOnly={shared} patientId={id} aiFallback={flags.aiFallback} actorId={DOCTOR_ID} />
               <DosesTimeline doses={data.doses} now={now()} />

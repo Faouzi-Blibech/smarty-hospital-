@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { LiveBanner } from "@/components/LiveBanner";
 import { ErrorCard } from "@/components/shared/ErrorCard";
 import { NotesPanel } from "@/components/shared/NotesPanel";
+import { ChatPanel } from "@/components/shared/ChatPanel";
 import { trendOf } from "@/components/shared/VitalsChart";
 import { Toast, useToast } from "@/components/Toast";
 import { useT } from "@/i18n/I18nProvider";
@@ -344,6 +345,7 @@ export function NursePatientDetail({ id }: { id: string }) {
                 )}
               </section>
             </div>
+            <ChatPanel patientId={id} role="nurse" />
             <NotesPanel
               notes={data.notes}
               onAdd={onAddNote}

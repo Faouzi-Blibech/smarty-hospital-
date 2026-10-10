@@ -119,3 +119,16 @@ def test_huge_input_stays_fast():
     t0 = time.perf_counter()
     T.triage("no fever " * 25000, ["no " * 20000], 40)  # ~200 KB of negation cues
     assert time.perf_counter() - t0 < 0.2
+
+
+# ---- the role chat (app/ai/chat.py) answers a patient's emergency with the urgent or crisis text ---------------------
+@pytest.mark.parametrize("question", [
+    "ma 3andouch nabd w ma yetnaffesch",  # Darija: no pulse and not breathing
+    "pas de fièvre mais il a perdu connaissance",
+    "لا حمى لكن ألم شديد في الصدر",
+])
+def test_patient_chat_emergency_gets_the_urgent_answer(question):
+    from app.ai import chat
+
+    out = chat.answer("patient", question, [], names=["Amira"])
+    assert out["answer"] in (assistant.URGENT, assistant.CRISIS)
