@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth.deps import can_access, has_grant, staff_ward
-from app.models import Appointment, ExamResult, Patient, Staff, User
+from app.models import Appointment, ExamResult, Patient, RadiographReading, Staff, User
 from app.schemas import iso
 from app.services import accounts
 
@@ -89,6 +89,13 @@ def _name(db: Session, user_id: str | None) -> str | None:
     return u.name if u else None
 
 
+def _reading(db: Session, result) -> dict | None:
+    rr = db.scalar(select(RadiographReading).where(RadiographReading.exam_result_id == result.id))
+    if rr is None:
+        return None
+    return {"id": rr.id, "status": rr.status, "confirmed": rr.final_text is not None}
+
+
 def to_out(db: Session, o, viewer: User) -> dict:
     if viewer.role == "admin":  # spec §4: admin reads status only, no patient identity, files or AI fields
         return {"id": o.id, "appointment_id": o.appointment_id, "department": o.department, "status": o.status}
@@ -103,7 +110,7 @@ def to_out(db: Session, o, viewer: User) -> dict:
         out["results"] = [{"id": r.id, "file_name": r.file_name, "content_type": r.content_type,
                            "size_bytes": r.size_bytes, "report_text": r.report_text,
                            "uploaded_by_name": _name(db, r.uploaded_by),
-                           "created_at": iso(r.created_at)} for r in rows]
+                           "created_at": iso(r.created_at), "reading": _reading(db, r)} for r in rows]
     if viewer.role == "patient":
         out.pop("ai_suggested")
         out.pop("human_confirmed_by")
