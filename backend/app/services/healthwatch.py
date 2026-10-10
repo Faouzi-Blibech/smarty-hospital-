@@ -24,6 +24,7 @@ LOCAL_NEWS = {
     "ar": "https://news.google.com/rss/search?q=%D8%A7%D9%84%D8%B5%D8%AD%D8%A9+%D8%AA%D9%88%D9%86%D8%B3&hl=ar&gl=TN&ceid=TN:ar",
 }
 NEWS_PER_SOURCE = 6
+NEWS_MAX = 15
 
 _cache: dict[str, tuple[float, object]] = {}
 
@@ -128,7 +129,7 @@ def _news() -> list[dict]:
             continue
         seen.add(n["link"])
         out.append(n)
-    return out
+    return out[:NEWS_MAX]
 
 
 def news() -> list[dict]:

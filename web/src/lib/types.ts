@@ -213,6 +213,23 @@ export interface Conversation {
   patient?: PatientRef | null;
 }
 
+/** Health watch: weather-health alerts for the hospital's city and health news. Texts come in the three languages. */
+export type Tri = { en: string; fr: string; ar: string };
+export interface WeatherDay {
+  date: string; tmax: number | null; tmin: number | null; apparent_max: number | null; precip: number | null;
+  gusts: number | null; uv: number | null; dust_max: number | null; pm10_max: number | null; aqi_max: number | null;
+}
+export interface HealthAlert {
+  id: string; date: string; severity: "high" | "moderate"; value: string; groups: string[];
+  title: Tri; staff?: Tri; patient: Tri;
+  at_risk?: { id: string; name: string; groups: string[] }[]; at_risk_count?: number; concerns_me?: boolean;
+}
+export interface NewsItem { title: string; link: string; source: string; published: string | null; lang: string; }
+export interface HealthWatch {
+  city: string; available: boolean; demo: string | null; days: WeatherDay[]; alerts: HealthAlert[];
+  news?: NewsItem[]; updated_at?: string;
+}
+
 // ── Appointments and waitlist ───────────────────────────────────────────────
 
 export type AppointmentStatus = "requested" | "confirmed" | "cancelled" | "done" | "no_show";
