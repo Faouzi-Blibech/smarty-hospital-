@@ -3,6 +3,12 @@ from tests.helpers import login, make_patient
 GOOD = "correct-horse-battery"
 
 
+def test_enrollment_codes_are_gone(client):
+    admin = login(client, "admin@ward.tn")
+    assert client.post("/patients/p-0002/enrollment-code", headers=admin).status_code == 404
+    assert "/patients/{patient_id}/enrollment-code" not in client.get("/openapi.json").json()["paths"]
+
+
 def test_patient_password_reset_code_from_attending_or_admin(client, db):
     # patient@ward.tn owns p-0001, whose attending doctor is u-0001
     r = client.post("/patients/p-0001/reset-code", headers=login(client, "doctor@ward.tn"))

@@ -9,13 +9,12 @@ from app.db import Base
 
 
 class AccessCode(Base):
-    """`enrollment` links a patient account to a record; `reset` sets a password. Only the sha256 is stored."""
+    """`reset` sets a user's password (the only purpose since sign-up v2). Only the sha256 is stored."""
 
     __tablename__ = "access_codes"
     id: Mapped[str] = mapped_column(String, primary_key=True)
     purpose: Mapped[str] = mapped_column(String)
     code_hash: Mapped[str] = mapped_column(String, index=True)
-    patient_id: Mapped[str | None] = mapped_column(ForeignKey("patients.id"))
     user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
     issued_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

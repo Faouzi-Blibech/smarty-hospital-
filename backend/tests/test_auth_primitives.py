@@ -5,7 +5,6 @@ import pytest
 from app.auth import codes, passwords
 from app.auth.ratelimit import SlidingWindow
 from app.errors import ApiError
-from tests.helpers import make_patient
 
 
 def test_sliding_window_allows_up_to_limit_then_blocks_then_recovers():
@@ -68,31 +67,28 @@ def test_code_normalisation():
 
 
 def test_issue_find_and_use_once(seeded):
-    p = make_patient(seeded, attending="u-0001")
-    code, row = codes.issue(seeded, "enrollment", issued_by="u-0004", patient_id=p.id)
+    code, row = codes.issue(seeded, "reset", issued_by="u-0004", user_id="u-0002")
     assert row.code_hash != code and row.expires_at > datetime.now(UTC)
-    found = codes.find_valid(seeded, "enrollment", code.lower())
+    found = codes.find_valid(seeded, "reset", code.lower(), user_id="u-0002")
     assert found.id == row.id
-    codes.mark_used(found, used_by="u-0004")
+    codes.mark_used(found, used_by="u-0002")
     seeded.flush()
-    assert codes.find_valid(seeded, "enrollment", code) is None
+    assert codes.find_valid(seeded, "reset", code, user_id="u-0002") is None
 
 
 def test_new_code_revokes_previous(seeded):
-    p = make_patient(seeded, attending="u-0001")
-    first, _ = codes.issue(seeded, "enrollment", issued_by="u-0004", patient_id=p.id)
-    second, _ = codes.issue(seeded, "enrollment", issued_by="u-0004", patient_id=p.id)
-    assert codes.find_valid(seeded, "enrollment", first) is None
-    assert codes.find_valid(seeded, "enrollment", second) is not None
+    first, _ = codes.issue(seeded, "reset", issued_by="u-0004", user_id="u-0002")
+    second, _ = codes.issue(seeded, "reset", issued_by="u-0004", user_id="u-0002")
+    assert codes.find_valid(seeded, "reset", first, user_id="u-0002") is None
+    assert codes.find_valid(seeded, "reset", second, user_id="u-0002") is not None
 
 
 def test_expired_and_wrong_purpose(seeded):
-    p = make_patient(seeded, attending="u-0001")
-    old, _ = codes.issue(seeded, "enrollment", issued_by="u-0004", patient_id=p.id,
+    old, _ = codes.issue(seeded, "reset", issued_by="u-0004", user_id="u-0002",
                          now=datetime.now(UTC) - timedelta(hours=49))
-    assert codes.find_valid(seeded, "enrollment", old) is None
-    fresh, _ = codes.issue(seeded, "enrollment", issued_by="u-0004", patient_id=p.id)
-    assert codes.find_valid(seeded, "reset", fresh) is None
+    assert codes.find_valid(seeded, "reset", old, user_id="u-0002") is None
+    fresh, _ = codes.issue(seeded, "reset", issued_by="u-0004", user_id="u-0002")
+    assert codes.find_valid(seeded, "other", fresh, user_id="u-0002") is None
 
 
 def test_reset_code_is_bound_to_its_user(seeded):

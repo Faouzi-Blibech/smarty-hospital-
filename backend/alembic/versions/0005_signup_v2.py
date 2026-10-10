@@ -1,4 +1,4 @@
-"""sign-up v2: users.requested_role (the role picked on the sign-up form)
+"""sign-up v2: users.requested_role (the role picked on the sign-up form); enrollment codes removed
 
 Revision ID: 0005
 Revises: 0004
@@ -15,7 +15,11 @@ depends_on = None
 
 def upgrade() -> None:
     op.add_column('users', sa.Column('requested_role', sa.String(), nullable=True))
+    # enrollment codes no longer exist: drop the unredeemable rows and the column that linked them to a patient
+    op.execute("DELETE FROM access_codes WHERE purpose = 'enrollment'")
+    op.drop_column('access_codes', 'patient_id')
 
 
 def downgrade() -> None:
+    op.add_column('access_codes', sa.Column('patient_id', sa.String(), sa.ForeignKey('patients.id'), nullable=True))
     op.drop_column('users', 'requested_role')
