@@ -113,6 +113,7 @@ export function HealthCalendar({ role, editable = false, compact = false }: Heal
   }
 
   async function notify(ev: HealthEvent) {
+    if (!window.confirm(t("calendar.confirmNotify"))) return;
     setBusy(true);
     try {
       const r = await notifyHealthEvent(ev.id);

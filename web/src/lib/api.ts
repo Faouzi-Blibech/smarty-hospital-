@@ -1103,7 +1103,7 @@ export async function getMedRound(ward: string = DEFAULT_WARD): Promise<MedRound
   return groups.filter((g) => g.doses.length > 0);
 }
 
-// ── Health calendar (api.md 1.10) ──────────────────────────────────────────
+// ── Health calendar (api.md 1.12) ──────────────────────────────────────────
 
 /** The mock profile per role: Amira (F, 1972) is the patient; staff ignore sex/age limits. */
 function mockMatches(s: MockStore, role: Role, ev: Omit<HealthEvent, "matches_me" | "following">): boolean {

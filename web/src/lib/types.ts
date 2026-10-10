@@ -487,7 +487,7 @@ export interface ApiErrorBody {
   code: string;
 }
 
-// ── Health calendar (api.md 1.10) ──
+// ── Health calendar (api.md 1.12) ──
 export const HEALTH_CATEGORIES = ["screening", "vaccination", "chronic_disease", "infectious_disease", "lifestyle", "mental_health", "blood_donation"] as const;
 export type HealthCategory = (typeof HEALTH_CATEGORIES)[number];
 export interface HealthText { en: string; fr: string; ar: string; }
