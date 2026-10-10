@@ -1,0 +1,75 @@
+{"text": "كيف حال المريض في الغرفة 12؟", "expected": "ask_staff", "lang": "ar", "category": "indirect"}
+{"text": "هل حالتي تستدعي عملية جراحية؟", "expected": "ask_staff", "lang": "ar", "category": "short"}
+{"text": "هل يغطي التأمين العملية؟", "expected": "ask_staff", "lang": "ar", "category": "direct"}
+{"text": "شنوة المرض الي عندي؟", "expected": "ask_staff", "lang": "darija_ar", "category": "direct"}
+{"text": "التأمين يغطي العملية؟", "expected": "ask_staff", "lang": "darija_ar", "category": "direct"}
+{"text": "كيفاش صحة المريض الي في الغرفة 5؟", "expected": "ask_staff", "lang": "darija_ar", "category": "indirect"}
+{"text": "chnowa el marth elli 3andi?", "expected": "ask_staff", "lang": "darija_latin", "category": "direct"}
+{"text": "kifech el mrid elli fil bit 5?", "expected": "ask_staff", "lang": "darija_latin", "category": "indirect"}
+{"text": "el assurance tsadder el amaliya?", "expected": "ask_staff", "lang": "darija_latin", "category": "code_switch"}
+{"text": "Can I have a second opinion on my diagnosis?", "expected": "ask_staff", "lang": "en", "category": "direct"}
+{"text": "Does my insurance cover this surgery?", "expected": "ask_staff", "lang": "en", "category": "direct"}
+{"text": "what's the wifi password", "expected": "ask_staff", "lang": "en", "category": "short"}
+{"text": "Qu'est-ce que j'ai exactement comme maladie ?", "expected": "ask_staff", "lang": "fr", "category": "direct"}
+{"text": "Comment va le patient de la chambre 4 ?", "expected": "ask_staff", "lang": "fr", "category": "indirect"}
+{"text": "Mon assurance rembourse l'opération ?", "expected": "ask_staff", "lang": "fr", "category": "direct"}
+{"text": "كم نبضي الآن", "expected": "my_vitals", "lang": "ar", "category": "direct"}
+{"text": "نبض القلب؟", "expected": "my_vitals", "lang": "ar", "category": "short"}
+{"text": "ما هي نسبة الأكسجين لدي؟", "expected": "my_vitals", "lang": "ar", "category": "direct"}
+{"text": "قداش الحرارة متاعي توا", "expected": "my_vitals", "lang": "darija_ar", "category": "direct"}
+{"text": "الأكسجين متاعي كيفاش", "expected": "my_vitals", "lang": "darija_ar", "category": "direct"}
+{"text": "آخر قياسات متاعي", "expected": "my_vitals", "lang": "darija_ar", "category": "indirect"}
+{"text": "el oxygene mta3i kifech", "expected": "my_vitals", "lang": "darija_latin", "category": "direct"}
+{"text": "9adech el nabdh mta3i tawa", "expected": "my_vitals", "lang": "darija_latin", "category": "direct"}
+{"text": "9adech skhana 3andi?", "expected": "my_vitals", "lang": "darija_latin", "category": "direct"}
+{"text": "my numbers please", "expected": "my_vitals", "lang": "en", "category": "short"}
+{"text": "what were my last readings", "expected": "my_vitals", "lang": "en", "category": "indirect"}
+{"text": "can you tell me my pulse", "expected": "my_vitals", "lang": "en", "category": "direct"}
+{"text": "mes dernières constantes", "expected": "my_vitals", "lang": "fr", "category": "indirect"}
+{"text": "Comment est mon taux d'oxygène", "expected": "my_vitals", "lang": "fr", "category": "direct"}
+{"text": "quel est mon rythme cardiaque", "expected": "my_vitals", "lang": "fr", "category": "direct"}
+{"text": "هل فاتتني حبوب المساء؟", "expected": "next_dose", "lang": "ar", "category": "indirect"}
+{"text": "الدواء القادم؟", "expected": "next_dose", "lang": "ar", "category": "short"}
+{"text": "هل حان وقت الدواء", "expected": "next_dose", "lang": "ar", "category": "indirect"}
+{"text": "وقتاش الدوا الجاي", "expected": "next_dose", "lang": "darija_ar", "category": "direct"}
+{"text": "فاتتني حبوب العشية؟", "expected": "next_dose", "lang": "darija_ar", "category": "indirect"}
+{"text": "نسيت نشرب الدوا، وقتاش الجاية", "expected": "next_dose", "lang": "darija_ar", "category": "indirect"}
+{"text": "dwa?", "expected": "next_dose", "lang": "darija_latin", "category": "short"}
+{"text": "fatetni el 7bob mta3 el 3chiya?", "expected": "next_dose", "lang": "darija_latin", "category": "indirect"}
+{"text": "waktech nechrab el dwa?", "expected": "next_dose", "lang": "darija_latin", "category": "direct"}
+{"text": "is it time for my medicine yet", "expected": "next_dose", "lang": "en", "category": "indirect"}
+{"text": "have I taken my morning pills already", "expected": "next_dose", "lang": "en", "category": "indirect"}
+{"text": "When do I take my next tablet?", "expected": "next_dose", "lang": "en", "category": "direct"}
+{"text": "À quelle heure est ma prochaine prise de médicament ?", "expected": "next_dose", "lang": "fr", "category": "direct"}
+{"text": "c'est quand mon traitement", "expected": "next_dose", "lang": "fr", "category": "direct"}
+{"text": "prochain cachet?", "expected": "next_dose", "lang": "fr", "category": "short"}
+{"text": "هل لدي موعد هذا الأسبوع", "expected": "next_visit", "lang": "ar", "category": "direct"}
+{"text": "هل تم حجز موعد المتابعة", "expected": "next_visit", "lang": "ar", "category": "indirect"}
+{"text": "في أي يوم سأرى الطبيب مرة أخرى", "expected": "next_visit", "lang": "ar", "category": "indirect"}
+{"text": "وقتاش المراجعة", "expected": "next_visit", "lang": "darija_ar", "category": "indirect"}
+{"text": "الدكتور وقتاش يجي يشوفني", "expected": "next_visit", "lang": "darija_ar", "category": "indirect"}
+{"text": "عندي رونديفو هالأسبوع؟", "expected": "next_visit", "lang": "darija_ar", "category": "direct"}
+{"text": "3andi rendez-vous fil jem3a hethi?", "expected": "next_visit", "lang": "darija_latin", "category": "direct"}
+{"text": "rdv mta3i wa9tech", "expected": "next_visit", "lang": "darija_latin", "category": "code_switch"}
+{"text": "nhar chnowa nchouf el docteur", "expected": "next_visit", "lang": "darija_latin", "category": "indirect"}
+{"text": "is the consultant coming on thursday", "expected": "next_visit", "lang": "en", "category": "indirect"}
+{"text": "wen is my nxt apointment", "expected": "next_visit", "lang": "en", "category": "typo"}
+{"text": "when will the doctor see me again", "expected": "next_visit", "lang": "en", "category": "indirect"}
+{"text": "ma visite de contrôle c'est quel jour", "expected": "next_visit", "lang": "fr", "category": "indirect"}
+{"text": "quel jour je revois le docteur", "expected": "next_visit", "lang": "fr", "category": "indirect"}
+{"text": "c'est à quelle heure ma consultation demain", "expected": "next_visit", "lang": "fr", "category": "direct"}
+{"text": "ساعدوني", "expected": "urgent", "lang": "ar", "category": "short"}
+{"text": "أشعر بأنني سأفقد الوعي", "expected": "urgent", "lang": "ar", "category": "indirect"}
+{"text": "أشعر بألم شديد الآن", "expected": "urgent", "lang": "ar", "category": "direct"}
+{"text": "الدم يسيل من الإبرة", "expected": "urgent", "lang": "darija_ar", "category": "indirect"}
+{"text": "نحتاج ممرضة بسرعة", "expected": "urgent", "lang": "darija_ar", "category": "direct"}
+{"text": "الوجيعة قوية برشا توا", "expected": "urgent", "lang": "darija_ar", "category": "direct"}
+{"text": "el waja3 9awi barcha tawa", "expected": "urgent", "lang": "darija_latin", "category": "direct"}
+{"text": "ma nnajjamch nitnafes", "expected": "urgent", "lang": "darija_latin", "category": "direct"}
+{"text": "9albi yedhrob bsor3a w rasi ydour, jibouli 7ad", "expected": "urgent", "lang": "darija_latin", "category": "indirect"}
+{"text": "the pain is unbearable, come quickly", "expected": "urgent", "lang": "en", "category": "direct"}
+{"text": "help!", "expected": "urgent", "lang": "en", "category": "short"}
+{"text": "something is wrong, I need a nurse right now", "expected": "urgent", "lang": "en", "category": "direct"}
+{"text": "mon cœur bat trop vite et la tête me tourne, venez", "expected": "urgent", "lang": "fr", "category": "indirect"}
+{"text": "Je n'arrive plus à respirer", "expected": "urgent", "lang": "fr", "category": "direct"}
+{"text": "j'ai du sang qui coule de mon pansement", "expected": "urgent", "lang": "fr", "category": "indirect"}

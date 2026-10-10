@@ -112,9 +112,13 @@ def eval_intent(rows: list[dict]) -> dict:
             "confusion_pairs": dict(confusion.most_common()), "misses": wrong, "timing": _timing(ms)}
 
 
-def run(include_v1: bool = True) -> dict:
-    report = {"triage": {"v2": eval_triage(load_jsonl(V2 / "triage_eval.v2.jsonl"))},
-              "intent": {"v2": eval_intent(load_jsonl(V2 / "intent_eval.v2.jsonl"))}}
+SPLITS = {"all": "eval", "dev": "dev", "test": "test"}  # dev: tune against it; test: sealed, final scores only
+
+
+def run(include_v1: bool = True, split: str = "all") -> dict:
+    part = SPLITS[split]
+    report = {"triage": {"v2": eval_triage(load_jsonl(V2 / f"triage_{part}.v2.jsonl"))},
+              "intent": {"v2": eval_intent(load_jsonl(V2 / f"intent_{part}.v2.jsonl"))}}
     if include_v1:
         report["triage"]["v1"] = eval_triage(load_jsonl(V1 / "triage_eval.v1.jsonl"))
         report["intent"]["v1"] = eval_intent(load_jsonl(V1 / "intent_eval.v1.jsonl"))
@@ -126,10 +130,12 @@ def main() -> None:
     ap.add_argument("--out", help="also write the JSON report to this file")
     ap.add_argument("--no-laya", action="store_true", help="skip the optional Laya classifier")
     ap.add_argument("--no-v1", action="store_true", help="only the v2 sets")
+    ap.add_argument("--split", choices=SPLITS, default="all",
+                    help="v2 half: dev (tune against it), test (sealed: final scores only) or all")
     args = ap.parse_args()
     if args.no_laya:
         assistant.laya_intent.classify = lambda q: None
-    text = json.dumps(run(include_v1=not args.no_v1), ensure_ascii=False, indent=2)
+    text = json.dumps(run(include_v1=not args.no_v1, split=args.split), ensure_ascii=False, indent=2)
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8")
     sys.stdout.buffer.write((text + "\n").encode("utf-8"))
