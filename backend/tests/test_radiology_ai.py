@@ -68,8 +68,22 @@ def test_vision_call_payload(monkeypatch, local_vision):
     assert out.region == "chest"
     body = seen["body"]
     assert seen["url"].endswith("/api/chat") and body["model"] == "qwen3-vl:4b" and body["stream"] is False
-    user = body["messages"][-1]
+    user = body["messages"][1]
     assert user["images"] == ["UE5HREFUQQ=="] and "format" in body
+    assert body["messages"][-1]["role"] == "assistant" and "</think>" in body["messages"][-1]["content"]  # no thinking
+
+
+def test_vision_no_think_prefill_only_for_qwen3(monkeypatch, local_vision):
+    monkeypatch.setattr(get_settings(), "llm_vision_model", "qwen2.5vl:3b")
+    seen = {}
+
+    def fake_post(url, timeout, json):  # noqa: A002
+        seen.update(body=json)
+        return FakeResp(__import__("json").dumps(DRAFT))
+
+    monkeypatch.setattr(llm.httpx, "post", fake_post)
+    llm.complete_vision_json("radiograph_report", b"x", "", radiology.RadiographDraft)
+    assert [m["role"] for m in seen["body"]["messages"]] == ["system", "user"]
 
 
 def test_vision_needs_local_provider(monkeypatch):

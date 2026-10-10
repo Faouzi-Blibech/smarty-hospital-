@@ -1,9 +1,16 @@
 """Demo radiographs: CC0 teaching images (see ai/assets/radiographs/CREDITS.md) attached to synthetic patients,
-each with a queued AI reading. Needs MinIO, so it runs from `python -m app.seed`, not from seed() (tests)."""
+each with a queued AI reading. Needs MinIO, so it runs from `python -m app.seed`, not from seed() (tests).
+
+`python -m app.radiograph_seed --requeue` puts every reading the model could not produce (status unavailable or
+failed, nothing confirmed) back in the queue, e.g. after pulling the vision model; the worker then retries them.
+Without `--requeue` the module only prints this usage and changes nothing (seeding is `python -m app.seed`)."""
+
+import sys
 
 from datetime import UTC, datetime
 from pathlib import Path
 
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.ids import reserve_upto
@@ -46,3 +53,25 @@ def seed_radiographs(db: Session, put=None) -> int:
     for prefix in ("ex", "er", "rr"):
         reserve_upto(db, prefix, 900 + len(DEMO))
     return added
+
+
+def requeue(db: Session) -> int:
+    """Back to `queued` for readings with status unavailable/failed and no confirmed text; returns how many."""
+    res = db.execute(update(RadiographReading)
+                     .where(RadiographReading.status.in_(("unavailable", "failed")),
+                            RadiographReading.final_text.is_(None))
+                     .values(status="queued", started_at=None, finished_at=None))
+    db.flush()
+    return res.rowcount
+
+
+if __name__ == "__main__":
+    if "--requeue" not in sys.argv[1:]:
+        print("usage: python -m app.radiograph_seed --requeue   (seeding the demo X-rays is: python -m app.seed)")
+        sys.exit(0)
+    from app.db import SessionLocal
+
+    with SessionLocal() as s:
+        n = requeue(s)
+        s.commit()
+    print(f"re-queued {n} radiograph reading(s)")
