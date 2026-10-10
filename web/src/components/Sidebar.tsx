@@ -39,6 +39,7 @@ export const NAV: Record<StaffRole, NavItem[]> = {
   doctor: [
     { key: "patients", label: "shared.navMyPatients", href: "/doctor", count: NAV_COUNTS.doctor.patients },
     { key: "requests", label: "shared.navRequests", href: "/doctor/requests", count: NAV_COUNTS.doctor.requests },
+    { key: "team", label: "accounts.navTeam", href: "/doctor/team" },
     { key: "password", label: "auth.navPassword", href: "/doctor/password" },
   ],
   nurse: [
