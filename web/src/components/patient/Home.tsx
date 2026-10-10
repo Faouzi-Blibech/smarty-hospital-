@@ -2,6 +2,7 @@
 
 // Patient / Home (/patient): greeting, today's medicines, yesterday's missed dose,
 // the next appointment and "Ask a question". Plain words only: no NEWS2.
+import { HealthBanner } from "./HealthBanner";
 import { examLabel, deptLabel } from "@/lib/labels";
 import Link from "next/link";
 import { getDoses, getMyAppointments, getPatient, getPatientExams } from "@/lib/api";
@@ -87,6 +88,8 @@ export function Home() {
           </h1>
           <span className={styles.subline}>{[place, longDay(todayIso, lang)].filter(Boolean).join(" · ")}</span>
         </div>
+
+        <HealthBanner />
 
         {failed ? (
           <ErrorCard
