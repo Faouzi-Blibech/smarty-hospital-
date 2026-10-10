@@ -8,6 +8,7 @@ import { getMyAppointments } from "@/lib/api";
 import { useT } from "@/i18n/I18nProvider";
 import type { Key } from "@/i18n/messages";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { LogoutButton } from "@/components/LogoutButton";
 import { now, tunisTime } from "@/lib/time";
 import { myPatientId } from "./patient";
 import styles from "./Patient.module.css";
@@ -58,6 +59,7 @@ export function Brand() {
       <span className={styles.flex} />
       <span className={styles.protoTag}>{t("patient.protoTag")}</span>
       <Link href="/patient/password" className={styles.protoTag}>{t("auth.navPassword")}</Link>
+      <LogoutButton className={styles.logoutBtn} />
       <LanguageSwitcher compact tone="light" />
     </div>
   );

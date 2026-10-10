@@ -167,6 +167,17 @@ export async function login(email: string, password: string): Promise<LoginRespo
   return res;
 }
 
+/** POST /auth/logout (Bearer → 204), best effort, then forget the session on this device. Mock mode skips the network. */
+export async function logout(): Promise<void> {
+  try {
+    if (!USE_MOCKS) await http<void>("POST", "/auth/logout");
+  } catch {
+    /* network error, 401, anything: logging out locally must not be blocked */
+  } finally {
+    clearSession();
+  }
+}
+
 /** GET /me. In mock mode, `role` picks which demo user you are (default doctor). */
 export function getMe(role: Role = "doctor"): Promise<Me> {
   if (USE_MOCKS) return mock(() => USERS[role]);

@@ -116,6 +116,17 @@
   padding: 0 6px;
 }
 
+.logout {
+  align-self: flex-start;
+  font: 600 13px/1 var(--sans);
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--side-rule);
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
 .live,
 .paused {
   align-self: flex-start;

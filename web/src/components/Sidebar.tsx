@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useT } from "@/i18n/I18nProvider";
 import type { Key } from "@/i18n/messages";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { LogoutButton } from "./LogoutButton";
 import { USE_MOCKS } from "@/lib/time";
 import { initialsOf, useMe } from "@/lib/useMe";
 import { NAV_COUNTS } from "@/mocks";
@@ -142,6 +143,7 @@ export function Sidebar({ role, active, live = true, counts }: SidebarProps) {
           </span>
         )}
         <LanguageSwitcher tone="dark" compact />
+        <LogoutButton className={styles.logout} />
         <div className={styles.user}>
           <span className={styles.avatar}>{u.ini}</span>
           <div className={styles.who}>
