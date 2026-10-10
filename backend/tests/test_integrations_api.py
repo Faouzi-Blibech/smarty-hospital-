@@ -59,7 +59,9 @@ def test_daily_digest(client):
     rows = client.get("/integrations/n8n/daily-digest", headers=_n8n()).json()
     assert len(rows) == 1 and rows[0]["doctor"] == {"id": "u-0001", "name": "Dr Trabelsi", "email": "doctor@ward.tn"}
     p = rows[0]["patients"][0]
-    assert p["name"] == "Amira Ben Salah" and p["bed"] == "C-12" and p["news2"] == 0 and p["summary"]
+    # First name only; an unreviewed AI summary never leaves the server.
+    assert p["name"] == "Amira" and p["bed"] == "C-12" and p["news2"] == 0
+    assert p["summary"] == "Summary not reviewed yet. Open Ward to review it."
     assert client.get("/integrations/n8n/daily-digest?doctor_id=u-0001", headers=_n8n()).json() == rows
     assert client.get("/integrations/n8n/daily-digest?doctor_id=u-0002", headers=_n8n()).json() == []
 
