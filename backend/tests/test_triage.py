@@ -100,16 +100,41 @@ def _fake_model(monkeypatch, probs):
     monkeypatch.setattr(T.textclf, "predict_proba", lambda m, text: probs)
 
 
-def test_unsure_model_without_flag_is_raised_for_review(monkeypatch):
-    _fake_model(monkeypatch, {1: 0.28, 2: 0.25, 3: 0.2, 4: 0.27})
+def test_risk_mass_raises_an_unsure_case_to_four(monkeypatch):
+    # argmax is 1 but 31% of the mass sits on urgency 4-5: at the default tau a person must look at it
+    _fake_model(monkeypatch, {1: 0.38, 2: 0.31, 4: 0.21, 5: 0.10})
     r = T.triage("renouvellement d'ordonnance", [], 30)
-    assert r.red_flags == [] and r.urgency == T.UNSURE_URGENCY and r.confidence == 0.28
-    assert any(x.startswith("Model unsure (28%)") for x in r.reasons)
+    assert r.red_flags == [] and r.urgency == 4 and r.model_urgency == 1 and r.confidence == 0.38
+    assert any(x.startswith("Model unsure: 31% chance of urgency 4 or more") for x in r.reasons)
 
 
-def test_no_unsure_raise_when_confident_or_flag_fires(monkeypatch):
+def test_risk_mass_below_tau_changes_nothing(monkeypatch):
+    _fake_model(monkeypatch, {1: 0.6, 2: 0.2, 3: 0.08, 4: 0.07, 5: 0.05})
+    r = T.triage("renouvellement d'ordonnance", [], 30)
+    assert r.urgency == 1 and not any("Model unsure" in x for x in r.reasons)
+
+
+def test_a_flat_distribution_no_longer_defaults_to_three(monkeypatch):
+    # the old "unsure -> 3" rule is gone: low confidence alone is not a reason to raise
+    _fake_model(monkeypatch, {1: 0.3, 2: 0.3, 3: 0.3, 4: 0.05, 5: 0.05})
+    assert T.triage("renouvellement d'ordonnance", [], 30).urgency == 1
+
+
+def test_the_model_file_carries_its_own_tau(monkeypatch):
+    monkeypatch.setattr(T.textclf, "load", lambda name: {"risk_tau": 0.6})
+    monkeypatch.setattr(T.textclf, "predict_proba", lambda m, text: {1: 0.5, 4: 0.3, 5: 0.2})
+    assert T.triage("renouvellement d'ordonnance", [], 30).urgency == 1  # mass 0.5 < 0.6
+    monkeypatch.setattr(T.textclf, "predict_proba", lambda m, text: {1: 0.3, 4: 0.4, 5: 0.3})
+    assert T.triage("renouvellement d'ordonnance", [], 30).urgency == 4  # mass 0.7 >= 0.6
+
+
+def test_risk_mass_never_lowers_a_red_flag(monkeypatch):
     _fake_model(monkeypatch, {1: 0.9, 2: 0.1})
-    assert not any("Model unsure" in x for x in T.triage("renouvellement d'ordonnance", [], 30).reasons)
-    _fake_model(monkeypatch, {1: 0.3, 2: 0.3, 3: 0.4})
     r = T.triage("I want to kill myself", [], 30)
-    assert "suicide_self_harm" in r.red_flags and not any("Model unsure" in x for x in r.reasons)
+    assert r.urgency == 5 and "suicide_self_harm" in r.red_flags and not any("Model unsure" in x for x in r.reasons)
+
+
+def test_a_denied_red_flag_leaves_the_decision_to_the_model(monkeypatch):
+    _fake_model(monkeypatch, {1: 0.9, 2: 0.1})
+    r = T.triage("pas de douleur thoracique, juste un certificat", [], 30)
+    assert r.red_flags == [] and r.urgency == 1

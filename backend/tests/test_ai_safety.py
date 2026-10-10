@@ -44,11 +44,11 @@ def test_assistant_emergencies_get_the_urgent_answer(q):
     assert out["intent"] == "urgent" and out["answer"] == assistant.URGENT
 
 
-def test_low_model_confidence_is_raised_for_review(monkeypatch):
-    monkeypatch.setattr("app.ai.textclf.load", lambda name: object())
-    monkeypatch.setattr("app.ai.textclf.predict_proba", lambda m, t: {1: 0.3, 2: 0.25, 3: 0.25, 4: 0.2})
+def test_unsure_model_is_raised_to_four_for_review(monkeypatch):
+    monkeypatch.setattr("app.ai.textclf.load", lambda name: {})
+    monkeypatch.setattr("app.ai.textclf.predict_proba", lambda m, t: {1: 0.3, 2: 0.25, 3: 0.1, 4: 0.2, 5: 0.15})
     r = triage("vague text", [], age=40)
-    assert r.urgency == 3
+    assert r.urgency == 4
     assert any("unsure" in x for x in r.reasons)
 
 

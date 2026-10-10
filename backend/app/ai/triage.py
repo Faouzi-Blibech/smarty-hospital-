@@ -1,6 +1,6 @@
 """Triage scorer: hard red-flag rules + a trained classifier, no LLM (owner: Faouzi).
 
-urgency = max(red-flag floor, trained model, 2 if age >= 75). The model can only raise urgency
+urgency = max(red-flag floor, trained model, risk-mass rule, 2 if age >= 75). The model can only raise urgency
 above the floor, never lower it. A red flag that is explicitly denied ("pas de douleur thoracique") is not applied;
 the model then decides alone. Without the shipped model file it degrades to the rules alone. A human always
 confirms the result.
@@ -19,8 +19,8 @@ from app.ai import textclf
 RULES = Path(__file__).parent / "rules" / "red_flags.v2.json"
 SCALE = Path(__file__).parent / "rules" / "triage_scale.v1.json"
 ELDERLY_AGE = 75
-UNSURE_BELOW = 0.5  # model confidence under this, with no red flag: raised to UNSURE_URGENCY for a person to review
-UNSURE_URGENCY = 3
+URGENT_LEVEL = 4  # the "very urgent" level the risk-mass rule protects
+RISK_TAU = 0.3  # fallback for P(urgency >= 4) when the model file carries no tau of its own (see train_textclf.py)
 
 
 class TriageResult(BaseModel):
@@ -208,6 +208,11 @@ def scale_label(urgency: int) -> dict:
     return {"name": s["name"], "level": s["levels"][str(urgency)], "confirmed": bool(s["confirmed"])}
 
 
+def risk_mass(probs: dict) -> float:
+    """P(urgency >= URGENT_LEVEL) under the model's class probabilities."""
+    return sum(p for u, p in probs.items() if u >= URGENT_LEVEL)
+
+
 def triage(referral_text: str, symptoms: list[str], age: int | None) -> TriageResult:
     full_text = " ".join([referral_text, *symptoms])
     matched, negated = _scan(full_text, age)
@@ -225,9 +230,12 @@ def triage(referral_text: str, symptoms: list[str], age: int | None) -> TriageRe
         conf = round(conf, 2)
         reasons.append(f"Similar referrals were urgency {model_u} (model confidence {conf:.0%})")
         urgency = max(urgency, model_u)
-        if conf < UNSURE_BELOW and not matched and urgency < UNSURE_URGENCY:
-            urgency = UNSURE_URGENCY
-            reasons.append(f"Model unsure ({conf:.0%}): raised to {UNSURE_URGENCY} for a person to review")
+        tau = model.get("risk_tau", RISK_TAU) if isinstance(model, dict) else RISK_TAU
+        mass = risk_mass(probs)
+        if mass >= tau and urgency < URGENT_LEVEL:
+            urgency = URGENT_LEVEL
+            reasons.append(f"Model unsure: {mass:.0%} chance of urgency {URGENT_LEVEL} or more "
+                           f"(threshold {tau:.0%}), raised to {URGENT_LEVEL} for a person to review")
     if (age or 0) >= ELDERLY_AGE and urgency < 2:
         urgency = 2
         reasons.append(f"Age {age}: routine requests are raised to urgency 2")
