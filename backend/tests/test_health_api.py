@@ -91,3 +91,23 @@ def test_notify_now(client, db, emitted):
     assert any(p["first_name"] == "Amira" for p in data["recipients"])
     assert db.get(HealthEvent, "he-0001").announced_at is not None
     assert db.query(AuditLog).filter_by(action="notify", resource="health_event", resource_id="he-0001").count() == 1
+
+
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize("field", ["title", "description", "category", "starts_on", "ends_on", "audience",
+                                   "notify_days_before"])
+def test_patch_null_on_required_field_422(client, db, field):
+    adm = login(client, "admin@ward.tn")
+    before = client.get("/health-events?from=2026-01-01&to=2027-12-31", headers=adm).json()
+    r = client.patch("/health-events/he-0005", headers=adm, json={field: None})
+    assert r.status_code == 422 and r.json()["code"] == "invalid"
+    after = client.get("/health-events?from=2026-01-01&to=2027-12-31", headers=adm).json()
+    assert after == before
+
+
+def test_patch_null_organizer_ok(client):
+    adm = login(client, "admin@ward.tn")
+    r = client.patch("/health-events/he-0005", headers=adm, json={"organizer": None})
+    assert r.status_code == 200 and r.json()["organizer"] is None

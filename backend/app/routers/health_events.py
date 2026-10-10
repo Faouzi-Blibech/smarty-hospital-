@@ -128,6 +128,9 @@ def update_event(event_id: str, body: EventPatch, user: User = Depends(require_r
                  db: Session = Depends(get_db)) -> dict:
     ev = _event(db, event_id)
     changes = body.model_dump(exclude_unset=True)
+    for k in ("title", "description", "category", "starts_on", "ends_on", "audience", "notify_days_before"):
+        if k in changes and changes[k] is None:
+            raise ApiError(422, "invalid", f"{k} cannot be null")
     _bad_dates(changes.get("starts_on", ev.starts_on), changes.get("ends_on", ev.ends_on))
     if "starts_on" in changes and changes["starts_on"] != ev.starts_on:
         ev.announced_at = None  # a new date is a new announcement
