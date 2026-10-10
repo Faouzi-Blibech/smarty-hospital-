@@ -92,6 +92,7 @@ services:
       MQTT_PASSWORD: ${MQTT_BACKEND_PASSWORD:-change-me-mqtt}
       MINIO_ENDPOINT: minio:9000
       N8N_WEBHOOK_URL: http://n8n:5678/webhook/ward-events
+      WEB_URL: ${WEB_URL:-http://localhost:3000}
     ports: ["${API_BIND:-0.0.0.0}:${API_PORT:-8000}:8000"]
     depends_on:
       db: { condition: service_healthy }
