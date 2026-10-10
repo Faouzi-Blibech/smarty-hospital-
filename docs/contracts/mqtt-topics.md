@@ -1,13 +1,37 @@
-# MQTT contract — v1.1
+# MQTT contract — v1.2
 
-> **Version:** 1.1 (2026-10-05; v1.0 frozen 2026-10-05) · **Owners:** Hedi (device side), Wali (server side)
+> **Version:** 1.2 (2026-10-10; v1.0 frozen 2026-10-05) · **Owners:** Hedi (device side), Wali (server side)
 > Any change: open a PR that bumps the version above, add a changelog line, and announce it in the team chat.
 
 ## Broker
 
-- Mosquitto 2.x, `mqtt://<server>:1883`. Anonymous access on the isolated demo LAN (`infra/mosquitto/mosquitto.conf`); password auth is a Day 4 stretch and TLS is out of scope. Say so honestly in the pitch.
+- Mosquitto 2.x, `mqtt://<server>:1883`. **Every client must log in** (`allow_anonymous false`) and is limited by a per-topic ACL (v1.2, below). TLS is out of scope: credentials travel in clear text, so this is for the isolated demo LAN only. Say so honestly in the pitch.
 - Client IDs: device = `ward-dev-{device_id}`; backend worker = `ward-worker`; simulator = `ward-sim-{device_id}`.
 - `device_id` format: `bsu-` + 3 digits, e.g. `bsu-001` (bedside unit). Printed on the device label.
+
+### Authentication and ACL (v1.2)
+
+Accounts (the password file is built at broker start from env vars; nothing real is committed):
+
+| Username | Password env var | Who |
+|---|---|---|
+| `ward-backend` | `MQTT_BACKEND_PASSWORD` (compose passes it to `api` and `worker` as `MQTT_PASSWORD`) | worker, API publisher, WS relay |
+| the `device_id`, e.g. `bsu-001` | its entry in `MQTT_DEVICE_CREDENTIALS` (`bsu-001:pw,bsu-002:pw`) | the ESP, and the simulator for that device (both use the same account) |
+
+Demo defaults (public, in `.env.example`): backend `change-me-mqtt`, device `change-me-<device_id>`. With `WARD_ENV=prod` the
+broker container and the backend refuse to start on them. A new device needs a pair added to `MQTT_DEVICE_CREDENTIALS` and a broker restart.
+
+ACL (`infra/mosquitto/acl`; `%u` = username = `device_id`). Anything not listed is denied:
+
+| Principal | Read (subscribe) | Write (publish) |
+|---|---|---|
+| `ward-backend` | `hospital/device/+/vitals`, `events`, `status` | `hospital/device/+/schedule`, `command` |
+| `ward-backend` | `ward/internal/#` | `ward/internal/#` |
+| device `%u` | `hospital/device/%u/events`, `schedule`, `command` | `hospital/device/%u/vitals`, `status` (incl. the last-will), `events` |
+
+A device cannot read or write another device's topics, cannot publish `schedule`/`command` and cannot touch `ward/internal/#`.
+The backend does not read `schedule` (it only publishes it). Clients that cannot log in get CONNACK "not authorised".
+Client IDs stay as above; MQTT username/password are set at connect (PubSubClient: `connect(id, user, pass, willTopic, willQos, willRetain, willMsg)`).
 
 ## Publishers (v1.1)
 
@@ -141,9 +165,10 @@ relays them to WebSocket clients. Payload = the WS envelope from `api.md` plus a
 { "type": "vital", "data": { }, "scope": { "patient_id": "p-0001", "ward": "Cardiology", "doctor_id": "u-0001" } }
 ```
 
-Devices and the simulator must never publish here.
+Devices and the simulator must never publish here (the broker ACL now rejects it).
 
 ## Changelog
 
+- **1.2** (2026-10-10): broker authentication and per-topic ACLs. Anonymous access is removed; the backend logs in as `ward-backend`, each bedside unit / simulator as its `device_id`. Topics and payload shapes are unchanged. Firmware and simulator must send username/password at connect. Needs 👍 from Hedi (device side).
 - **1.1** (2026-10-05): reduced hardware (ESP32 + OLED + servo + DS1307, no sensors). Adds the publishers table; `msg_id` becomes "unique and increasing per publisher" (epoch-based bases) instead of "+1, persisted in NVS"; `slot` = servo slot 1..4; `ts` from the DS1307. Payload shapes unchanged. Needs 👍 from Wali (server side).
 - **1.0** (2026-10-05): initial freeze. Adds `msg_id`, epoch `ts`, `schedule_version`, `nurse_tap`, `schedule_ack` and `rotate_home` to the brief's drafts.

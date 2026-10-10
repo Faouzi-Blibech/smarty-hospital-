@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth.security import hash_password
-from app.config import get_settings
+from app.config import check_secrets, get_settings
 from app.ai.exams import suggest_exams
 from app.db import SessionLocal
 from app.ids import new_id, reserve_upto
@@ -155,6 +155,7 @@ def seed(db: Session) -> bool:
 
 
 if __name__ == "__main__":
+    check_secrets(get_settings())
     with SessionLocal() as s:
         created = seed(s)
         s.commit()
