@@ -15,7 +15,7 @@ def flags(text: str, age: int | None = None) -> list[str]:
 DENIED = [
     ("en", "No chest pain, just a certificate for my employer", "chest_pain"),
     ("en", "Denies chest pain, shortness of breath or palpitations; wants a vaccine", "chest_pain"),
-    ("en", "Denies chest pain, shortness of breath or palpitations; wants a vaccine", "breathing"),
+    ("en", "Denies chest pain or shortness of breath; wants a vaccine", "breathing"),
     ("en", "pregnant, no bleeding, just very painful periods", "pregnancy_bleeding"),
     ("en", "never had a seizure or fainting, I just want advice", "seizure"),
     ("en", "without chest pain, wants a certificate", "chest_pain"),
@@ -87,16 +87,19 @@ def test_inability_to_breathe_or_speak_is_never_negated(lang, text):
     assert {"breathing", "stroke_signs", "loss_of_consciousness"} & set(flags(text))
 
 
-def test_negated_flag_is_reported_and_model_input_drops_the_denied_words(monkeypatch):
+def test_negated_flag_is_reported_and_the_model_reads_the_full_text(monkeypatch):
     text = "pas de douleur thoracique, juste un certificat"
     matched, negated = T._scan(text)
     assert matched == [] and [f["id"] for f in negated] == ["chest_pain"]
-    assert "thoracique" not in T.model_text(text) and "certificat" in T.model_text(text)
+    assert T.model_text(text) == "pas de douleur thoracique, juste un certificat"
     monkeypatch.setattr(T.textclf, "load", lambda name: None)
     r = T.triage(text, [], 40)
     assert r.red_flags == [] and any(x.startswith("Red-flag wording denied") for x in r.reasons)
-    # an inability phrase survives the scoping of the model input
-    assert "nitnaffes" in T.model_text("ma 3andich s5ana, ma nnajjamch nitnaffes")
+
+
+def test_a_denial_does_not_cross_a_comma():
+    # the safety ruling: denial verbs never carry across a comma, so the second symptom is affirmed (over-triage)
+    assert "breathing" in flags("Denies chest pain, shortness of breath; wants a vaccine")
 
 
 # ---- the nine new families -----------------------------------------------------------------------------------------

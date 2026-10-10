@@ -1,7 +1,68 @@
 {
   "version": 2,
-  "note": "Hard red-flag floor for triage. Keywords and text are normalised the same way (lowercase, accents and Arabic hamza/harakat stripped, ى->ي, ة->ه, Arabic-Indic digits -> ASCII). A string keyword is a substring; {\"all\": [...]} needs every term somewhere; {\"regex\": ...} runs on the normalised text; a term {\"context\": \"elderly\"} holds for age 75+ or an elderly clue in the text; \"affirm\": true keeps an inability phrase valid inside a negation. A hit under a negation cue is ignored (see triage.py). Flags marked provisional are illustrative and must be confirmed by the hospital's doctors. Errs towards raising urgency. Not clinically validated.",
+  "note": "Hard red-flag floor for triage. Keywords and text are normalised the same way (lowercase, accents and Arabic hamza/harakat stripped, ى->ي, ة->ه, Arabic-Indic digits -> ASCII). A string keyword matches whole tokens (a trailing \"*\" marks a stem, e.g. \"suicid*\"; Arabic keywords also match with their attached proclitics و ف ب ل ك ال and pronoun suffixes); {\"all\": [...]} needs every term somewhere; {\"regex\": ...} runs on the normalised text, where <<word>> stands for a whole Arabic token with its proclitics and suffixes; a term {\"context\": \"elderly\"} holds for age 75+ or an elderly clue in the text; \"affirm\": true keeps a keyword valid inside a negation (\"no pulse\", \"can't breathe\"). A hit that starts on a negated noun phrase, or that sits next to a past-history marker (\"AVC en 2019\", \"history of\"), is ignored (see triage.py). Flags marked provisional are illustrative and must be confirmed by the hospital's doctors. Errs towards raising urgency. Not clinically validated.",
   "flags": [
+    {
+      "id": "cardiac_arrest",
+      "min_urgency": 5,
+      "note": "No pulse, not breathing, unresponsive, cardiac arrest. Every keyword is affirm: these phrasings carry a negation word that is the emergency itself.",
+      "keywords": [
+        {"all": ["no pulse"], "affirm": true},
+        {"all": ["pulseless"], "affirm": true},
+        {"all": ["without a pulse"], "affirm": true},
+        {"all": ["can't find a pulse"], "affirm": true},
+        {"all": ["cannot find a pulse"], "affirm": true},
+        {"all": ["pas de pouls"], "affirm": true},
+        {"all": ["sans pouls"], "affirm": true},
+        {"all": ["aucun pouls"], "affirm": true},
+        {"all": ["pouls absent"], "affirm": true},
+        {"all": ["pouls imprenable"], "affirm": true},
+        {"all": ["ما عندوش نبض"], "affirm": true},
+        {"all": ["ما عندهاش نبض"], "affirm": true},
+        {"all": ["ما فماش نبض"], "affirm": true},
+        {"all": ["ما فيهش نبض"], "affirm": true},
+        {"all": ["لا نبض"], "affirm": true},
+        {"all": ["لا يوجد نبض"], "affirm": true},
+        {"all": ["ليس له نبض"], "affirm": true},
+        {"all": ["بدون نبض"], "affirm": true},
+        {"all": ["النبض مقطوع"], "affirm": true},
+        {"all": ["ma 3andouch nabd"], "affirm": true},
+        {"all": ["ma 3andhech nabd"], "affirm": true},
+        {"all": ["ma fammech nabd"], "affirm": true},
+        {"all": ["ma fihech nabd"], "affirm": true},
+        {"all": ["not breathing"], "affirm": true},
+        {"all": ["stopped breathing"], "affirm": true},
+        {"all": ["ne respire pas"], "affirm": true},
+        {"all": ["ne respire plus"], "affirm": true},
+        {"all": ["ما يتنفسش"], "affirm": true},
+        {"all": ["ما تتنفسش"], "affirm": true},
+        {"all": ["لا يتنفس"], "affirm": true},
+        {"all": ["لا تتنفس"], "affirm": true},
+        {"all": ["ma yetnaffesch"], "affirm": true},
+        {"all": ["ma yetnaffesh"], "affirm": true},
+        {"all": ["ma tetnaffesch"], "affirm": true},
+        {"all": ["ne repond plus"], "affirm": true},
+        {"all": ["عدم الاستجابه"], "affirm": true},
+        {"all": ["cardiac arrest"], "affirm": true},
+        {"all": ["heart stopped"], "affirm": true},
+        {"all": ["arret cardiaque"], "affirm": true},
+        {"all": ["arret cardio-respiratoire"], "affirm": true},
+        {"all": ["arret cardio respiratoire"], "affirm": true},
+        {"all": ["arret respiratoire"], "affirm": true},
+        {"all": ["سكته قلبيه"], "affirm": true},
+        {"all": ["توقف القلب"], "affirm": true},
+        {"all": ["القلب وقف"], "affirm": true},
+        {"all": ["قلبو وقف"], "affirm": true},
+        {"all": ["9albou wa9ef"], "affirm": true},
+        {"all": ["cpr"], "affirm": true},
+        {"all": ["massage cardiaque"], "affirm": true},
+        {"regex": "\\bacr\\b(?! ?(?:ratio|urinaire|\\d))", "affirm": true},
+        {"regex": "\\bunresponsive\\b(?! to)", "affirm": true},
+        {"regex": "\\bne repond pas\\b(?! (?:au|aux|a)\\b)(?! (?:mes|ses|nos|leurs?|son|sa)\\b)", "affirm": true},
+        {"regex": "(?<!\\w)لا (?:يستجيب|تستجيب)(?!\\w)(?! ?لل)(?! ل)", "affirm": true},
+        {"regex": "(?<!\\w)ما (?:يجاوبش|تجاوبش)(?!\\w)(?! (?:علي|عال|ع) ?(?:ال)?(?:تليفون|تلفون|هاتف|ميساج|مسج|رسائل))", "affirm": true}
+      ]
+    },
     {
       "id": "chest_pain",
       "min_urgency": 5,
@@ -34,11 +95,11 @@
         "جلطة قلبية",
         "الذبحة الصدرية",
         "خلف القص",
-        {"all": ["douleur", "poitrine"]},
+        {"all": ["douleur*", "poitrine"]},
         {"all": ["ألم", "صدر"]},
         {"all": ["وجع", "صدر"]},
         {"all": ["pain", "chest"]},
-        {"regex": "(?:chest|breastbone|sternum|thorax|thoracique|poitrine|retrosternal\\w*|صدر|القص|\\bs[aeo]?d[aeo]?r\\w{0,3}\\b|\\b[9q]alb\\w*|قلب).{0,35}(?:pain\\w*|\\bache\\w*|aching|hurts?\\b|pressure|tight\\w*|squeez\\w*|crush\\w*|burning|douleur\\w*|\\bmal\\b|serre\\w*|serrement|oppress\\w*|pression|brule\\w*|الم|وجع|وجيعه|يوجع|توجع|يولم|يحرق|ثقل|ضيق|ضاغط|يشد|waj+a*3\\w*|\\bw[o]?ja3\\w*|[yt]o?j+a*3\\w*|[yt]?o[9q]r?e?s\\b|yo7re[9q]|dhagh?t\\w*|m3aser|yo[9q]tel|yekhn[o]?[u]?[9q]|tfa3ni)|(?:pain\\w*|\\bache\\w*|aching|hurts?\\b|pressure|tight\\w*|squeez\\w*|crush\\w*|burning|douleur\\w*|\\bmal\\b|serre\\w*|serrement|oppress\\w*|pression|brule\\w*|الم|وجع|وجيعه|يوجع|توجع|يولم|يحرق|ثقل|ضيق|ضاغط|يشد|waj+a*3\\w*|\\bw[o]?ja3\\w*|[yt]o?j+a*3\\w*|[yt]?o[9q]r?e?s\\b|yo7re[9q]|dhagh?t\\w*|m3aser|yo[9q]tel|yekhn[o]?[u]?[9q]|tfa3ni).{0,35}(?:chest|breastbone|sternum|thorax|thoracique|poitrine|retrosternal\\w*|صدر|القص|\\bs[aeo]?d[aeo]?r\\w{0,3}\\b|\\b[9q]alb\\w*|قلب)"}
+        {"regex": "(?:(?<!\\w)chest|(?<!\\w)breastbone|(?<!\\w)sternum|(?<!\\w)thorax|(?<!\\w)thoracique|(?<!\\w)poitrine|(?<!\\w)retrosternal\\w*|<<صدر>>|<<القص>>|\\bs[aeo]?d[aeo]?r\\w{0,3}\\b|\\b[9q]alb\\w*|<<قلب>>).{0,35}(?:(?<!\\w)pain\\w*|\\bache\\w*|(?<!\\w)aching|(?<!\\w)hurts?\\b|(?<!\\w)pressure|(?<!\\w)tight\\w*|(?<!\\w)squeez\\w*|(?<!\\w)crush\\w*|(?<!\\w)burning|(?<!\\w)douleur\\w*|\\bmal\\b|(?<!\\w)serre\\w*|(?<!\\w)serrement|(?<!\\w)oppress\\w*|(?<!\\w)pression|(?<!\\w)brule\\w*|<<الم>>|<<وجع>>|<<وجيعه>>|<<يوجع>>|<<توجع>>|<<يولم>>|<<يحرق>>|<<ثقل>>|<<ضيق>>|<<ضاغط>>|(?<!\\w)ضغط(?= (?:في|على|علي|خانق|كبير|قوي|شديد))|<<خانق>>|<<يشد>>|(?<!\\w)waj+a*3\\w*|\\bw[o]?ja3\\w*|(?<!\\w)[yt]o?j+a*3\\w*|(?<!\\w)[yt]?o[9q]r?e?s\\b|(?<!\\w)yo7re[9q]|(?<!\\w)dhagh?t\\w*|(?<!\\w)m3aser|(?<!\\w)yo[9q]tel|(?<!\\w)yekhn[o]?[u]?[9q]|(?<!\\w)tfa3ni)|(?:(?<!\\w)pain\\w*|\\bache\\w*|(?<!\\w)aching|(?<!\\w)hurts?\\b|(?<!\\w)pressure|(?<!\\w)tight\\w*|(?<!\\w)squeez\\w*|(?<!\\w)crush\\w*|(?<!\\w)burning|(?<!\\w)douleur\\w*|\\bmal\\b|(?<!\\w)serre\\w*|(?<!\\w)serrement|(?<!\\w)oppress\\w*|(?<!\\w)pression|(?<!\\w)brule\\w*|<<الم>>|<<وجع>>|<<وجيعه>>|<<يوجع>>|<<توجع>>|<<يولم>>|<<يحرق>>|<<ثقل>>|<<ضيق>>|<<ضاغط>>|(?<!\\w)ضغط(?= (?:في|على|علي|خانق|كبير|قوي|شديد))|<<خانق>>|<<يشد>>|(?<!\\w)waj+a*3\\w*|\\bw[o]?ja3\\w*|(?<!\\w)[yt]o?j+a*3\\w*|(?<!\\w)[yt]?o[9q]r?e?s\\b|(?<!\\w)yo7re[9q]|(?<!\\w)dhagh?t\\w*|(?<!\\w)m3aser|(?<!\\w)yo[9q]tel|(?<!\\w)yekhn[o]?[u]?[9q]|(?<!\\w)tfa3ni).{0,35}(?:(?<!\\w)chest|(?<!\\w)breastbone|(?<!\\w)sternum|(?<!\\w)thorax|(?<!\\w)thoracique|(?<!\\w)poitrine|(?<!\\w)retrosternal\\w*|<<صدر>>|<<القص>>|\\bs[aeo]?d[aeo]?r\\w{0,3}\\b|\\b[9q]alb\\w*|<<قلب>>)"}
       ]
     },
     {
@@ -51,18 +112,18 @@
         "fast positive",
         "avc",
         "accident vasculaire cerebral",
-        "paralysie",
+        "paralysie*",
         "bouche deviee",
         "bouche tordue",
         "stroke",
-        "face droop",
+        "face droop*",
         "facial droop",
         "face drooping",
         "slurred speech",
         "speech slurred",
         "speech garbled",
-        "hemiparesie",
-        "hemiplegie",
+        "hemiparesie*",
+        "hemiplegie*",
         "aphasie",
         "faiblesse soudaine",
         "sudden weakness",
@@ -86,17 +147,19 @@
         "فمها مائل",
         "fama chalal",
         "chalal",
-        {"regex": "(?:can'?t|cannot|unable to|cant) (?:lift|raise|move) (?:his|her|my|the) (?:arm|leg|hand)"},
-        {"regex": "(?:one side|half) of (?:his|her|my|the) (?:face|body)"},
-        {"regex": "(?:face|visage|bouche|mouth|وجه|فم|وجهو|\\bwejh\\w*|\\bfam\\b).{0,25}(?:droop\\w*|sagg\\w*|slack|lopsided|crooked|tombe\\w*|devie\\w*|tordu\\w*|مايل|مايل|طايح|منحرف|متدلي|ma+y[ae]l|ma3waj\\w*|nezel)|(?:droop\\w*|sagg\\w*|slack|lopsided|crooked|tombe\\w*|devie\\w*|tordu\\w*|مايل|مايل|طايح|منحرف|متدلي|ma+y[ae]l|ma3waj\\w*|nezel).{0,25}(?:face|visage|bouche|mouth|وجه|فم|وجهو|\\bwejh\\w*|\\bfam\\b)"},
-        {"regex": "(?:words|speech|parole|mots|كلام|النطق|لسان|لسانها|لسانو|lsan\\w*|klem\\w*|kelma).{0,25}(?:slurr\\w*|garbl\\w*|pas sortir|ne sortent pas|can't find|cant find|bizarre|ثقيل|ما عادش|ما عادتش|ما يفهمش|t3adwej|ma3wja|mech mefhoum|ma nfhamouh)|(?:slurr\\w*|garbl\\w*|pas sortir|ne sortent pas|can't find|cant find|bizarre|ثقيل|ما عادش|ما عادتش|ما يفهمش|t3adwej|ma3wja|mech mefhoum|ma nfhamouh).{0,25}(?:words|speech|parole|mots|كلام|النطق|لسان|لسانها|لسانو|lsan\\w*|klem\\w*|kelma)"}
+        {"regex": "(?:(?<!\\w)can'?t|(?<!\\w)cannot|(?<!\\w)unable to|(?<!\\w)cant) (?:(?<!\\w)lift|(?<!\\w)raise|(?<!\\w)move) (?:(?<!\\w)his|(?<!\\w)her|(?<!\\w)my|(?<!\\w)the) (?:(?<!\\w)arm|(?<!\\w)leg|(?<!\\w)hand)"},
+        {"regex": "(?:(?<!\\w)one side|(?<!\\w)half) of (?:(?<!\\w)his|(?<!\\w)her|(?<!\\w)my|(?<!\\w)the) (?:(?<!\\w)face|(?<!\\w)body)"},
+        {"regex": "(?:(?<!\\w)(?<!en )face|(?<!\\w)visage|(?<!\\w)bouche|(?<!\\w)mouth|<<وجه>>|<<فم>>|<<وجهو>>|\\bwejh\\w*|\\bfam\\b).{0,25}(?:(?<!\\w)droop\\w*|(?<!\\w)sagg\\w*|(?<!\\w)slack|(?<!\\w)lopsided|(?<!\\w)crooked|(?<!\\w)tombe\\w*|(?<!\\w)devie\\w*|(?<!\\w)tordu\\w*|<<مايل>>|<<مايل>>|<<طايح>>|<<منحرف>>|<<متدلي>>|(?<!\\w)ma+y[ae]l|(?<!\\w)ma3waj\\w*|(?<!\\w)nezel)|(?:(?<!\\w)droop\\w*|(?<!\\w)sagg\\w*|(?<!\\w)slack|(?<!\\w)lopsided|(?<!\\w)crooked|(?<!\\w)devie\\w*|(?<!\\w)tordu\\w*|<<مايل>>|<<مايل>>|<<طايح>>|<<منحرف>>|<<متدلي>>|(?<!\\w)ma+y[ae]l|(?<!\\w)ma3waj\\w*|(?<!\\w)nezel).{0,25}(?:(?<!\\w)(?<!en )face|(?<!\\w)visage|(?<!\\w)bouche|(?<!\\w)mouth|<<وجه>>|<<فم>>|<<وجهو>>|\\bwejh\\w*|\\bfam\\b)"},
+        {"regex": "(?:(?<!\\w)words|(?<!\\w)speech|(?<!\\w)parole|(?<!\\w)mots|<<كلام>>|<<النطق>>|<<لسان>>|<<لسانها>>|<<لسانو>>|(?<!\\w)lsan\\w*|(?<!\\w)klem\\w*|(?<!\\w)kelma).{0,25}(?:(?<!\\w)slurr\\w*|(?<!\\w)garbl\\w*|(?<!\\w)pas sortir|(?<!\\w)ne sortent pas|(?<!\\w)can't find|(?<!\\w)cant find|(?<!\\w)bizarre|<<ثقيل>>|<<ما عادش>>|<<ما عادتش>>|<<ما يفهمش>>|(?<!\\w)t3adwej|(?<!\\w)ma3wja|(?<!\\w)mech mefhoum|(?<!\\w)ma nfhamouh)|(?:(?<!\\w)slurr\\w*|(?<!\\w)garbl\\w*|(?<!\\w)pas sortir|(?<!\\w)ne sortent pas|(?<!\\w)can't find|(?<!\\w)cant find|(?<!\\w)bizarre|<<ثقيل>>|<<ما عادش>>|<<ما عادتش>>|<<ما يفهمش>>|(?<!\\w)t3adwej|(?<!\\w)ma3wja|(?<!\\w)mech mefhoum|(?<!\\w)ma nfhamouh).{0,25}(?:(?<!\\w)words|(?<!\\w)speech|(?<!\\w)parole|(?<!\\w)mots|<<كلام>>|<<النطق>>|<<لسان>>|<<لسانها>>|<<لسانو>>|(?<!\\w)lsan\\w*|(?<!\\w)klem\\w*|(?<!\\w)kelma)"},
+        {"regex": "\\bne (?:peut|peux|pouvait|arrive)(?: plus| pas)? ni (?:parler|bouger|marcher|lever)", "affirm": true},
+        {"all": ["ni parler ni bouger"], "affirm": true}
       ]
     },
     {
       "id": "severe_bleeding",
       "min_urgency": 5,
       "keywords": [
-        "hemorragie",
+        "hemorragie*",
         "saignement abondant",
         "saignement important",
         "saignement massif",
@@ -124,7 +187,7 @@
         "vomi du sang",
         "vomit du sang",
         "crache du sang",
-        "black tarry stool",
+        "black tarry stool*",
         "melaena",
         "melena",
         "blood everywhere",
@@ -132,15 +195,15 @@
         "قيء دموي",
         "يتقيا دم",
         "يتقيأ دم",
-        "نزيف",
         "dam barcha",
         "dem barcha",
         "dem ghzir",
         "dem ghazir",
-        {"regex": "(?:vomit\\w*|cough\\w*|spit\\w*|throw\\w* up|vomi\\w*|crach\\w*|تقيا\\w*|تقيا\\w*|يتقيا|يتقيا|سعال|كحه|9ay\\w*|y9ay|tqay\\w*).{0,25}(?:\\bblood|\\bsang\\b|(?<!\\S)[وبفل]?(?:ال)?دم[يه]?(?!\\S)|\\b(?:d|dd|edd)[ae]m\\b)|(?:\\bblood|\\bsang\\b|(?<!\\S)[وبفل]?(?:ال)?دم[يه]?(?!\\S)|\\b(?:d|dd|edd)[ae]m\\b).{0,25}(?:vomit\\w*|cough\\w*|spit\\w*|throw\\w* up|vomi\\w*|crach\\w*|تقيا\\w*|تقيا\\w*|يتقيا|يتقيا|سعال|كحه|9ay\\w*|y9ay|tqay\\w*)"},
+        {"regex": "(?:(?<!\\w)vomit\\w*|(?<!\\w)cough\\w*|(?<!\\w)spit\\w*|(?<!\\w)throw\\w* up|(?<!\\w)vomi\\w*|(?<!\\w)crach\\w*|<<تقيا\\w*|<<تقيا\\w*|<<يتقيا>>|<<يتقيا>>|<<سعال>>|<<كحه>>|(?<!\\w)9ay\\w*|(?<!\\w)y9ay|(?<!\\w)tqay\\w*).{0,25}(?:\\bblood(?! ?(?:tests?|work|counts?|pressure|sugar|results?|group|type|draw|samples?|analysis))|(?<!prise de )\\bsang\\b|(?<!تحليل )(?<!تحاليل )(?<!فحص )(?<!\\S)[وبفل]?(?:ال)?دم[يه]?(?!\\S)|\\b(?:d|dd|edd)[ae]m\\b)|(?:\\bblood(?! ?(?:tests?|work|counts?|pressure|sugar|results?|group|type|draw|samples?|analysis))|(?<!prise de )\\bsang\\b|(?<!تحليل )(?<!تحاليل )(?<!فحص )(?<!\\S)[وبفل]?(?:ال)?دم[يه]?(?!\\S)|\\b(?:d|dd|edd)[ae]m\\b).{0,25}(?:(?<!\\w)vomit\\w*|(?<!\\w)cough\\w*|(?<!\\w)spit\\w*|(?<!\\w)throw\\w* up|(?<!\\w)vomi\\w*|(?<!\\w)crach\\w*|<<تقيا\\w*|<<تقيا\\w*|<<يتقيا>>|<<يتقيا>>|<<سعال>>|<<كحه>>|(?<!\\w)9ay\\w*|(?<!\\w)y9ay|(?<!\\w)tqay\\w*)"},
         "نزف شديد",
         "ونزف",
-        {"regex": "(?:\\bblood|\\bsang\\b|(?<!\\S)[وبفل]?(?:ال)?دم[يه]?(?!\\S)|\\b(?:d|dd|edd)[ae]m\\b|\\bdam\\b).{0,30}(?:won'?t stop|wont stop|pouring|soak\\w*|gushing|spurting|profus\\w*|abondant\\w*|ne s'arrete|coule de partout|imbibe|trempe|يتدفق|لا يتوقف|ما يوقفش|ما يتوقفش|يسيل|غزير|برشا|ياسر|barcha|ghz?ir|ghazir|yasser|ma yet?wa99?afch|ma yo[9q]ofch|ma yousslich|bezzaf)|(?:won'?t stop|wont stop|pouring|soak\\w*|gushing|spurting|profus\\w*|abondant\\w*|ne s'arrete|coule de partout|imbibe|trempe|يتدفق|لا يتوقف|ما يوقفش|ما يتوقفش|يسيل|غزير|برشا|ياسر|barcha|ghz?ir|ghazir|yasser|ma yet?wa99?afch|ma yo[9q]ofch|ma yousslich|bezzaf).{0,30}(?:\\bblood|\\bsang\\b|(?<!\\S)[وبفل]?(?:ال)?دم[يه]?(?!\\S)|\\b(?:d|dd|edd)[ae]m\\b|\\bdam\\b)"}
+        {"regex": "(?:\\bblood(?! ?(?:tests?|work|counts?|pressure|sugar|results?|group|type|draw|samples?|analysis))|(?<!prise de )\\bsang\\b|(?<!تحليل )(?<!تحاليل )(?<!فحص )(?<!\\S)[وبفل]?(?:ال)?دم[يه]?(?!\\S)|\\b(?:d|dd|edd)[ae]m\\b|\\bdam\\b).{0,30}(?:(?<!\\w)won'?t stop|(?<!\\w)wont stop|(?<!\\w)pouring|(?<!\\w)soak\\w*|(?<!\\w)gushing|(?<!\\w)spurting|(?<!\\w)profus\\w*|(?<!\\w)abondant\\w*|(?<!\\w)ne s'arrete|(?<!\\w)coule de partout|(?<!\\w)imbibe|(?<!\\w)trempe|<<يتدفق>>|<<لا يتوقف>>|<<ما يوقفش>>|<<ما يتوقفش>>|<<يسيل>>|<<غزير>>|<<برشا>>|(?<!\\w)barcha|(?<!\\w)ghz?ir|(?<!\\w)ghazir|(?<!\\w)ma yet?wa99?afch|(?<!\\w)ma yo[9q]ofch|(?<!\\w)ma yousslich|(?<!\\w)bezzaf)|(?:(?<!\\w)won'?t stop|(?<!\\w)wont stop|(?<!\\w)pouring|(?<!\\w)soak\\w*|(?<!\\w)gushing|(?<!\\w)spurting|(?<!\\w)profus\\w*|(?<!\\w)abondant\\w*|(?<!\\w)ne s'arrete|(?<!\\w)coule de partout|(?<!\\w)imbibe|(?<!\\w)trempe|<<يتدفق>>|<<لا يتوقف>>|<<ما يوقفش>>|<<ما يتوقفش>>|<<يسيل>>|<<غزير>>|<<برشا>>|(?<!\\w)barcha|(?<!\\w)ghz?ir|(?<!\\w)ghazir|(?<!\\w)ma yet?wa99?afch|(?<!\\w)ma yo[9q]ofch|(?<!\\w)ma yousslich|(?<!\\w)bezzaf).{0,30}(?:\\bblood(?! ?(?:tests?|work|counts?|pressure|sugar|results?|group|type|draw|samples?|analysis))|(?<!prise de )\\bsang\\b|(?<!تحليل )(?<!تحاليل )(?<!فحص )(?<!\\S)[وبفل]?(?:ال)?دم[يه]?(?!\\S)|\\b(?:d|dd|edd)[ae]m\\b|\\bdam\\b)"},
+        {"regex": "<<نزيف>>(?! (?:من )?(?:ال)?انف\\w*)(?! خفيف)"}
       ]
     },
     {
@@ -190,7 +253,6 @@
         "gasping",
         "gasp for air",
         "stridor",
-        "wheezing",
         "air hunger",
         "not breathing",
         "stopped breathing",
@@ -202,14 +264,12 @@
         "turning blue",
         "shortness of breath",
         "short of breath",
-        "breathless",
         "can't get air",
         "cant get air",
         "can't catch my breath",
         "cant catch my breath",
         "drowning on dry land",
         "choking",
-        "ضيق نفس",
         "صعوبة في التنفس",
         "صعوبة التنفس",
         "صعوبة في النفس",
@@ -242,12 +302,9 @@
         "نفسو ضايق",
         "نفسي مقطوع",
         {"all": ["ضيق", "تنفس"]},
-        {"all": ["ضيق", "نفس"]},
         {"all": ["najjamch", "nitnaffes"]},
-        {"all": ["short", "breath"]},
-        {"all": ["difficult", "breath"]},
         {"all": ["شفايف", "كحل"]},
-        {"all": ["شفايف", "زرق"]},
+        {"all": ["شفايف", "زرق*"]},
         {"all": ["شفايفو", "كحل"]},
         {"all": ["شفايفها", "كحل"]},
         {"all": ["شفايف", "ازرق"]},
@@ -255,8 +312,22 @@
         {"regex": "\\bm(?:a|ech|ouch|och)\\s+\\w{0,10}\\s*(?:n|y|t)[ae]?tn[ae]ff?[ae]s", "affirm": true},
         {"regex": "\\b(?:nafas|nefes|naf+as)\\w*\\s+m[a]?[9q]tou?3", "affirm": true},
         {"regex": "\\b(?:n|y|t)[e]?[9q]?khtn[ae][9q]|\\b(?:n|y|t)ekhn[ae][9q]|\\b[nyt]?ikhtniq", "affirm": true},
-        {"regex": "(?:difficult\\w*|trouble|struggl\\w*|hard|cant|can't|cannot|unable|labou?red|difficile|difficulte|impossible|peine|ضيق|صعوبه|صعوبه|s3ouba|s3ib|dhi[9q]|diq|dhayqa).{0,25}(?:breath\\w*|\\bair\\b|respir\\w*|souffle|etouff\\w*|essouffl\\w*|dyspn\\w*|تنفس|نفس|النفس|\\bn[iey]?tn[ae]ff?[ae]s|\\b[yt]?[ae]?tn[ae]ff?[ae]s|\\bnaf+[ae]?s\\b|\\bhawa\\b|الهواء|الهوا)|(?:breath\\w*|\\bair\\b|respir\\w*|souffle|etouff\\w*|essouffl\\w*|dyspn\\w*|تنفس|نفس|النفس|\\bn[iey]?tn[ae]ff?[ae]s|\\b[yt]?[ae]?tn[ae]ff?[ae]s|\\bnaf+[ae]?s\\b|\\bhawa\\b|الهواء|الهوا).{0,25}(?:difficult\\w*|trouble|struggl\\w*|hard|cant|can't|cannot|unable|labou?red|difficile|difficulte|impossible|peine|ضيق|صعوبه|صعوبه|s3ouba|s3ib|dhi[9q]|diq|dhayqa)"},
-        {"regex": "(?:asthm\\w*|asthme|ربو|ventoline|inhaler|puff\\w*|ventolin).{0,40}(?:not working|no relief|ne fait plus rien|ne marche plus|does not help|doesn'?t help|won'?t help|ma nfa3ch|ما نفعتش|cant speak|can't speak|can't talk|ma najjamch nahki|ma tnajjemch tahki|ما نجمش نحكي|ma 3ana fayda)|(?:not working|no relief|ne fait plus rien|ne marche plus|does not help|doesn'?t help|won'?t help|ma nfa3ch|ما نفعتش|cant speak|can't speak|can't talk|ma najjamch nahki|ma tnajjemch tahki|ما نجمش نحكي|ma 3ana fayda).{0,40}(?:asthm\\w*|asthme|ربو|ventoline|inhaler|puff\\w*|ventolin)"}
+        {"regex": "(?:(?<!\\w)difficult\\w*|(?<!\\w)trouble|(?<!\\w)struggl\\w*|(?<!\\w)hard|(?<!\\w)cant|(?<!\\w)can't|(?<!\\w)cannot|(?<!\\w)unable|(?<!\\w)labou?red|(?<!\\w)difficile|(?<!\\w)difficulte|(?<!\\w)impossible|(?<!\\w)peine|<<ضيق>>|<<صعوبه>>|<<صعوبه>>|(?<!\\w)s3ouba|(?<!\\w)s3ib|(?<!\\w)dhi[9q]|(?<!\\w)diq|(?<!\\w)dhayqa).{0,25}(?:(?<!\\w)breath\\w*+(?! (?:fine|normal\\w*|ok|okay|well|easily))|\\bair\\b|(?<!\\w)respir\\w*+(?! (?:normal\\w*|bien|ok))|(?<!\\w)souffle|(?<!\\w)etouff\\w*|(?<!\\w)essouffl\\w*|(?<!\\w)dyspn\\w*|<<تنفس>>|(?<!\\w)[وف]?(?:[بلكمع]?ال|لل|[بلك])?نفس(?!\\w)(?! ال)|<<النفس>>|\\bn[iey]?tn[ae]ff?[ae]s|\\b[yt]?[ae]?tn[ae]ff?[ae]s|\\bnaf+[ae]?s\\b|\\bhawa\\b|<<الهواء>>|<<الهوا>>)|(?:(?<!\\w)breath\\w*+(?! (?:fine|normal\\w*|ok|okay|well|easily))|\\bair\\b|(?<!\\w)respir\\w*+(?! (?:normal\\w*|bien|ok))|(?<!\\w)souffle|(?<!\\w)etouff\\w*|(?<!\\w)essouffl\\w*|(?<!\\w)dyspn\\w*|<<تنفس>>|(?<!\\w)[وف]?(?:[بلكمع]?ال|لل|[بلك])?نفس(?!\\w)(?! ال)|<<النفس>>|\\bn[iey]?tn[ae]ff?[ae]s|\\b[yt]?[ae]?tn[ae]ff?[ae]s|\\bnaf+[ae]?s\\b|\\bhawa\\b|<<الهواء>>|<<الهوا>>).{0,25}(?:(?<!\\w)difficult\\w*|(?<!\\w)trouble|(?<!\\w)struggl\\w*|(?<!\\w)hard|(?<!\\w)cant|(?<!\\w)can't|(?<!\\w)cannot|(?<!\\w)unable|(?<!\\w)labou?red|(?<!\\w)difficile|(?<!\\w)difficulte|(?<!\\w)impossible|(?<!\\w)peine|<<ضيق>>|<<صعوبه>>|<<صعوبه>>|(?<!\\w)s3ouba|(?<!\\w)s3ib|(?<!\\w)dhi[9q]|(?<!\\w)diq|(?<!\\w)dhayqa)"},
+        {"regex": "(?:(?<!\\w)asthm\\w*|(?<!\\w)asthme|<<ربو>>|(?<!\\w)ventoline|(?<!\\w)inhaler|(?<!\\w)puff\\w*|(?<!\\w)ventolin).{0,40}(?:(?<!\\w)not working|(?<!\\w)no relief|(?<!\\w)ne fait plus rien|(?<!\\w)ne marche plus|(?<!\\w)does not help|(?<!\\w)doesn'?t help|(?<!\\w)won'?t help|(?<!\\w)ma nfa3ch|<<ما نفعتش>>|(?<!\\w)cant speak|(?<!\\w)can't speak|(?<!\\w)can't talk|(?<!\\w)ma najjamch nahki|(?<!\\w)ma tnajjemch tahki|<<ما نجمش نحكي>>|(?<!\\w)ma 3ana fayda)|(?:(?<!\\w)not working|(?<!\\w)no relief|(?<!\\w)ne fait plus rien|(?<!\\w)ne marche plus|(?<!\\w)does not help|(?<!\\w)doesn'?t help|(?<!\\w)won'?t help|(?<!\\w)ma nfa3ch|<<ما نفعتش>>|(?<!\\w)cant speak|(?<!\\w)can't speak|(?<!\\w)can't talk|(?<!\\w)ma najjamch nahki|(?<!\\w)ma tnajjemch tahki|<<ما نجمش نحكي>>|(?<!\\w)ma 3ana fayda).{0,40}(?:(?<!\\w)asthm\\w*|(?<!\\w)asthme|<<ربو>>|(?<!\\w)ventoline|(?<!\\w)inhaler|(?<!\\w)puff\\w*|(?<!\\w)ventolin)"},
+        "breathless at rest",
+        "too breathless",
+        "very breathless",
+        "so breathless",
+        "severely breathless",
+        "breathless and",
+        "can't stop wheezing",
+        "wheezing badly",
+        "severe wheezing",
+        "wheezing and struggling",
+        {"all": ["عدم القدره علي التنفس"], "affirm": true},
+        {"all": ["not breathing"], "affirm": true},
+        {"all": ["no longer breathing"], "affirm": true},
+        {"regex": "<<ضيق>> (?:في )?(?:ال)?نفس(?!\\w)"}
       ]
     },
     {
@@ -269,7 +340,6 @@
         "syncope",
         "fainted",
         "إغماء",
-        "ghabt",
         "inerte",
         "اغمي على",
         "ghmi 3la",
@@ -294,10 +364,10 @@
         "isn't responding",
         "isnt responding",
         "knocked out",
-        "evanoui",
+        "evanoui*",
         "evanouie",
         "evanouissement",
-        "inconscient",
+        "inconscient*",
         "inconsciente",
         "tombe dans les pommes",
         "s'est effondre",
@@ -339,14 +409,29 @@
         {"all": ["sans reaction"], "affirm": true},
         {"all": ["no longer responding"], "affirm": true},
         {"all": ["not breathing and"], "affirm": true},
-        {"regex": "\\bm[a]?\\s+(?:y|t)?(?:fi[9q]|astajib|astajeb|rod|jaweb|7arrek|et7arrek)\\w*ch\\b", "affirm": true}
+        {"regex": "\\bm[a]?\\s+(?:(?<!\\w)y|(?<!\\w)t)?(?:fi[9q]|astajib|astajeb|rod|jaweb|7arrek|et7arrek)\\w*ch\\b", "affirm": true},
+        {"regex": "\\bghab\\w* (?:3an|3la|3al) (?:el |l)?wa3[iy]\\w*"},
+        {"all": ["no longer conscious"], "affirm": true},
+        {"all": ["not conscious"], "affirm": true},
+        {"all": ["not conscious anymore"], "affirm": true},
+        {"all": ["plus conscient*"], "affirm": true},
+        {"all": ["pas conscient*"], "affirm": true},
+        {"all": ["ليس واعيا"], "affirm": true},
+        {"all": ["ليس واعي"], "affirm": true},
+        {"all": ["ليست واعيه"], "affirm": true},
+        {"all": ["غير واعي"], "affirm": true},
+        {"all": ["مش واعي"], "affirm": true},
+        {"all": ["ماهوش واعي"], "affirm": true},
+        {"all": ["ماهيش واعيه"], "affirm": true},
+        {"all": ["mahouch wa3i"], "affirm": true},
+        {"all": ["mahich wa3ya"], "affirm": true}
       ]
     },
     {
       "id": "pregnancy_bleeding",
       "min_urgency": 5,
       "keywords": [
-        "metrorragie",
+        "metrorragie*",
         "metrorragies",
         "fausse couche",
         "miscarriage",
@@ -358,35 +443,28 @@
         "postpartum hemorrhage",
         "hemorragie du post-partum",
         "اجهاض",
-        {"all": ["enceinte", "saignement"]},
+        {"all": ["enceinte", "saignement*"]},
         {"all": ["pregnant", "bleeding"]},
         {"all": ["حامل", "نزيف"]},
-        {"regex": "(?:enceinte|grossesse|pregnan\\w*|test (?:de grossesse )?positif|positive pregnancy test|pregnancy test|hcg|weeks along|trimester|expecting|\\bsa\\b|حامل|حامله|حمل|الحمل|\\bha?m?la\\b|\\b7amla\\b|\\bhamla\\b|\\bhamil).{0,60}(?:bleed\\w*|hemorr\\w*|haemorr\\w*|saign\\w*|metrorr\\w*|spotting|blood loss|perd(?:s|u)? du sang|perte de sang|(?:passing|losing|lost) blood|sang rouge|sang qui coule|blood running|pool of blood|نزيف|نزل دم|نزل مني دم|نزلها دم|ينزل دم|تنزف|دم احمر|دم ينزل|تبلل بالدم|ياسر دم|دم برشا|\\b(?:d|dd|edd)[ae]m\\b.{0,12}(?:ykhrej|tkhrej|tkharej|yenzel|tenzel|nezel|tnazel|tnazzel|ynazzel|barcha|ghz?ir|yfout|hmar|7mar)|(?:ykhrej|tkhrej|yenzel|tenzel|nezel|tnazel|tnazzel|ynazzel|barcha|ghz?ir|hmar|7mar).{0,12}\\b(?:d|dd|edd)[ae]m\\b|ma7a[9q]\\s*(?:7|h)amra|tache (?:7|h)amra|culotte)|(?:bleed\\w*|hemorr\\w*|haemorr\\w*|saign\\w*|metrorr\\w*|spotting|blood loss|perd(?:s|u)? du sang|perte de sang|(?:passing|losing|lost) blood|sang rouge|sang qui coule|blood running|pool of blood|نزيف|نزل دم|نزل مني دم|نزلها دم|ينزل دم|تنزف|دم احمر|دم ينزل|تبلل بالدم|ياسر دم|دم برشا|\\b(?:d|dd|edd)[ae]m\\b.{0,12}(?:ykhrej|tkhrej|tkharej|yenzel|tenzel|nezel|tnazel|tnazzel|ynazzel|barcha|ghz?ir|yfout|hmar|7mar)|(?:ykhrej|tkhrej|yenzel|tenzel|nezel|tnazel|tnazzel|ynazzel|barcha|ghz?ir|hmar|7mar).{0,12}\\b(?:d|dd|edd)[ae]m\\b|ma7a[9q]\\s*(?:7|h)amra|tache (?:7|h)amra|culotte).{0,60}(?:enceinte|grossesse|pregnan\\w*|test (?:de grossesse )?positif|positive pregnancy test|pregnancy test|hcg|weeks along|trimester|expecting|\\bsa\\b|حامل|حامله|حمل|الحمل|\\bha?m?la\\b|\\b7amla\\b|\\bhamla\\b|\\bhamil)"}
+        {"regex": "(?:(?<!\\w)enceinte|(?<!\\w)grossesse|(?<!\\w)pregnan\\w*|test (?:de grossesse )?positif|(?<!\\w)positive pregnancy test|(?<!\\w)pregnancy test|(?<!\\w)hcg|(?<!\\w)weeks along|(?<!\\w)trimester|(?<!\\w)expecting|\\bsa\\b|<<حامل>>|<<حامله>>|<<حمل>>|<<الحمل>>|\\bha?m?la\\b|\\b7amla\\b|\\bhamla\\b|\\bhamil)[^.;!?,،]{0,60}(?:(?<!\\w)bleed\\w*|(?<!\\w)hemorr\\w*|(?<!\\w)haemorr\\w*|(?<!\\w)saign\\w*|(?<!\\w)metrorr\\w*|(?<!\\w)spotting|(?<!\\w)blood loss|perd(?:s|u)? du sang|(?<!\\w)perte de sang|(?:(?<!\\w)passing|(?<!\\w)losing|(?<!\\w)lost) blood|(?<!\\w)sang rouge|(?<!\\w)sang qui coule|(?<!\\w)blood running|(?<!\\w)pool of blood|<<نزيف>>|<<نزل دم>>|<<نزل مني دم>>|<<نزلها دم>>|<<ينزل دم>>|<<تنزف>>|<<دم احمر>>|<<دم ينزل>>|<<تبلل بالدم>>|<<ياسر دم>>|<<دم برشا>>|\\b(?:d|dd|edd)[ae]m\\b.{0,12}(?:(?<!\\w)ykhrej|(?<!\\w)tkhrej|(?<!\\w)tkharej|(?<!\\w)yenzel|(?<!\\w)tenzel|(?<!\\w)nezel|(?<!\\w)(?:ye|te|y|t)?tnazel|(?<!\\w)tnazzel|(?<!\\w)ynazzel|(?<!\\w)barcha|(?<!\\w)ghz?ir|(?<!\\w)yfout|(?<!\\w)hmar|(?<!\\w)7mar)|(?:(?<!\\w)ykhrej|(?<!\\w)tkhrej|(?<!\\w)yenzel|(?<!\\w)tenzel|(?<!\\w)nezel|(?<!\\w)(?:ye|te|y|t)?tnazel|(?<!\\w)tnazzel|(?<!\\w)ynazzel|(?<!\\w)barcha|(?<!\\w)ghz?ir|(?<!\\w)hmar|(?<!\\w)7mar).{0,12}\\b(?:d|dd|edd)[ae]m\\b|ma7a[9q]\\s*(?:7|h)amra|tache (?:7|h)amra|(?<!\\w)culotte)|(?:(?<!\\w)bleed\\w*|(?<!\\w)hemorr\\w*|(?<!\\w)haemorr\\w*|(?<!\\w)saign\\w*|(?<!\\w)metrorr\\w*|(?<!\\w)spotting|(?<!\\w)blood loss|perd(?:s|u)? du sang|(?<!\\w)perte de sang|(?:(?<!\\w)passing|(?<!\\w)losing|(?<!\\w)lost) blood|(?<!\\w)sang rouge|(?<!\\w)sang qui coule|(?<!\\w)blood running|(?<!\\w)pool of blood|<<نزيف>>|<<نزل دم>>|<<نزل مني دم>>|<<نزلها دم>>|<<ينزل دم>>|<<تنزف>>|<<دم احمر>>|<<دم ينزل>>|<<تبلل بالدم>>|<<ياسر دم>>|<<دم برشا>>|\\b(?:d|dd|edd)[ae]m\\b.{0,12}(?:(?<!\\w)ykhrej|(?<!\\w)tkhrej|(?<!\\w)tkharej|(?<!\\w)yenzel|(?<!\\w)tenzel|(?<!\\w)nezel|(?<!\\w)(?:ye|te|y|t)?tnazel|(?<!\\w)tnazzel|(?<!\\w)ynazzel|(?<!\\w)barcha|(?<!\\w)ghz?ir|(?<!\\w)yfout|(?<!\\w)hmar|(?<!\\w)7mar)|(?:(?<!\\w)ykhrej|(?<!\\w)tkhrej|(?<!\\w)yenzel|(?<!\\w)tenzel|(?<!\\w)nezel|(?<!\\w)(?:ye|te|y|t)?tnazel|(?<!\\w)tnazzel|(?<!\\w)ynazzel|(?<!\\w)barcha|(?<!\\w)ghz?ir|(?<!\\w)hmar|(?<!\\w)7mar).{0,12}\\b(?:d|dd|edd)[ae]m\\b|ma7a[9q]\\s*(?:7|h)amra|tache (?:7|h)amra|(?<!\\w)culotte)[^.;!?,،]{0,60}(?:(?<!\\w)enceinte|(?<!\\w)grossesse|(?<!\\w)pregnan\\w*|test (?:de grossesse )?positif|(?<!\\w)positive pregnancy test|(?<!\\w)pregnancy test|(?<!\\w)hcg|(?<!\\w)weeks along|(?<!\\w)trimester|(?<!\\w)expecting|\\bsa\\b|<<حامل>>|<<حامله>>|<<حمل>>|<<الحمل>>|\\bha?m?la\\b|\\b7amla\\b|\\bhamla\\b|\\bhamil)"},
+        {"regex": "(?:(?:\\btest\\w*|\\bbeta ?hcg|\\bhcg|\\banalyse|<<تحليل>>|<<اختبار>>)(?: (?:de grossesse|urinaire|sanguin|du sang|de sang|الحمل|tal3?))?(?: (?:est|etait|a ete|is|was|came back|came out|turned|طلع|جا|ja))? (?:positi\\w*|<<ايجابي>>)|\\bpositive (?:pregnancy |hcg )?test|\\bretard de regles?\\b|\\blate period\\b|\\bmissed (?:my |her )?periods?\\b|\\bma jatnich (?:el )?3ada\\b|ما جاتنيش العاده|تاخرت العاده)[^.;!?]{0,80}(?:\\bperd\\w* du sang|\\bperte\\w* (?:de sang|rouges?|sanguin\\w*)|\\bsaign\\w*|\\bbleed\\w*|\\bspotting|\\bblood(?! ?(?:tests?|hcg|work))|(?<!prise de )\\bsang\\b|<<نزيف>>|<<تنزف>>|<<ننزف>>|(?<!تحليل )(?<!\\S)[وبفل]?(?:ال)?دم[يه]?(?!\\S)|\\b(?:d|dd|edd)[ae]m\\b|\\btenzef\\w*|\\bnenzef\\w*)|(?:\\bperd\\w* du sang|\\bperte\\w* (?:de sang|rouges?|sanguin\\w*)|\\bsaign\\w*|\\bbleed\\w*|\\bspotting|\\bblood(?! ?(?:tests?|hcg|work))|(?<!prise de )\\bsang\\b|<<نزيف>>|<<تنزف>>|<<ننزف>>|(?<!تحليل )(?<!\\S)[وبفل]?(?:ال)?دم[يه]?(?!\\S)|\\b(?:d|dd|edd)[ae]m\\b|\\btenzef\\w*|\\bnenzef\\w*)[^.;!?]{0,80}(?:(?:\\btest\\w*|\\bbeta ?hcg|\\bhcg|\\banalyse|<<تحليل>>|<<اختبار>>)(?: (?:de grossesse|urinaire|sanguin|du sang|de sang|الحمل|tal3?))?(?: (?:est|etait|a ete|is|was|came back|came out|turned|طلع|جا|ja))? (?:positi\\w*|<<ايجابي>>)|\\bpositive (?:pregnancy |hcg )?test|\\bretard de regles?\\b|\\blate period\\b|\\bmissed (?:my |her )?periods?\\b|\\bma jatnich (?:el )?3ada\\b|ما جاتنيش العاده|تاخرت العاده)"}
       ]
     },
     {
       "id": "high_fever_child",
       "min_urgency": 4,
+      "note": "Fever counts at 38 or more in an infant under 3 months (a fever word means 38 or more), at 39 or more or with explicit high-fever wording in an older child, or with a danger sign (floppy, not drinking, won't wake). A temperature below the threshold does not fire.",
       "keywords": [
-        {"all": ["fievre", "nourrisson"]},
-        {"all": ["fievre", "bebe"]},
-        {"all": ["baby", "fever"]},
-        {"all": ["سخانة", "رضيع"]},
-        {"all": ["fievre", "nouveau-ne"]},
-        {"all": ["newborn", "fever"]},
-        {"all": ["newborn", "temperature"]},
-        {"all": ["infant", "fever"]},
-        {"all": [{"regex": "(?:fever|febrile|fievre|temperature|\\btemp\\b|حمي|حراره|حرارت|سخانه|سخونه|سخانت|سخان|مسخن|جسمو سخون|s5[ao]?u?na|s5oun|skh[ao]u?na|sokhn\\w*|yaskhan|msakhn\\w*|\\bs7ana|burning up|brulant\\w*|\\b3[89](?:[.,]\\d)?\\b|\\b40(?:[.,]\\d)?\\b)"}, {"regex": "(?:baby|bebe|nourrisson|newborn|nouveau-ne|nouveau ne|infant|neonat\\w*|رضيع|رضيعه|رضيعه|مولود|بيبي|البيبي|\\bb[ee]b[ee]\\b)"}]},
-        {"all": [{"regex": "(?:fever|febrile|fievre|temperature|\\btemp\\b|حمي|حراره|حرارت|سخانه|سخونه|سخانت|سخان|مسخن|جسمو سخون|s5[ao]?u?na|s5oun|skh[ao]u?na|sokhn\\w*|yaskhan|msakhn\\w*|\\bs7ana|burning up|brulant\\w*|\\b3[89](?:[.,]\\d)?\\b|\\b40(?:[.,]\\d)?\\b)"}, {"regex": "\\b\\d{1,2}[- ]?(?:months?|mois|weeks?|semaines?|wks?)[- ]?(?:old|d'age)?\\b|(?:ag[e]e?|عمر\\w*|3and\\w*)\\s+(?:de\\s+)?\\d{1,2}\\s*(?:mois|semaines?|months?|weeks?|jours?|days?|chhour|chhar|ayem|شهر|اشهر|شهرين|اسابيع|ايام|يوم)"}]},
-        {"all": [{"regex": "(?:fever|febrile|fievre|temperature|\\btemp\\b|حمي|حراره|حرارت|سخانه|سخونه|سخانت|سخان|مسخن|جسمو سخون|s5[ao]?u?na|s5oun|skh[ao]u?na|sokhn\\w*|yaskhan|msakhn\\w*|\\bs7ana|burning up|brulant\\w*|\\b3[89](?:[.,]\\d)?\\b|\\b40(?:[.,]\\d)?\\b)"}, {"regex": "(?:child|kid|son|daughter|toddler|enfant|fils|fille|petit|petite|طفل|ابني|بنتي|ولدي|طفلي|طفلتي|ابنتي|weldi|wlidi|benti|bnayti|tfel|tfal|الصغير|الصغيره)"}, {"regex": "(?:lethargi\\w*|floppy|limp|drowsy|sleepy|not drinking|won'?t drink|unresponsive|won'?t wake|dehydrat\\w*|sunken|dry lips|no wet nappy|hasn'?t wet|somnolent\\w*|mou comme|ne veut plus boire|ne boit|ne reagit|leth|yeux creux|pas de larmes|خامل|ناعس|ناعسه|ما يشربش|ما تشربش|ما يفيقش|ما تفيقش|شفايفو يابسين|nayem|nayma|ma yechrabch|ma yet7arrekch|nechef|y[a]?bes)"}]},
-        {"all": [{"regex": "(?:fever|fievre|حمي|سخانه|حراره|s5ana|high temp|burning up)"}, {"regex": "(?:toddler|child|enfant|طفل|tfel|weldi)"}, {"regex": "(?:40|39[.,]?\\d?|very high|tres elevee|barcha|برشا|عاليه)"}]}
+        {"all": [{"regex": "(?<!\\w)newborn\\w*|(?<!\\w)nouveau[- ]ne\\w*|(?<!\\w)neonat\\w*|<<رضيع>>|<<رضيعه>>|<<مولود>>|حديث الولاده|\\b(?:(?:[1-9]|[1-5]\\d) ?(?:days?|jours?|ayem|ايام|يوم)|(?:[1-9]|1[0-2]) ?(?:weeks?|wks?|semaines?|sem|اسابيع|اسبوع|جمعات)|[12] ?(?:months?|mois|chhar|chhour|شهر|اشهر|شهور)|شهرين|one month|un mois)[- ]old\\b|\\b(?:(?:[1-9]|[1-5]\\d) ?(?:days?|jours?|ayem|ايام|يوم)|(?:[1-9]|1[0-2]) ?(?:weeks?|wks?|semaines?|sem|اسابيع|اسبوع|جمعات)|[12] ?(?:months?|mois|chhar|chhour|شهر|اشهر|شهور)|شهرين|one month|un mois) (?:d'age|de vie)\\b|(?:\\bbaby|\\bbebe|\\bnourrisson|\\bfils|\\bfille|\\bson|\\bdaughter|\\benfant|\\bchild|<<رضيع>>|<<طفل>>|<<طفلي>>|<<ولدي>>|<<بنتي>>|<<ابني>>|<<بيبي>>|\\bweldi|\\bbenti|\\btfol\\w*|\\btfel)(?: (?:de|of|aged|age de|عمره|عمرها|3omrou|3omrha|عنده|عندو|3andou))? (?:(?:[1-9]|[1-5]\\d) ?(?:days?|jours?|ayem|ايام|يوم)|(?:[1-9]|1[0-2]) ?(?:weeks?|wks?|semaines?|sem|اسابيع|اسبوع|جمعات)|[12] ?(?:months?|mois|chhar|chhour|شهر|اشهر|شهور)|شهرين|one month|un mois)\\b|(?:\\bage|\\bagee|\\baged|<<عمره>>|<<عمرها>>|\\b3omr\\w*) (?:de )?(?:(?:[1-9]|[1-5]\\d) ?(?:days?|jours?|ayem|ايام|يوم)|(?:[1-9]|1[0-2]) ?(?:weeks?|wks?|semaines?|sem|اسابيع|اسبوع|جمعات)|[12] ?(?:months?|mois|chhar|chhour|شهر|اشهر|شهور)|شهرين|one month|un mois)\\b"}, {"regex": "(?<!\\w)fever\\w*|(?<!\\w)febri\\w*|(?<!\\w)fievre\\w*|<<حمي>>|<<سخانه>>|<<سخونه>>|<<سخانت>>|<<مسخن>>|(?<!\\w)s5[ao]?u?na|(?<!\\w)s5oun\\w*|(?<!\\w)skh[ao]u?na|(?<!\\w)sokhn\\w*|(?<!\\w)msakhn\\w*|(?<!\\w)s7ana|burning up|(?<!\\w)brulant\\w*|\\b(?:has|have|had|got|running) a (?:high )?temp\\w*|(?:(?<!\\w)fever\\w*|(?<!\\w)febri\\w*|(?<!\\w)fievre\\w*|<<حمي>>|<<سخانه>>|<<سخونه>>|<<سخانت>>|<<مسخن>>|(?<!\\w)s5[ao]?u?na|(?<!\\w)s5oun\\w*|(?<!\\w)skh[ao]u?na|(?<!\\w)sokhn\\w*|(?<!\\w)msakhn\\w*|(?<!\\w)s7ana|burning up|(?<!\\w)brulant\\w*|\\b(?:has|have|had|got|running) a (?:high )?temp\\w*|(?<!\\w)temp\\w*|<<حراره>>|<<حرارت>>|(?<!\\w)thermomet\\w*)[^\\d.;!?]{0,15}\\b(?:3[89]|4[0-2])(?:[.,]\\d)?\\b|\\b(?:3[89]|4[0-2])(?:[.,]\\d)? ?(?:°|degre\\w*|degree\\w*|c\\b|<<درجه>>)"}]},
+        {"all": [{"regex": "\\bbab(?:y|ies)\\b|\\bbebe\\w*|\\bnourrisson\\w*|\\bnewborn|\\binfant\\w*|\\bchild\\w*|\\bkids?\\b|\\bson\\b|\\bdaughter\\w*|\\btoddler\\w*|\\benfant\\w*|\\bfils\\b|\\bfille\\w*|\\bpetite?\\b|<<طفل>>|<<ابني>>|<<بنتي>>|<<ولدي>>|<<طفلي>>|<<طفلتي>>|<<ابنتي>>|<<رضيع>>|<<رضيعه>>|<<مولود>>|<<بيبي>>|<<الصغير>>|<<الصغيره>>|\\bweldi|\\bwlidi|\\bbenti|\\bbnayti|\\btfel|\\btfol\\w*|\\btfal"}, {"regex": "(?:(?<!\\w)fever\\w*|(?<!\\w)febri\\w*|(?<!\\w)fievre\\w*|<<حمي>>|<<سخانه>>|<<سخونه>>|<<سخانت>>|<<مسخن>>|(?<!\\w)s5[ao]?u?na|(?<!\\w)s5oun\\w*|(?<!\\w)skh[ao]u?na|(?<!\\w)sokhn\\w*|(?<!\\w)msakhn\\w*|(?<!\\w)s7ana|burning up|(?<!\\w)brulant\\w*|\\b(?:has|have|had|got|running) a (?:high )?temp\\w*|(?<!\\w)temp\\w*|<<حراره>>|<<حرارت>>|(?<!\\w)thermomet\\w*)[^\\d.;!?]{0,15}\\b(?:39|4[0-2])(?:[.,]\\d)?\\b|\\b(?:39|4[0-2])(?:[.,]\\d)? ?(?:°|degre\\w*|degree\\w*|c\\b|<<درجه>>)|\\bhigh (?:fever|temp\\w*)|\\bvery high (?:fever|temp\\w*)|\\bfievre (?:tres )?(?:forte|elevee|importante)|\\b(?:forte|grosse|tres forte) fievre|<<حمي>> (?:شديده|مرتفعه|عاليه|قويه)|<<حراره>> (?:مرتفعه|عاليه|قويه)|<<سخانه>> (?:قويه|كبيره|عاليه|برشا)|\\bs5ana (?:kbira|9wiya|9awiya|barcha|3alya)|\\bskhana (?:kbira|9wiya|barcha|3alya)"}]},
+        {"all": [{"regex": "(?:(?<!\\w)fever|(?<!\\w)febrile|(?<!\\w)fievre|(?<!\\w)temperature|\\btemp\\b|<<حمي>>|<<حراره>>|<<حرارت>>|<<سخانه>>|<<سخونه>>|<<سخانت>>|<<سخان>>|<<مسخن>>|<<جسمو سخون>>|(?<!\\w)s5[ao]?u?na|(?<!\\w)s5oun|(?<!\\w)skh[ao]u?na|(?<!\\w)sokhn\\w*|(?<!\\w)yaskhan|(?<!\\w)msakhn\\w*|\\bs7ana|(?<!\\w)burning up|(?<!\\w)brulant\\w*|\\b3[89](?:[.,]\\d)?\\b|\\b40(?:[.,]\\d)?\\b)"}, {"regex": "(?:(?<!\\w)child|(?<!\\w)kid|(?<!\\w)son|(?<!\\w)daughter|(?<!\\w)toddler|(?<!\\w)enfant|(?<!\\w)fils|(?<!\\w)fille|(?<!\\w)petit|(?<!\\w)petite|<<طفل>>|<<ابني>>|<<بنتي>>|<<ولدي>>|<<طفلي>>|<<طفلتي>>|<<ابنتي>>|(?<!\\w)weldi|(?<!\\w)wlidi|(?<!\\w)benti|(?<!\\w)bnayti|(?<!\\w)tfel|(?<!\\w)tfal|<<الصغير>>|<<الصغيره>>)"}, {"regex": "(?:(?<!\\w)lethargi\\w*|(?<!\\w)floppy|(?<!\\w)limp|(?<!\\w)drowsy|(?<!\\w)sleepy|(?<!\\w)not drinking|(?<!\\w)won'?t drink|(?<!\\w)unresponsive|(?<!\\w)won'?t wake|(?<!\\w)dehydrat\\w*|(?<!\\w)sunken|(?<!\\w)dry lips|(?<!\\w)no wet nappy|(?<!\\w)hasn'?t wet|(?<!\\w)somnolent\\w*|(?<!\\w)mou comme|(?<!\\w)ne veut plus boire|(?<!\\w)ne boit|(?<!\\w)ne reagit|(?<!\\w)leth|(?<!\\w)yeux creux|(?<!\\w)pas de larmes|<<خامل>>|<<ناعس>>|<<ناعسه>>|<<ما يشربش>>|<<ما تشربش>>|<<ما يفيقش>>|<<ما تفيقش>>|<<شفايفو يابسين>>|(?<!\\w)nayem|(?<!\\w)nayma|(?<!\\w)ma yechrabch|(?<!\\w)ma yet7arrekch|(?<!\\w)nechef|(?<!\\w)y[a]?bes)"}]}
       ]
     },
     {
       "id": "suicide_self_harm",
       "min_urgency": 5,
       "keywords": [
-        "suicid",
+        "suicid*",
         "kill myself",
         "end my life",
         "want to die",
@@ -398,7 +476,7 @@
         "en finir avec la vie",
         "mettre fin a mes jours",
         "me faire du mal",
-        "انتحار",
+        "انتحار*",
         "ننتحر",
         "انتحر",
         "نقتل روحي",
@@ -418,8 +496,6 @@
         "don't want to live",
         "dont want to live",
         "do not want to live",
-        "no reason to live",
-        "nothing to live for",
         "harm myself",
         "cut myself",
         "cutting myself",
@@ -513,17 +589,39 @@
         "nenti7ar",
         "ngoul bech nmout",
         "tgoul bech tmout",
-        "ygoul bech ymout"
+        "ygoul bech ymout",
+        {"all": ["no reason to live"], "affirm": true},
+        {"all": ["no reason to go on"], "affirm": true},
+        {"all": ["nothing to live for"], "affirm": true},
+        {"all": ["no will to live"], "affirm": true},
+        {"all": ["no point living"], "affirm": true},
+        {"all": ["no point in living"], "affirm": true},
+        {"all": ["no point going on"], "affirm": true},
+        {"all": ["want to end it"], "affirm": true},
+        {"all": ["pas de raison de vivre"], "affirm": true},
+        {"all": ["aucune raison de vivre"], "affirm": true},
+        {"all": ["plus de raison de vivre"], "affirm": true},
+        {"all": ["plus aucune raison de vivre"], "affirm": true},
+        {"all": ["ما عنديش علاش نعيش"], "affirm": true},
+        {"all": ["ما عندي علاش نعيش"], "affirm": true},
+        {"all": ["ما عادش عندي علاش نعيش"], "affirm": true},
+        {"all": ["لا سبب للعيش"], "affirm": true},
+        {"all": ["لا يوجد سبب للعيش"], "affirm": true},
+        {"all": ["ma3andich 3lech n3ich"], "affirm": true},
+        {"all": ["ma 3andich 3lech n3ich"], "affirm": true},
+        {"all": ["ma 3andi 3lech n3ich"], "affirm": true},
+        {"all": ["ma3andi 3lech n3ich"], "affirm": true},
+        {"all": ["ma 3andich 3leh n3ich"], "affirm": true}
       ]
     },
     {
       "id": "overdose",
       "min_urgency": 5,
       "keywords": [
-        "overdose",
+        "overdose*",
         "surdose",
         "surdosage",
-        "intoxication medicamenteuse",
+        "intoxication medicamenteuse*",
         "too many pills",
         "too many tablets",
         "trop de comprimes",
@@ -533,36 +631,37 @@
         "تسمم",
         "poisoned",
         "poisoning",
-        "empoisonn",
-        {"regex": "\\b[1-9][0-9]\\s+(?:\\S+\\s+){0,2}(?:tablets|pills|comprimes|cachets|gelules|حبة|حبات)"},
-        {"regex": "\\b(?:swallowed|ate|eaten|took|taken|drank|drunk|ingested)\\b.{0,35}\\b(?:whole (?:box|bottle|strip|pack|packet)|entire (?:box|bottle|strip|pack)|all (?:of )?(?:my|his|her|the|their)|a handful|handful|bleach|detergent|cleaning (?:product|fluid|liquid)|antifreeze|pesticide|poison|unknown (?:pills|tablets)|dozen|lots of|a lot of)"},
-        {"regex": "\\b(?:bleach|detergent|cleaning (?:product|fluid)|pesticide|poison)\\b.{0,30}\\b(?:swallow\\w*|drank|drunk|ingest\\w*|mouth|lips)"},
-        {"regex": "\\b(?:empty (?:blister|strip|bottle|packet)|blister (?:was )?empty|bottle (?:was )?empty|found the (?:blister|strip))\\b"},
-        {"regex": "\\b(?:avale|a avale|ont avale|ingere|a ingere|a bu|bu|a mange|mange|a pris|pris|prend)\\b.{0,40}\\b(?:tou(?:t|te|tes|s) (?:le|la|les|l')|boite entiere|plusieurs|trop de|produit|javel|detergent|nettoyage|menager|pesticide|poison|inconnu|comprimes de la boite|des comprimes|des pilules|des cachets)"},
-        {"regex": "\\b(?:javel|eau de javel|produit (?:menager|de nettoyage)|pesticide|insecticide|raticide)\\b.{0,40}\\b(?:avale|bu|boit|bouche|ingere|a bu)"},
-        {"regex": "(?:بلع|ابتلع|شرب|تناول|اكل|كلا|كلى)\\w*.{0,30}(?:علبه كامله|علبه الدوا|علبه الدواء|كل الحبوب|كل الدوا|حبوب كثيره|اقراص كثيره|حبوبا كثيره|برشا|مبيد|جافيل|منظف|كلور|سم|مجهول|قرعه الدوا|قرعه الدواء|زجاجه منظف|الدوا كلها)"},
-        {"regex": "(?:حبوب|اقراص|دوا|دواء)\\w*.{0,20}(?:بلع|ابتلع|شرب|تناول)\\w*.{0,15}(?:برشا|كثير|كل)"},
+        "empoisonn*",
+        {"regex": "\\b[1-9][0-9]\\s+(?:\\S+\\s+){0,2}(?:(?<!\\w)tablets|(?<!\\w)pills|(?<!\\w)comprimes|(?<!\\w)cachets|(?<!\\w)gelules|<<حبة>>|<<حبات>>)"},
+        {"regex": "\\b(?:swallowed|ate|eaten|took|taken|drank|drunk|ingested)\\b.{0,35}\\b(?:whole (?:(?<!\\w)box|(?<!\\w)bottle|(?<!\\w)strip|(?<!\\w)pack|(?<!\\w)packet)|entire (?:(?<!\\w)box|(?<!\\w)bottle|(?<!\\w)strip|(?<!\\w)pack)|all (?:of )?(?:(?<!\\w)my|(?<!\\w)his|(?<!\\w)her|(?<!\\w)the|(?<!\\w)their)|a handful|handful|bleach|detergent|cleaning (?:(?<!\\w)product|(?<!\\w)fluid|(?<!\\w)liquid)|antifreeze|pesticide|poison|unknown (?:(?<!\\w)pills|(?<!\\w)tablets)|dozen|lots of|a lot of)"},
+        {"regex": "\\b(?:bleach|detergent|cleaning (?:(?<!\\w)product|(?<!\\w)fluid)|pesticide|poison)\\b.{0,30}\\b(?:swallow\\w*|drank|drunk|ingest\\w*|mouth|lips)"},
+        {"regex": "\\b(?:empty (?:(?<!\\w)blister|(?<!\\w)strip|(?<!\\w)bottle|(?<!\\w)packet)|blister (?:was )?empty|bottle (?:was )?empty|found the (?:(?<!\\w)blister|(?<!\\w)strip))\\b"},
+        {"regex": "\\b(?:avale|a avale|ont avale|ingere|a ingere|a bu|bu|a mange|mange|a pris|pris)\\b.{0,40}\\b(?:tou(?:t|te|tes|s) (?:le|la|les|l') ?(?!(?:jours?|matins?|soirs?|semaines?|mois|nuits?|ans)\\b)|boite entiere|plusieurs|trop de|produit|javel|detergent|nettoyage|menager|pesticide|poison|inconnu|comprimes de la boite)"},
+        {"regex": "\\b(?:javel|eau de javel|produit (?:(?<!\\w)menager|(?<!\\w)de nettoyage)|pesticide|insecticide|raticide)\\b.{0,40}\\b(?:avale|bu|boit|bouche|ingere|a bu)"},
+        {"regex": "(?:بلع|ابتلع|شرب|تناول|اكل|كلا|كلى)\\w*.{0,30}(?:<<علبه كامله>>|<<علبه الدوا>>|<<علبه الدواء>>|<<كل الحبوب>>|<<كل الدوا>>|<<حبوب كثيره>>|<<اقراص كثيره>>|<<حبوبا كثيره>>|<<برشا>>|<<مبيد>>|<<جافيل>>|<<منظف>>|<<كلور>>|<<سم>>|<<مجهول>>|<<قرعه الدوا>>|<<قرعه الدواء>>|<<زجاجه منظف>>|<<الدوا كلها>>)"},
+        {"regex": "(?:حبوب|اقراص|دوا|دواء)\\w*.{0,20}(?:بلع|ابتلع|شرب|تناول)\\w*.{0,15}(?:<<برشا>>|<<كثير>>|<<كل>>)"},
         {"regex": "\\b(?:bla3\\w*|bela3\\w*)\\b.{0,30}\\b(?:barcha|kol|kamel|comprim\\w*|7bouub|7bob|dwe|dwa)\\b"},
         {"regex": "\\b(?:chr?e?b\\w*|chrab\\w*|7ell|7all)\\b.{0,30}\\b(?:javel|chlor|bleach|clorox|produit|bidon|flacon|essence|pesticide|sirop|bar9a|netteya|nadhafa)\\b"},
         {"regex": "\\b(?:kel\\w*|kla|kal|kal[ae]t)\\b.{0,25}\\b(?:barcha|kol)\\b.{0,15}\\b(?:7bouub|7bob|comprim\\w*|dwe|dwa)\\b"},
-        {"regex": "\\b(?:khd?hit|khdhet|khadhet|khadhit)\\b.{0,20}\\b(?:barcha|kol)\\b.{0,15}\\b(?:dwe|dwa|7bouub|7bob|comprim\\w*|zebla)\\b"}
+        {"regex": "\\b(?:khd?hit|khdhet|khadhet|khadhit)\\b.{0,20}\\b(?:barcha|kol)\\b.{0,15}\\b(?:dwe|dwa|7bouub|7bob|comprim\\w*|zebla)\\b"},
+        {"regex": "\\b(?:a avale|avale|ont avale|ingere|a ingere)\\b.{0,25}\\b(?:des|plein de|une poignee de|beaucoup de) (?:comprimes|pilules|cachets|medicaments|gelules)"}
       ]
     },
     {
       "id": "anaphylaxis",
       "min_urgency": 5,
       "keywords": [
-        "anaphyla",
+        "anaphyla*",
         "choc allergique",
         "quincke",
         "throat is closing",
-        {"all": ["throat", "swell"]},
-        {"all": ["lips", "swell"]},
-        {"all": ["tongue", "swell"]},
-        {"all": ["gorge", "gonfl"]},
-        {"all": ["levres", "gonfl"]},
-        {"all": ["langue", "gonfl"]},
-        {"all": ["gorge", "serre"]},
+        {"all": ["throat", "swell*"]},
+        {"all": ["lips", "swell*"]},
+        {"all": ["tongue", "swell*"]},
+        {"all": ["gorge", "gonfl*"]},
+        {"all": ["levres", "gonfl*"]},
+        {"all": ["langue", "gonfl*"]},
+        {"all": ["gorge", "serre*"]},
         "حساسية شديدة",
         {"all": ["حلق", "تورم"]},
         {"all": ["حلق", "انتفاخ"]},
@@ -580,7 +679,7 @@
         "angio-oedeme",
         "oedeme de quincke",
         "reaction allergique grave",
-        {"regex": "(?:allerg\\w*|حساسيه|حساسيه|7asasiya|hasasiya|7assasiya|sting|piqure|guepe).{0,40}(?:can'?t breathe|cannot breathe|cant breathe|short of breath|wheez\\w*|siffl\\w*|respire mal|ne peut pas respirer|ne respire|ضيق التنفس|ضيق نفس|لا يستطيع التنفس|ما يقدرش يتنفس|ما نجمش نتنفس|ما تقدرش تتنفس|يصفر|ma n+aj+[ae]?m(?:ch)? n[i]?tn[ae]ff?[ae]s|ma (?:y|t)?n+aj+[ae]?m(?:ch)? (?:y|t)[ae]?tn[ae]ff?[ae]s|nitnaffes|yatnaffes|7asset b dhiq|nafass diq)|(?:can'?t breathe|cannot breathe|cant breathe|short of breath|wheez\\w*|siffl\\w*|respire mal|ne peut pas respirer|ne respire|ضيق التنفس|ضيق نفس|لا يستطيع التنفس|ما يقدرش يتنفس|ما نجمش نتنفس|ما تقدرش تتنفس|يصفر|ma n+aj+[ae]?m(?:ch)? n[i]?tn[ae]ff?[ae]s|ma (?:y|t)?n+aj+[ae]?m(?:ch)? (?:y|t)[ae]?tn[ae]ff?[ae]s|nitnaffes|yatnaffes|7asset b dhiq|nafass diq).{0,40}(?:allerg\\w*|حساسيه|حساسيه|7asasiya|hasasiya|7assasiya|sting|piqure|guepe)"},
+        {"regex": "(?:(?<!\\w)allerg\\w*|<<حساسيه>>|<<حساسيه>>|(?<!\\w)7asasiya|(?<!\\w)hasasiya|(?<!\\w)7assasiya|(?<!\\w)sting|(?<!\\w)piqure|(?<!\\w)guepe).{0,40}(?:(?<!\\w)can'?t breathe|(?<!\\w)cannot breathe|(?<!\\w)cant breathe|(?<!\\w)short of breath|(?<!\\w)wheez\\w*|(?<!\\w)siffl\\w*|(?<!\\w)respire mal|(?<!\\w)ne peut pas respirer|(?<!\\w)ne respire|<<ضيق التنفس>>|<<ضيق نفس>>|<<لا يستطيع التنفس>>|<<ما يقدرش يتنفس>>|<<ما نجمش نتنفس>>|<<ما تقدرش تتنفس>>|<<يصفر>>|ma n+aj+[ae]?m(?:ch)? n[i]?tn[ae]ff?[ae]s|ma (?:(?<!\\w)y|(?<!\\w)t)?n+aj+[ae]?m(?:ch)? (?:y|t)[ae]?tn[ae]ff?[ae]s|(?<!\\w)nitnaffes|(?<!\\w)yatnaffes|(?<!\\w)7asset b dhiq|(?<!\\w)nafass diq)|(?:(?<!\\w)can'?t breathe|(?<!\\w)cannot breathe|(?<!\\w)cant breathe|(?<!\\w)short of breath|(?<!\\w)wheez\\w*|(?<!\\w)siffl\\w*|(?<!\\w)respire mal|(?<!\\w)ne peut pas respirer|(?<!\\w)ne respire|<<ضيق التنفس>>|<<ضيق نفس>>|<<لا يستطيع التنفس>>|<<ما يقدرش يتنفس>>|<<ما نجمش نتنفس>>|<<ما تقدرش تتنفس>>|<<يصفر>>|ma n+aj+[ae]?m(?:ch)? n[i]?tn[ae]ff?[ae]s|ma (?:(?<!\\w)y|(?<!\\w)t)?n+aj+[ae]?m(?:ch)? (?:y|t)[ae]?tn[ae]ff?[ae]s|(?<!\\w)nitnaffes|(?<!\\w)yatnaffes|(?<!\\w)7asset b dhiq|(?<!\\w)nafass diq).{0,40}(?:(?<!\\w)allerg\\w*|<<حساسيه>>|<<حساسيه>>|(?<!\\w)7asasiya|(?<!\\w)hasasiya|(?<!\\w)7assasiya|(?<!\\w)sting|(?<!\\w)piqure|(?<!\\w)guepe)"},
         "allergie grave",
         "allergie severe",
         "severe allergic",
@@ -596,21 +695,21 @@
         "صعوبة في البلع",
         "ما نجمش نبلع",
         "ما يقدرش يبلع",
-        {"regex": "(?:swell\\w*|swollen|puff\\w*|tight|clos\\w*|gonfl\\w*|enfl\\w*|oedeme|serre|ferme|تورم|انتفاخ|انتفخ|تنفخ|ورم|منتفخ|يتورم|تورمت|wrem\\w*|wr[a]?93|yenfakh|tnafakh|tn[ae]fekh|t?kabb?ar|yetkabbar).{0,25}(?:throat|tongue|lips?|eyelids|gorge|langue|levres|paupieres|حلق|الحلق|لسان|شفايف|شفتا\\w*|شفاه|gorj\\w*|lsan\\w*|chf[ae]y\\w*|3ayn\\w*)|(?:throat|tongue|lips?|eyelids|gorge|langue|levres|paupieres|حلق|الحلق|لسان|شفايف|شفتا\\w*|شفاه|gorj\\w*|lsan\\w*|chf[ae]y\\w*|3ayn\\w*).{0,25}(?:swell\\w*|swollen|puff\\w*|tight|clos\\w*|gonfl\\w*|enfl\\w*|oedeme|serre|ferme|تورم|انتفاخ|انتفخ|تنفخ|ورم|منتفخ|يتورم|تورمت|wrem\\w*|wr[a]?93|yenfakh|tnafakh|tn[ae]fekh|t?kabb?ar|yetkabbar)"},
-        {"all": [{"regex": "(?:swell\\w*|swollen|puff\\w*|gonfl\\w*|enfl\\w*|double de volume|تورم|انتفخ|تنفخ|ورم|منتفخ|wrem\\w*|yenfakh|tnafakh).{0,25}(?:face|visage|وجه|وجهي|wejh\\w*)|(?:face|visage|وجه|وجهي|wejh\\w*).{0,25}(?:swell\\w*|swollen|puff\\w*|gonfl\\w*|enfl\\w*|double de volume|تورم|انتفخ|تنفخ|ورم|منتفخ|wrem\\w*|yenfakh|tnafakh)"}, {"regex": "(?:allerg\\w*|sting|piqure|guepe|wasp|bee\\b|injection|tablet|medicine|medication|peanut|nut\\b|shrimp|crevette|cacahuete|antibio\\w*|penicillin\\w*|amoxi\\w*|wheez\\w*|siffl\\w*|hives|urticaire|حساسيه|لسع|لسعه|حقنه|دوا|دواء|كاوكاو|7asasiya|hasasiya|\\bdwe\\b|\\bdwa\\b|nahla|3ayen|يصفر|تصفر)"}]}
+        {"regex": "(?:(?<!\\w)swell\\w*|(?<!\\w)swollen|(?<!\\w)puff\\w*|(?<!\\w)tight|(?<!\\w)clos\\w*|(?<!\\w)gonfl\\w*|(?<!\\w)enfl\\w*|(?<!\\w)oedeme|(?<!\\w)serre|(?<!\\w)ferme|<<تورم>>|<<انتفاخ>>|<<انتفخ>>|<<تنفخ>>|<<ورم>>|<<منتفخ>>|<<يتورم>>|<<تورمت>>|(?<!\\w)wrem\\w*|(?<!\\w)wr[a]?93|(?<!\\w)yenfakh|(?<!\\w)tnafakh|(?<!\\w)tn[ae]fekh|(?<!\\w)t?kabb?ar|(?<!\\w)yetkabbar).{0,25}(?:(?<!\\w)throat|(?<!\\w)tongue|(?<!\\w)lips?|(?<!\\w)eyelids|(?<!\\w)gorge|(?<!\\w)langue|(?<!\\w)levres|(?<!\\w)paupieres|<<حلق>>|<<الحلق>>|<<لسان>>|<<شفايف>>|<<شفتا\\w*|<<شفاه>>|(?<!\\w)gorj\\w*|(?<!\\w)lsan\\w*|(?<!\\w)chf[ae]y\\w*|(?<!\\w)3ayn\\w*)|(?:(?<!\\w)throat|(?<!\\w)tongue|(?<!\\w)lips?|(?<!\\w)eyelids|(?<!\\w)gorge|(?<!\\w)langue|(?<!\\w)levres|(?<!\\w)paupieres|<<حلق>>|<<الحلق>>|<<لسان>>|<<شفايف>>|<<شفتا\\w*|<<شفاه>>|(?<!\\w)gorj\\w*|(?<!\\w)lsan\\w*|(?<!\\w)chf[ae]y\\w*|(?<!\\w)3ayn\\w*).{0,25}(?:(?<!\\w)swell\\w*|(?<!\\w)swollen|(?<!\\w)puff\\w*|(?<!\\w)tight|(?<!\\w)clos\\w*|(?<!\\w)gonfl\\w*|(?<!\\w)enfl\\w*|(?<!\\w)oedeme|(?<!\\w)serre|(?<!\\w)ferme|<<تورم>>|<<انتفاخ>>|<<انتفخ>>|<<تنفخ>>|<<ورم>>|<<منتفخ>>|<<يتورم>>|<<تورمت>>|(?<!\\w)wrem\\w*|(?<!\\w)wr[a]?93|(?<!\\w)yenfakh|(?<!\\w)tnafakh|(?<!\\w)tn[ae]fekh|(?<!\\w)t?kabb?ar|(?<!\\w)yetkabbar)"},
+        {"all": [{"regex": "(?:(?<!\\w)swell\\w*|(?<!\\w)swollen|(?<!\\w)puff\\w*|(?<!\\w)gonfl\\w*|(?<!\\w)enfl\\w*|(?<!\\w)double de volume|<<تورم>>|<<انتفخ>>|<<تنفخ>>|<<ورم>>|<<منتفخ>>|(?<!\\w)wrem\\w*|(?<!\\w)yenfakh|(?<!\\w)tnafakh).{0,25}(?:(?<!\\w)face|(?<!\\w)visage|<<وجه>>|<<وجهي>>|(?<!\\w)wejh\\w*)|(?:(?<!\\w)face|(?<!\\w)visage|<<وجه>>|<<وجهي>>|(?<!\\w)wejh\\w*).{0,25}(?:(?<!\\w)swell\\w*|(?<!\\w)swollen|(?<!\\w)puff\\w*|(?<!\\w)gonfl\\w*|(?<!\\w)enfl\\w*|(?<!\\w)double de volume|<<تورم>>|<<انتفخ>>|<<تنفخ>>|<<ورم>>|<<منتفخ>>|(?<!\\w)wrem\\w*|(?<!\\w)yenfakh|(?<!\\w)tnafakh)"}, {"regex": "(?:(?<!\\w)allerg\\w*|(?<!\\w)sting|(?<!\\w)piqure|(?<!\\w)guepe|(?<!\\w)wasp|(?<!\\w)bee\\b|(?<!\\w)injection|(?<!\\w)tablet|(?<!\\w)medicine|(?<!\\w)medication|(?<!\\w)peanut|(?<!\\w)nut\\b|(?<!\\w)shrimp|(?<!\\w)crevette|(?<!\\w)cacahuete|(?<!\\w)antibio\\w*|(?<!\\w)penicillin\\w*|(?<!\\w)amoxi\\w*|(?<!\\w)wheez\\w*|(?<!\\w)siffl\\w*|(?<!\\w)hives|(?<!\\w)urticaire|<<حساسيه>>|<<لسع>>|<<لسعه>>|<<حقنه>>|<<دوا>>|<<دواء>>|<<كاوكاو>>|(?<!\\w)7asasiya|(?<!\\w)hasasiya|\\bdwe\\b|\\bdwa\\b|(?<!\\w)nahla|(?<!\\w)3ayen|<<يصفر>>|<<تصفر>>)"}]}
       ]
     },
     {
       "id": "seizure",
       "min_urgency": 5,
       "keywords": [
-        "convuls",
-        "seizure",
+        "convuls*",
+        "seizure*",
         "crise d'epilepsie",
         "crise epileptique",
         "تشنج",
         "نوبة صرع",
-        "epilep",
+        "epilep*",
         "tonic-clonic",
         "tonic clonic",
         "status epilepticus",
@@ -632,7 +731,7 @@
         "yeux revulses",
         "febrile convulsion",
         "fever fit",
-        "اختلاج",
+        "اختلاج*",
         "اختلاجات",
         "نوبات اختلاجية",
         "صرع",
@@ -656,9 +755,13 @@
         {"all": ["shaking", "not responding"]},
         {"all": ["shaking", "unresponsive"]},
         {"all": ["shaking", "foam"]},
-        {"all": ["trembl", "ne repond"]},
-        {"all": ["trembl", "inconscient"]},
-        {"regex": "(?:crise).{0,40}(?:tombe\\w*|yeux|ne repond|ne reagit|mord\\w*|secousses|wa93\\w*|ghmi|jesm\\w*|tastajib\\w*|yastajib\\w*)|(?:tombe\\w*|yeux|ne repond|ne reagit|mord\\w*|secousses|wa93\\w*|ghmi|jesm\\w*|tastajib\\w*|yastajib\\w*).{0,40}(?:crise)"}
+        {"all": ["trembl*", "inconscient*"]},
+        {"regex": "(?:\\bcrise(?! (?:d'angoisse|de panique|d'anxiete|economique|de nerfs|de foie|de colere|de larmes|de rire|de toux|d'asthme|hypertensive|cardiaque|de goutte|du logement|financiere))).{0,40}(?:(?<!\\w)tombe\\w*|(?<!\\w)yeux|(?<!\\w)ne repond|(?<!\\w)ne reagit|(?<!\\w)mord\\w*|(?<!\\w)secousses|(?<!\\w)wa93\\w*|(?<!\\w)ghmi|(?<!\\w)jesm\\w*|(?<!\\w)tastajib\\w*|(?<!\\w)yastajib\\w*)|(?:(?<!\\w)tombe\\w*|(?<!\\w)yeux|(?<!\\w)ne repond|(?<!\\w)ne reagit|(?<!\\w)mord\\w*|(?<!\\w)secousses|(?<!\\w)wa93\\w*|(?<!\\w)ghmi|(?<!\\w)jesm\\w*|(?<!\\w)tastajib\\w*|(?<!\\w)yastajib\\w*).{0,40}(?:\\bcrise(?! (?:d'angoisse|de panique|d'anxiete|economique|de nerfs|de foie|de colere|de larmes|de rire|de toux|d'asthme|hypertensive|cardiaque|de goutte|du logement|financiere)))"},
+        {"all": ["trembl*", {"regex": "\\bne repond (?:plus|pas)(?! (?:au|aux|a) (?:traitement|medicament)\\w*)"}]},
+        "يتشنج",
+        "تتشنج",
+        "يتشنجو",
+        "اختلاج*"
       ]
     },
     {
@@ -747,10 +850,10 @@
         "dwa ghalet",
         "dwa ghalta",
         "dose double",
-        {"regex": "(?:\\btook\\b|\\btaken\\b|\\btake\\b|\\bgiven\\b|\\bgave\\b|\\bgive\\b|\\bswallowed\\b|\\bate\\b).{0,40}(?:twice|double|two times|wrong|someone else|by mistake|by accident|accidentally|instead of|mistakenly)|(?:twice|double|two times|wrong|someone else|by mistake|by accident|accidentally|instead of|mistakenly).{0,40}(?:\\btook\\b|\\btaken\\b|\\btake\\b|\\bgiven\\b|\\bgave\\b|\\bgive\\b|\\bswallowed\\b|\\bate\\b)"},
-        {"regex": "(?:pris|prise|avale|donne|ai pris|a pris|pris).{0,40}(?:deux fois|2 fois|double|mauvais|mauvaise|erreur|au lieu d|par erreur|celui d|ceux d|celle d)|(?:deux fois|2 fois|double|mauvais|mauvaise|erreur|au lieu d|par erreur|celui d|ceux d|celle d).{0,40}(?:pris|prise|avale|donne|ai pris|a pris|pris)"},
-        {"regex": "(?:مرتين|جرعتين|جوز مرات|جوج مرات|بالغلط|بالخطا|غلط|خطا|خاطي|مضاعف).{0,25}(?:دوا|دواء|حبوب|جرعه|جرعه|انسولين|حبه|حبه|قرص|وارفارين)|(?:دوا|دواء|حبوب|جرعه|جرعه|انسولين|حبه|حبه|قرص|وارفارين).{0,25}(?:مرتين|جرعتين|جوز مرات|جوج مرات|بالغلط|بالخطا|غلط|خطا|خاطي|مضاعف)"},
-        {"regex": "(?:khd?hit|khdhet|khadhit|khadhet|chrabt|kheditou).{0,30}(?:2 fois|mrteen|marratin|zouz marrat|jouz marrat|jouj marrat|ghalta|ghalet|mte3 (?:jara|baba|mama|khouya|jarti|sa7bi)|ghirou)|(?:2 fois|mrteen|marratin|zouz marrat|jouz marrat|jouj marrat|ghalta|ghalet|mte3 (?:jara|baba|mama|khouya|jarti|sa7bi)|ghirou).{0,30}(?:khd?hit|khdhet|khadhit|khadhet|chrabt|kheditou)"}
+        {"regex": "(?:\\btook\\b|\\btaken\\b|\\bgiven\\b|\\bgave\\b|\\bswallowed\\b|\\bate\\b).{0,40}(?:(?<!\\w)twice(?! (?:a|per|each|every) day| daily)|(?<!\\w)double|(?<!\\w)two times|(?<!\\w)wrong|(?<!\\w)someone else|(?<!\\w)by mistake|(?<!\\w)by accident|(?<!\\w)accidentally|(?<!\\w)instead of|(?<!\\w)mistakenly)|(?:(?<!\\w)twice(?! (?:a|per|each|every) day| daily)|(?<!\\w)double|(?<!\\w)two times|(?<!\\w)wrong|(?<!\\w)someone else|(?<!\\w)by mistake|(?<!\\w)by accident|(?<!\\w)accidentally|(?<!\\w)instead of|(?<!\\w)mistakenly).{0,40}(?:\\btook\\b|\\btaken\\b|\\bgiven\\b|\\bgave\\b|\\bswallowed\\b|\\bate\\b)"},
+        {"regex": "(?:(?<!\\w)pris|(?<!\\w)prise|(?<!\\w)avale|(?<!\\w)donne|(?<!\\w)ai pris|(?<!\\w)a pris|(?<!\\w)pris).{0,40}(?:(?<!\\w)deux fois|(?<!\\w)2 fois|(?<!\\w)double|(?<!\\w)mauvais|(?<!\\w)mauvaise|(?<!\\w)erreur|(?<!\\w)au lieu d|(?<!\\w)par erreur|(?<!\\w)celui d|(?<!\\w)ceux d|(?<!\\w)celle d)|(?:(?<!\\w)deux fois|(?<!\\w)2 fois|(?<!\\w)double|(?<!\\w)mauvais|(?<!\\w)mauvaise|(?<!\\w)erreur|(?<!\\w)au lieu d|(?<!\\w)par erreur|(?<!\\w)celui d|(?<!\\w)ceux d|(?<!\\w)celle d).{0,40}(?:(?<!\\w)pris|(?<!\\w)prise|(?<!\\w)avale|(?<!\\w)donne|(?<!\\w)ai pris|(?<!\\w)a pris|(?<!\\w)pris)"},
+        {"regex": "(?:<<مرتين>>(?! (?:في |فال)?(?:ال)?(?:يوم|نهار)\\w*)(?! يوميا)(?! كل)|<<جرعتين>>|<<جوز مرات>>|<<جوج مرات>>|<<بالغلط>>|<<بالخطا>>|<<غلط>>|<<خطا>>|<<خاطي>>|<<مضاعف>>).{0,25}(?:<<دوا>>|<<دواء>>|<<حبوب>>|<<جرعه>>|<<جرعه>>|<<انسولين>>|<<حبه>>|<<حبه>>|<<قرص>>|<<وارفارين>>)|(?:<<دوا>>|<<دواء>>|<<حبوب>>|<<جرعه>>|<<جرعه>>|<<انسولين>>|<<حبه>>|<<حبه>>|<<قرص>>|<<وارفارين>>).{0,25}(?:<<مرتين>>(?! (?:في |فال)?(?:ال)?(?:يوم|نهار)\\w*)(?! يوميا)(?! كل)|<<جرعتين>>|<<جوز مرات>>|<<جوج مرات>>|<<بالغلط>>|<<بالخطا>>|<<غلط>>|<<خطا>>|<<خاطي>>|<<مضاعف>>)"},
+        {"regex": "(?:(?<!\\w)khd?hit|(?<!\\w)khdhet|(?<!\\w)khadhit|(?<!\\w)khadhet|(?<!\\w)chrabt|(?<!\\w)kheditou).{0,30}(?:(?<!\\w)2 fois|(?<!\\w)mrteen|(?<!\\w)marratin|(?<!\\w)zouz marrat|(?<!\\w)jouz marrat|(?<!\\w)jouj marrat|(?<!\\w)ghalta|(?<!\\w)ghalet|mte3 (?:(?<!\\w)jara|(?<!\\w)baba|(?<!\\w)mama|(?<!\\w)khouya|(?<!\\w)jarti|(?<!\\w)sa7bi)|(?<!\\w)ghirou)|(?:(?<!\\w)2 fois|(?<!\\w)mrteen|(?<!\\w)marratin|(?<!\\w)zouz marrat|(?<!\\w)jouz marrat|(?<!\\w)jouj marrat|(?<!\\w)ghalta|(?<!\\w)ghalet|mte3 (?:(?<!\\w)jara|(?<!\\w)baba|(?<!\\w)mama|(?<!\\w)khouya|(?<!\\w)jarti|(?<!\\w)sa7bi)|(?<!\\w)ghirou).{0,30}(?:(?<!\\w)khd?hit|(?<!\\w)khdhet|(?<!\\w)khadhit|(?<!\\w)khadhet|(?<!\\w)chrabt|(?<!\\w)kheditou)"}
       ]
     },
     {
@@ -772,8 +875,8 @@
         "صداع انفجاري",
         "sdaa3 mkhif",
         "worst headache of my life",
-        {"regex": "(?:headache|head ache|migraine|cephalee|mal de tete|mal a la tete|صداع|الم راس|الم في الراس|وجع راس|وجع في الراس|وجيعه في الراس|sd[a]?a?3\\b|sdaa3|waja3 (?:fil|fi|f) ras|waja3 ras|ras\\w* (?:yoja3|yo[9q]ros|ydhrab)|راسي يوجع|راسي يدور|راسو يوجع|راسها يوجع).{0,45}(?:worst|explosive|thunder|instant\\w*|out of nowhere|never (?:had|felt|have had)|peak\\w* in seconds|like never before|pire|brutal\\w*|soudain\\w*|violent\\w*|plus fort|jamais (?:eu|connu|ressenti)|coup de (?:tonnerre|massue|poignard|batte)|اسوا|اقوي|فجاه|فجاه|بغته|مفاجي|انفجاري|صاعق|ما عمري|لم اعهده|لم اعهد|يتفجر|مدمر|ma 3umri|ma 3omri|ma 3mri|bghta|faj[2a]+a|yfaj+er|mkhif|worse than ever)|(?:worst|explosive|thunder|instant\\w*|out of nowhere|never (?:had|felt|have had)|peak\\w* in seconds|like never before|pire|brutal\\w*|soudain\\w*|violent\\w*|plus fort|jamais (?:eu|connu|ressenti)|coup de (?:tonnerre|massue|poignard|batte)|اسوا|اقوي|فجاه|فجاه|بغته|مفاجي|انفجاري|صاعق|ما عمري|لم اعهده|لم اعهد|يتفجر|مدمر|ma 3umri|ma 3omri|ma 3mri|bghta|faj[2a]+a|yfaj+er|mkhif|worse than ever).{0,45}(?:headache|head ache|migraine|cephalee|mal de tete|mal a la tete|صداع|الم راس|الم في الراس|وجع راس|وجع في الراس|وجيعه في الراس|sd[a]?a?3\\b|sdaa3|waja3 (?:fil|fi|f) ras|waja3 ras|ras\\w* (?:yoja3|yo[9q]ros|ydhrab)|راسي يوجع|راسي يدور|راسو يوجع|راسها يوجع)"},
-        {"regex": "(?:headache|head ache|migraine|cephalee|mal de tete|mal a la tete|صداع|الم راس|الم في الراس|وجع راس|وجع في الراس|وجيعه في الراس|sd[a]?a?3\\b|sdaa3|waja3 (?:fil|fi|f) ras|waja3 ras|ras\\w* (?:yoja3|yo[9q]ros|ydhrab)|راسي يوجع|راسي يدور|راسو يوجع|راسها يوجع).{0,60}(?:stiff neck|neck stiff\\w*|nuque raide|raideur de la nuque|raideur nuque|رقبتي ناشفه|رقبه ناشفه|تيبس|raqba qaswa|raqbti|double vision|ازدواج)|(?:stiff neck|neck stiff\\w*|nuque raide|raideur de la nuque|raideur nuque|رقبتي ناشفه|رقبه ناشفه|تيبس|raqba qaswa|raqbti|double vision|ازدواج).{0,60}(?:headache|head ache|migraine|cephalee|mal de tete|mal a la tete|صداع|الم راس|الم في الراس|وجع راس|وجع في الراس|وجيعه في الراس|sd[a]?a?3\\b|sdaa3|waja3 (?:fil|fi|f) ras|waja3 ras|ras\\w* (?:yoja3|yo[9q]ros|ydhrab)|راسي يوجع|راسي يدور|راسو يوجع|راسها يوجع)"}
+        {"regex": "(?:(?<!\\w)headache|(?<!\\w)head ache|(?<!\\w)migraine|(?<!\\w)cephalee|(?<!\\w)mal de tete|(?<!\\w)mal a la tete|<<صداع>>|<<الم راس>>|<<الم في الراس>>|<<وجع راس>>|<<وجع في الراس>>|<<وجيعه في الراس>>|(?<!\\w)sd[a]?a?3\\b|(?<!\\w)sdaa3|waja3 (?:(?<!\\w)fil|(?<!\\w)fi|(?<!\\w)f) ras|(?<!\\w)waja3 ras|ras\\w* (?:(?<!\\w)yoja3|(?<!\\w)yo[9q]ros|(?<!\\w)ydhrab)|<<راسي يوجع>>|<<راسي يدور>>|<<راسو يوجع>>|<<راسها يوجع>>).{0,45}(?:(?<!\\w)worst|(?<!\\w)explosive|(?<!\\w)thunder|(?<!\\w)instant\\w*|(?<!\\w)out of nowhere|never (?:(?<!\\w)had|(?<!\\w)felt|(?<!\\w)have had)|(?<!\\w)peak\\w* in seconds|(?<!\\w)like never before|(?<!\\w)pire|(?<!\\w)brutal\\w*|(?<!\\w)soudain\\w*|(?<!\\w)violent\\w*|(?<!\\w)plus fort|jamais (?:(?<!\\w)eu|(?<!\\w)connu|(?<!\\w)ressenti)|coup de (?:(?<!\\w)tonnerre|(?<!\\w)massue|(?<!\\w)poignard|(?<!\\w)batte)|<<اسوا>>|<<اقوي>>|<<فجاه>>|<<فجاه>>|<<بغته>>|<<مفاجي>>|<<انفجاري>>|<<صاعق>>|<<ما عمري>>|<<لم اعهده>>|<<لم اعهد>>|<<يتفجر>>|<<مدمر>>|(?<!\\w)ma 3umri|(?<!\\w)ma 3omri|(?<!\\w)ma 3mri|(?<!\\w)bghta|(?<!\\w)faj[2a]+a|(?<!\\w)yfaj+er|(?<!\\w)mkhif|(?<!\\w)worse than ever)|(?:(?<!\\w)worst|(?<!\\w)explosive|(?<!\\w)thunder|(?<!\\w)instant\\w*|(?<!\\w)out of nowhere|never (?:(?<!\\w)had|(?<!\\w)felt|(?<!\\w)have had)|(?<!\\w)peak\\w* in seconds|(?<!\\w)like never before|(?<!\\w)pire|(?<!\\w)brutal\\w*|(?<!\\w)soudain\\w*|(?<!\\w)violent\\w*|(?<!\\w)plus fort|jamais (?:(?<!\\w)eu|(?<!\\w)connu|(?<!\\w)ressenti)|coup de (?:(?<!\\w)tonnerre|(?<!\\w)massue|(?<!\\w)poignard|(?<!\\w)batte)|<<اسوا>>|<<اقوي>>|<<فجاه>>|<<فجاه>>|<<بغته>>|<<مفاجي>>|<<انفجاري>>|<<صاعق>>|<<ما عمري>>|<<لم اعهده>>|<<لم اعهد>>|<<يتفجر>>|<<مدمر>>|(?<!\\w)ma 3umri|(?<!\\w)ma 3omri|(?<!\\w)ma 3mri|(?<!\\w)bghta|(?<!\\w)faj[2a]+a|(?<!\\w)yfaj+er|(?<!\\w)mkhif|(?<!\\w)worse than ever).{0,45}(?:(?<!\\w)headache|(?<!\\w)head ache|(?<!\\w)migraine|(?<!\\w)cephalee|(?<!\\w)mal de tete|(?<!\\w)mal a la tete|<<صداع>>|<<الم راس>>|<<الم في الراس>>|<<وجع راس>>|<<وجع في الراس>>|<<وجيعه في الراس>>|(?<!\\w)sd[a]?a?3\\b|(?<!\\w)sdaa3|waja3 (?:(?<!\\w)fil|(?<!\\w)fi|(?<!\\w)f) ras|(?<!\\w)waja3 ras|ras\\w* (?:(?<!\\w)yoja3|(?<!\\w)yo[9q]ros|(?<!\\w)ydhrab)|<<راسي يوجع>>|<<راسي يدور>>|<<راسو يوجع>>|<<راسها يوجع>>)"},
+        {"regex": "(?:(?<!\\w)headache|(?<!\\w)head ache|(?<!\\w)migraine|(?<!\\w)cephalee|(?<!\\w)mal de tete|(?<!\\w)mal a la tete|<<صداع>>|<<الم راس>>|<<الم في الراس>>|<<وجع راس>>|<<وجع في الراس>>|<<وجيعه في الراس>>|(?<!\\w)sd[a]?a?3\\b|(?<!\\w)sdaa3|waja3 (?:(?<!\\w)fil|(?<!\\w)fi|(?<!\\w)f) ras|(?<!\\w)waja3 ras|ras\\w* (?:(?<!\\w)yoja3|(?<!\\w)yo[9q]ros|(?<!\\w)ydhrab)|<<راسي يوجع>>|<<راسي يدور>>|<<راسو يوجع>>|<<راسها يوجع>>).{0,60}(?:(?<!\\w)stiff neck|(?<!\\w)neck stiff\\w*|(?<!\\w)nuque raide|(?<!\\w)raideur de la nuque|(?<!\\w)raideur nuque|<<رقبتي ناشفه>>|<<رقبه ناشفه>>|<<تيبس>>|(?<!\\w)raqba qaswa|(?<!\\w)raqbti|(?<!\\w)double vision|<<ازدواج>>)|(?:(?<!\\w)stiff neck|(?<!\\w)neck stiff\\w*|(?<!\\w)nuque raide|(?<!\\w)raideur de la nuque|(?<!\\w)raideur nuque|<<رقبتي ناشفه>>|<<رقبه ناشفه>>|<<تيبس>>|(?<!\\w)raqba qaswa|(?<!\\w)raqbti|(?<!\\w)double vision|<<ازدواج>>).{0,60}(?:(?<!\\w)headache|(?<!\\w)head ache|(?<!\\w)migraine|(?<!\\w)cephalee|(?<!\\w)mal de tete|(?<!\\w)mal a la tete|<<صداع>>|<<الم راس>>|<<الم في الراس>>|<<وجع راس>>|<<وجع في الراس>>|<<وجيعه في الراس>>|(?<!\\w)sd[a]?a?3\\b|(?<!\\w)sdaa3|waja3 (?:(?<!\\w)fil|(?<!\\w)fi|(?<!\\w)f) ras|(?<!\\w)waja3 ras|ras\\w* (?:(?<!\\w)yoja3|(?<!\\w)yo[9q]ros|(?<!\\w)ydhrab)|<<راسي يوجع>>|<<راسي يدور>>|<<راسو يوجع>>|<<راسها يوجع>>)"}
       ]
     },
     {
@@ -792,10 +895,10 @@
         "ارتفاع حاد في الضغط",
         "ضغط مرتفع جدا",
         "ضغطي مرتفع جدا",
-        {"all": [{"regex": "(?:\\bbp\\b|b\\.p\\.|blood pressure|pression|tension|dhagh?t\\w*|ضغط\\w*|ضغطي|ضغط الدم)[^\\d]{0,25}(?:1[89]\\d|2\\d\\d)\\b"}, {"regex": "(?:headache|cephalee|mal de tete|vision|blurr\\w*|dizz\\w*|chest|poitrine|confus\\w*|numb\\w*|nausea|vomit\\w*|palpitation\\w*|weakness|faible|vertige\\w*|etourdi\\w*|صداع|دوخه|دوخه|دوار|تشوش|نظر|صدر|خدر|غثيان|راسي|راسو|dowkha|doukha|ras\\b|sdaa3|khoudhi|3ayn\\w*|nes9|ghariba|dabdeb\\w*|tdabdeb\\w*)"}]},
-        {"all": [{"regex": "\\b(?:1[89]\\d|2\\d\\d)\\s*(?:/|over|sur|على|\\bon\\b)\\s*(?:1[0-3]\\d|9\\d)\\b"}, {"regex": "(?:headache|cephalee|mal de tete|vision|blurr\\w*|dizz\\w*|chest|poitrine|confus\\w*|numb\\w*|nausea|vomit\\w*|palpitation\\w*|weakness|faible|vertige\\w*|etourdi\\w*|صداع|دوخه|دوخه|دوار|تشوش|نظر|صدر|خدر|غثيان|راسي|راسو|dowkha|doukha|ras\\b|sdaa3|khoudhi|3ayn\\w*|nes9|ghariba|dabdeb\\w*|tdabdeb\\w*)"}]},
-        {"all": [{"regex": "(?:\\btension\\b|\\bbp\\b|dhagh?t\\w*|dhagt|pression|ضغط\\w*)[^\\d]{0,12}\\b(?:19|2[0-4]|18)\\s*(?:/|sur|\\bon\\b|ala|على)\\s*(?:9|1[0-4])\\b"}, {"regex": "(?:headache|cephalee|mal de tete|vision|blurr\\w*|dizz\\w*|chest|poitrine|confus\\w*|numb\\w*|nausea|vomit\\w*|palpitation\\w*|weakness|faible|vertige\\w*|etourdi\\w*|صداع|دوخه|دوخه|دوار|تشوش|نظر|صدر|خدر|غثيان|راسي|راسو|dowkha|doukha|ras\\b|sdaa3|khoudhi|3ayn\\w*|nes9|ghariba|dabdeb\\w*|tdabdeb\\w*)"}]},
-        {"all": [{"regex": "(?:\\btension\\b|dhagh?t\\w*|dhagt|ضغط\\w*)"}, {"regex": "(?:tla3t lel sema|tla3t lsma|sky high|through the roof|off the charts|tres elevee|tres haute|مرتفع جدا|عالي برشا|3alya barcha|3alia barcha|barcha 3al)"}, {"regex": "(?:headache|cephalee|mal de tete|vision|blurr\\w*|dizz\\w*|chest|poitrine|confus\\w*|numb\\w*|nausea|vomit\\w*|palpitation\\w*|weakness|faible|vertige\\w*|etourdi\\w*|صداع|دوخه|دوخه|دوار|تشوش|نظر|صدر|خدر|غثيان|راسي|راسو|dowkha|doukha|ras\\b|sdaa3|khoudhi|3ayn\\w*|nes9|ghariba|dabdeb\\w*|tdabdeb\\w*)"}]}
+        {"all": [{"regex": "(?:\\bbp\\b|b\\.p\\.|blood pressure|pression|tension|dhagh?t\\w*|ضغط\\w*|ضغطي|ضغط الدم)[^\\d]{0,25}(?:(?<!\\w)1[89]\\d|(?<!\\w)2\\d\\d)\\b"}, {"regex": "(?:(?<!\\w)headache|(?<!\\w)cephalee|(?<!\\w)mal de tete|(?<!\\w)vision|(?<!\\w)blurr\\w*|(?<!\\w)dizz\\w*|(?<!\\w)chest|(?<!\\w)poitrine|(?<!\\w)confus\\w*|(?<!\\w)numb\\w*|(?<!\\w)nausea|(?<!\\w)vomit\\w*|(?<!\\w)palpitation\\w*|(?<!\\w)weakness|(?<!\\w)faible|(?<!\\w)vertige\\w*|(?<!\\w)etourdi\\w*|<<صداع>>|<<دوخه>>|<<دوخه>>|<<دوار>>|<<تشوش>>|<<نظر>>|<<صدر>>|<<خدر>>|<<غثيان>>|<<راسي>>|<<راسو>>|(?<!\\w)dowkha|(?<!\\w)doukha|(?<!\\w)ras\\b|(?<!\\w)sdaa3|(?<!\\w)khoudhi|(?<!\\w)3ayn\\w*|(?<!\\w)nes9|(?<!\\w)ghariba|(?<!\\w)dabdeb\\w*|(?<!\\w)tdabdeb\\w*)"}]},
+        {"all": [{"regex": "\\b(?:1[89]\\d|2\\d\\d)\\s*(?:/|(?<!\\w)over|(?<!\\w)sur|<<على>>|\\bon\\b)\\s*(?:(?<!\\w)1[0-3]\\d|(?<!\\w)9\\d)\\b"}, {"regex": "(?:(?<!\\w)headache|(?<!\\w)cephalee|(?<!\\w)mal de tete|(?<!\\w)vision|(?<!\\w)blurr\\w*|(?<!\\w)dizz\\w*|(?<!\\w)chest|(?<!\\w)poitrine|(?<!\\w)confus\\w*|(?<!\\w)numb\\w*|(?<!\\w)nausea|(?<!\\w)vomit\\w*|(?<!\\w)palpitation\\w*|(?<!\\w)weakness|(?<!\\w)faible|(?<!\\w)vertige\\w*|(?<!\\w)etourdi\\w*|<<صداع>>|<<دوخه>>|<<دوخه>>|<<دوار>>|<<تشوش>>|<<نظر>>|<<صدر>>|<<خدر>>|<<غثيان>>|<<راسي>>|<<راسو>>|(?<!\\w)dowkha|(?<!\\w)doukha|(?<!\\w)ras\\b|(?<!\\w)sdaa3|(?<!\\w)khoudhi|(?<!\\w)3ayn\\w*|(?<!\\w)nes9|(?<!\\w)ghariba|(?<!\\w)dabdeb\\w*|(?<!\\w)tdabdeb\\w*)"}]},
+        {"all": [{"regex": "(?:\\btension\\b|\\bbp\\b|dhagh?t\\w*|dhagt|pression|ضغط\\w*)[^\\d]{0,12}\\b(?:19|2[0-4]|18)\\s*(?:/|(?<!\\w)sur|\\bon\\b|(?<!\\w)ala|<<على>>)\\s*(?:(?<!\\w)9|(?<!\\w)1[0-4])\\b"}, {"regex": "(?:(?<!\\w)headache|(?<!\\w)cephalee|(?<!\\w)mal de tete|(?<!\\w)vision|(?<!\\w)blurr\\w*|(?<!\\w)dizz\\w*|(?<!\\w)chest|(?<!\\w)poitrine|(?<!\\w)confus\\w*|(?<!\\w)numb\\w*|(?<!\\w)nausea|(?<!\\w)vomit\\w*|(?<!\\w)palpitation\\w*|(?<!\\w)weakness|(?<!\\w)faible|(?<!\\w)vertige\\w*|(?<!\\w)etourdi\\w*|<<صداع>>|<<دوخه>>|<<دوخه>>|<<دوار>>|<<تشوش>>|<<نظر>>|<<صدر>>|<<خدر>>|<<غثيان>>|<<راسي>>|<<راسو>>|(?<!\\w)dowkha|(?<!\\w)doukha|(?<!\\w)ras\\b|(?<!\\w)sdaa3|(?<!\\w)khoudhi|(?<!\\w)3ayn\\w*|(?<!\\w)nes9|(?<!\\w)ghariba|(?<!\\w)dabdeb\\w*|(?<!\\w)tdabdeb\\w*)"}]},
+        {"all": [{"regex": "(?:\\btension\\b|(?<!\\w)dhagh?t\\w*|(?<!\\w)dhagt|<<ضغط\\w*)"}, {"regex": "(?:(?<!\\w)tla3t lel sema|(?<!\\w)tla3t lsma|(?<!\\w)sky high|(?<!\\w)through the roof|(?<!\\w)off the charts|(?<!\\w)tres elevee|(?<!\\w)tres haute|<<مرتفع جدا>>|<<عالي برشا>>|(?<!\\w)3alya barcha|(?<!\\w)3alia barcha|(?<!\\w)barcha 3al)"}, {"regex": "(?:(?<!\\w)headache|(?<!\\w)cephalee|(?<!\\w)mal de tete|(?<!\\w)vision|(?<!\\w)blurr\\w*|(?<!\\w)dizz\\w*|(?<!\\w)chest|(?<!\\w)poitrine|(?<!\\w)confus\\w*|(?<!\\w)numb\\w*|(?<!\\w)nausea|(?<!\\w)vomit\\w*|(?<!\\w)palpitation\\w*|(?<!\\w)weakness|(?<!\\w)faible|(?<!\\w)vertige\\w*|(?<!\\w)etourdi\\w*|<<صداع>>|<<دوخه>>|<<دوخه>>|<<دوار>>|<<تشوش>>|<<نظر>>|<<صدر>>|<<خدر>>|<<غثيان>>|<<راسي>>|<<راسو>>|(?<!\\w)dowkha|(?<!\\w)doukha|(?<!\\w)ras\\b|(?<!\\w)sdaa3|(?<!\\w)khoudhi|(?<!\\w)3ayn\\w*|(?<!\\w)nes9|(?<!\\w)ghariba|(?<!\\w)dabdeb\\w*|(?<!\\w)tdabdeb\\w*)"}]}
       ]
     },
     {
@@ -804,10 +907,10 @@
       "provisional": true,
       "note": "Illustrative family added for the prototype. The keywords and the minimum urgency are placeholders to be confirmed by the hospital's doctors.",
       "keywords": [
-        "reduced fetal movement",
-        "reduced foetal movement",
-        "decreased fetal movement",
-        "decreased foetal movement",
+        "reduced fetal movement*",
+        "reduced foetal movement*",
+        "decreased fetal movement*",
+        "decreased foetal movement*",
         "diminution des mouvements",
         "mouvements actifs foetaux",
         "baby has stopped moving",
@@ -822,11 +925,13 @@
         "توقفت ركلات",
         "ما رفسش",
         "ما يرفسش",
-        {"regex": "\\bbaby(?:'s| is| has| isn't| isnt)? (?:moving|kicking) (?:much )?less\\b|\\b(?:fewer|less) (?:movements?|kicks)\\b|\\bbaby (?:isn't|isnt|is not|not) moving\\b"},
-        {"regex": "\\b(?:haven'?t|hasn'?t|can'?t|cant|not|don'?t|dont) (?:feeling|felt|feel|feeling the|felt the|feel the|felt my|feel my)? ?(?:the )?(?:baby|him|her)? ?(?:move|moving|kick)"},
-        {"regex": "\\bne (?:le |la |l')?(?:sens|sent) (?:presque )?plus (?:bouger|remuer)\\b|\\b(?:bebe|bébé) (?:ne )?(?:bouge|remue) (?:presque |beaucoup )?(?:plus|moins|pas)\\b|\\bbouge (?:beaucoup )?moins\\b"},
-        {"regex": "\\b(?:tfel|baby|bebe|bébé|jnin)\\w* (?:ma )?(?:3ad\\w*\\s+)?(?:ma\\s+)?y[a]?7?h?arr?[ae]k\\w*|\\bma (?:3ad\\w*\\s+)?n(?:h|7)ess\\w* b(?:el|il|ih)\\b|\\b(?:tfel|baby|bebe|bébé)\\w* wa(?:9|q|3)[ae]f\\b"},
-        {"regex": "(?:حامل|الحمل|حمل|الشهر|الاسبوع).{0,60}(?:الجنين|البيبي|الصغير|بيبي)|(?:الجنين|البيبي|الصغير|بيبي).{0,60}(?:حامل|الحمل|حمل|الشهر|الاسبوع)"}
+        {"regex": "\\bbaby(?:'s| is| has| isn't| isnt)? (?:(?<!\\w)moving|(?<!\\w)kicking) (?:much )?less\\b|\\b(?:fewer|less) (?:(?<!\\w)movements?|(?<!\\w)kicks)\\b|\\bbaby (?:(?<!\\w)isn't|(?<!\\w)isnt|(?<!\\w)is not|(?<!\\w)not) moving\\b"},
+        {"regex": "\\bne (?:(?<!\\w)le |(?<!\\w)la |(?<!\\w)l')?(?:(?<!\\w)sens|(?<!\\w)sent) (?:presque )?plus (?:(?<!\\w)bouger|(?<!\\w)remuer)\\b|\\b(?:bebe|bébé) (?:ne )?(?:(?<!\\w)bouge|(?<!\\w)remue) (?:(?<!\\w)presque |(?<!\\w)beaucoup )?(?:(?<!\\w)plus|(?<!\\w)moins|(?<!\\w)pas)\\b|\\bbouge (?:beaucoup )?moins\\b"},
+        {"regex": "\\b(?:haven'?t|hasn'?t|have not|has not|can'?t|cant|cannot|not|don'?t|dont|do not|didn'?t|did not) (?:feel|felt|feeling|noticed)(?: the| my)? (?:baby|him|her|bump|it)(?: \\w+)? (?:move|moving|moved|kick\\w*)", "affirm": true},
+        {"regex": "\\bbaby (?:hasn'?t|has not|isn'?t|is not|not) (?:been )?(?:moved|moving|kicked|kicking)\\b", "affirm": true},
+        {"regex": "\\b(?:tfel|baby|bebe|jnin)\\w* (?:ma\\s?3ad\\w*\\s+|ma\\s+(?:3ad\\w*\\s+)?)y[a]?7?h?arr?[ae]k\\w*|\\bma (?:3ad\\w*\\s+)?n(?:h|7)ess\\w* b(?:el|il|ih)\\b|\\b(?:tfel|baby|bebe)\\w* wa(?:9|q|3)[ae]f\\b", "affirm": true},
+        {"regex": "(?<!\\w)(?:لم|ما|لا)\\s?(?:اعد\\s|عاد\\w*\\s)?(?:اشعر|احس|نحس|تحس|يحس|حسيت|تحسش|نحسش|حسيتش)\\w*\\s(?:ب)?(?:حركه|حركات|الحركه)\\s?(?:ال)?(?:جنين|بيبي|بيبي)", "affirm": true},
+        {"regex": "(?:<<الجنين>>|<<البيبي>>|<<بيبي>>|حركه الجنين|حركات الجنين)[^.,;،]{0,25}(?:<<قلت>>|<<نقصت>>|<<قليله>>|<<قليل>>|<<توقفت>>|<<وقفت>>|ما عادش|ما عادتش|ما يتحركش|لا يتحرك|لم يتحرك|ما تحركش|ما رفسش|ما يرفسش)", "affirm": true}
       ]
     },
     {
@@ -835,8 +940,8 @@
       "provisional": true,
       "note": "Illustrative family added for the prototype. The keywords and the minimum urgency are placeholders to be confirmed by the hospital's doctors.",
       "keywords": [
-        {"all": [{"regex": "(?:confus\\w*|disorient\\w*|desorient\\w*|delir\\w*|talking nonsense|talking rubbish|rambling|gibberish|ne sait plus|dit n'importe quoi|propos incoherent|ne reconnait|ne reconnait plus|doesn'?t know (?:where|who|what|the year|the date)|doesnt know (?:where|who|what|the year|the date)|agitated|مرتبك|ارتباك|مخلط|تايه|تايه|هذيان|يهذي|مشوش|تشوش|لا يعرف|ما يعرفش|ما تعرفش|mchaw\\w*|\\btayeh\\b|\\btayha\\b|mkhalet|mkhalta|ma ya3?aref|ma ya3ref|ma ta3ref|ma ya3raf)"}, {"context": "elderly"}]},
-        {"regex": "(?:new confusion|new onset confusion|sudden confusion|acute confusion|acute delirium|confusion soudaine|confusion aigue|confusion brutale|etat confusionnel|syndrome confusionnel)"}
+        {"all": [{"regex": "(?:(?<!\\w)confus\\w*+(?! (?:about|by|over|sur|au sujet|avec|with|par rapport|concernant|regarding|as to))|(?<!\\w)disorient\\w*|(?<!\\w)desorient\\w*|(?<!\\w)delir\\w*|(?<!\\w)talking nonsense|(?<!\\w)talking rubbish|(?<!\\w)rambling|(?<!\\w)gibberish|(?<!\\w)ne sait plus|(?<!\\w)dit n'importe quoi|(?<!\\w)propos incoherent|(?<!\\w)ne reconnait|(?<!\\w)ne reconnait plus|doesn'?t know (?:(?<!\\w)where|(?<!\\w)who|(?<!\\w)what|(?<!\\w)the year|(?<!\\w)the date)|doesnt know (?:(?<!\\w)where|(?<!\\w)who|(?<!\\w)what|(?<!\\w)the year|(?<!\\w)the date)|(?<!\\w)agitated|<<مرتبك>>(?! من(?!\\w))(?! بسبب)|<<ارتباك>>|<<مخلط>>|<<تايه>>|<<تايه>>|<<هذيان>>|<<يهذي>>|<<مشوش>>|<<تشوش>>|<<لا يعرف>>|<<ما يعرفش>>|<<ما تعرفش>>|(?<!\\w)mchaw\\w*|\\btayeh\\b|\\btayha\\b|(?<!\\w)mkhalet|(?<!\\w)mkhalta|(?<!\\w)ma ya3?aref|(?<!\\w)ma ya3ref|(?<!\\w)ma ta3ref|(?<!\\w)ma ya3raf)"}, {"context": "elderly"}]},
+        {"regex": "(?:(?<!\\w)new confusion|(?<!\\w)new onset confusion|(?<!\\w)sudden confusion|(?<!\\w)acute confusion|(?<!\\w)acute delirium|(?<!\\w)confusion soudaine|(?<!\\w)confusion aigue|(?<!\\w)confusion brutale|(?<!\\w)etat confusionnel|(?<!\\w)syndrome confusionnel)"}
       ]
     },
     {
@@ -845,7 +950,7 @@
       "provisional": true,
       "note": "Illustrative family added for the prototype. The keywords and the minimum urgency are placeholders to be confirmed by the hospital's doctors.",
       "keywords": [
-        {"all": [{"regex": "(?:fell|fall\\w*|slipped|tripped|tumbled|tombe\\w*|chute|glisse\\w*|trebuch\\w*|طاح|سقط|سقوط|زلق|وقع|ta7\\w*|wa93\\w*|tneh3et|zleg\\w*|zlag\\w*).{0,70}(?:can'?t (?:stand|walk|get up|bear weight|put (?:any )?weight)|cannot (?:stand|walk|get up|bear weight)|unable to (?:stand|walk|get up|bear weight)|not weight bearing|non weight|weight bearing|won'?t hold|hip|femur|fracture|ne peut pas (?:marcher|se lever|se mettre debout|poser)|ne peut plus (?:marcher|se lever)|n'arrive pas a (?:marcher|se lever|se relever)|hanche|femur|impossible de se lever|لا يستطيع الوقوف|لا تستطيع الوقوف|لا تقدر علي المشي|لا يقدر علي المشي|ما يقدرش يوقف|ما تقدرش توقف|ما قدرش يوقف|ورك|الورك|ما يقدرش يمشي|ما تقدرش تمشي|ma (?:y|t)?najj?[ae]?m(?:ch)? (?:y|t)?o?[9q]of|ma (?:y|t)?[9q]ader(?:ch)? (?:y|t)?o?[9q]of|ma9derch (?:y|t)?najem|ma ynajmouch yeqaf|rejl\\w* kharb\\w*|kharbet)|(?:can'?t (?:stand|walk|get up|bear weight|put (?:any )?weight)|cannot (?:stand|walk|get up|bear weight)|unable to (?:stand|walk|get up|bear weight)|not weight bearing|non weight|weight bearing|won'?t hold|hip|femur|fracture|ne peut pas (?:marcher|se lever|se mettre debout|poser)|ne peut plus (?:marcher|se lever)|n'arrive pas a (?:marcher|se lever|se relever)|hanche|femur|impossible de se lever|لا يستطيع الوقوف|لا تستطيع الوقوف|لا تقدر علي المشي|لا يقدر علي المشي|ما يقدرش يوقف|ما تقدرش توقف|ما قدرش يوقف|ورك|الورك|ما يقدرش يمشي|ما تقدرش تمشي|ma (?:y|t)?najj?[ae]?m(?:ch)? (?:y|t)?o?[9q]of|ma (?:y|t)?[9q]ader(?:ch)? (?:y|t)?o?[9q]of|ma9derch (?:y|t)?najem|ma ynajmouch yeqaf|rejl\\w* kharb\\w*|kharbet).{0,70}(?:fell|fall\\w*|slipped|tripped|tumbled|tombe\\w*|chute|glisse\\w*|trebuch\\w*|طاح|سقط|سقوط|زلق|وقع|ta7\\w*|wa93\\w*|tneh3et|zleg\\w*|zlag\\w*)"}, {"context": "elderly"}]}
+        {"all": [{"regex": "(?:(?<!\\w)fell(?! asleep| in love| behind)|(?<!\\w)fall\\w*|(?<!\\w)slipped|(?<!\\w)tripped|(?<!\\w)tumbled|(?<!\\w)tombe\\w*|(?<!\\w)chute|(?<!\\w)glisse\\w*|(?<!\\w)trebuch\\w*|<<طاح>>|<<سقط>>|<<سقوط>>|<<زلق>>|<<وقع>>|(?<!\\w)ta7\\w*|(?<!\\w)wa93\\w*|(?<!\\w)tneh3et|(?<!\\w)zleg\\w*|(?<!\\w)zlag\\w*).{0,70}(?:can'?t (?:(?<!\\w)stand|(?<!\\w)walk|(?<!\\w)get up|(?<!\\w)bear weight|put (?:any )?weight)|cannot (?:(?<!\\w)stand|(?<!\\w)walk|(?<!\\w)get up|(?<!\\w)bear weight)|unable to (?:(?<!\\w)stand|(?<!\\w)walk|(?<!\\w)get up|(?<!\\w)bear weight)|(?<!\\w)not weight bearing|(?<!\\w)non weight|(?<!\\w)weight bearing|(?<!\\w)won'?t hold|(?<!\\w)hip|(?<!\\w)femur|(?<!\\w)fracture|ne peut pas (?:(?<!\\w)marcher|(?<!\\w)se lever|(?<!\\w)se mettre debout|(?<!\\w)poser)|ne peut plus (?:(?<!\\w)marcher|(?<!\\w)se lever)|n'arrive pas a (?:(?<!\\w)marcher|(?<!\\w)se lever|(?<!\\w)se relever)|(?<!\\w)hanche|(?<!\\w)femur|(?<!\\w)impossible de se lever|<<لا يستطيع الوقوف>>|<<لا تستطيع الوقوف>>|<<لا تقدر علي المشي>>|<<لا يقدر علي المشي>>|<<ما يقدرش يوقف>>|<<ما تقدرش توقف>>|<<ما قدرش يوقف>>|<<ورك>>|<<الورك>>|<<ما يقدرش يمشي>>|<<ما تقدرش تمشي>>|ma (?:(?<!\\w)y|(?<!\\w)t)?najj?[ae]?m(?:ch)? (?:(?<!\\w)y|(?<!\\w)t)?o?[9q]of|ma (?:(?<!\\w)y|(?<!\\w)t)?[9q]ader(?:ch)? (?:(?<!\\w)y|(?<!\\w)t)?o?[9q]of|ma9derch (?:(?<!\\w)y|(?<!\\w)t)?najem|(?<!\\w)ma ynajmouch yeqaf|(?<!\\w)rejl\\w* kharb\\w*|(?<!\\w)kharbet)|(?:can'?t (?:(?<!\\w)stand|(?<!\\w)walk|(?<!\\w)get up|(?<!\\w)bear weight|put (?:any )?weight)|cannot (?:(?<!\\w)stand|(?<!\\w)walk|(?<!\\w)get up|(?<!\\w)bear weight)|unable to (?:(?<!\\w)stand|(?<!\\w)walk|(?<!\\w)get up|(?<!\\w)bear weight)|(?<!\\w)not weight bearing|(?<!\\w)non weight|(?<!\\w)weight bearing|(?<!\\w)won'?t hold|(?<!\\w)hip|(?<!\\w)femur|(?<!\\w)fracture|ne peut pas (?:(?<!\\w)marcher|(?<!\\w)se lever|(?<!\\w)se mettre debout|(?<!\\w)poser)|ne peut plus (?:(?<!\\w)marcher|(?<!\\w)se lever)|n'arrive pas a (?:(?<!\\w)marcher|(?<!\\w)se lever|(?<!\\w)se relever)|(?<!\\w)hanche|(?<!\\w)femur|(?<!\\w)impossible de se lever|<<لا يستطيع الوقوف>>|<<لا تستطيع الوقوف>>|<<لا تقدر علي المشي>>|<<لا يقدر علي المشي>>|<<ما يقدرش يوقف>>|<<ما تقدرش توقف>>|<<ما قدرش يوقف>>|<<ورك>>|<<الورك>>|<<ما يقدرش يمشي>>|<<ما تقدرش تمشي>>|ma (?:(?<!\\w)y|(?<!\\w)t)?najj?[ae]?m(?:ch)? (?:(?<!\\w)y|(?<!\\w)t)?o?[9q]of|ma (?:(?<!\\w)y|(?<!\\w)t)?[9q]ader(?:ch)? (?:(?<!\\w)y|(?<!\\w)t)?o?[9q]of|ma9derch (?:(?<!\\w)y|(?<!\\w)t)?najem|(?<!\\w)ma ynajmouch yeqaf|(?<!\\w)rejl\\w* kharb\\w*|(?<!\\w)kharbet).{0,70}(?:(?<!\\w)fell(?! asleep| in love| behind)|(?<!\\w)fall\\w*|(?<!\\w)slipped|(?<!\\w)tripped|(?<!\\w)tumbled|(?<!\\w)tombe\\w*|(?<!\\w)chute|(?<!\\w)glisse\\w*|(?<!\\w)trebuch\\w*|<<طاح>>|<<سقط>>|<<سقوط>>|<<زلق>>|<<وقع>>|(?<!\\w)ta7\\w*|(?<!\\w)wa93\\w*|(?<!\\w)tneh3et|(?<!\\w)zleg\\w*|(?<!\\w)zlag\\w*)"}, {"context": "elderly"}]}
       ]
     },
     {
@@ -866,13 +971,13 @@
         "hypoglycemie",
         "غيبوبة السكري",
         "غيبوبة سكرية",
-        {"all": [{"regex": "(?:diabet\\w*|sugar|glucose|glycemi\\w*|glycaemi\\w*|insulin\\w*|sucre|dka|سكري|سكر|السكر|انسولين|sokk?ar\\w*|sokari|dyab\\w*|diab\\\\w*|diabetic)"}, {"regex": "(?:foot|feet|toe|toes|ulcer|ulcere|pied|orteil|قدم|اصبع|رجل|sba3\\w*|rejl\\w*|sab3|sbou3)"}, {"regex": "(?:gangren\\w*|necros\\w*|black(?:ened)?|noir\\w*|dark purple|aswed|اسود|ازرق|اسودت|اسود|yeswed|tkahhal|كحل|نتن|رايحه كريهه)"}]},
-        {"all": [{"regex": "(?:diabetic|diabetique|diabete|diabetes|سكري|sokkar|sokari|sucre)"}, {"regex": "(?:gangren\\w*|black(?:ened)? (?:toe|foot)|noir)"}]},
-        {"regex": "(?:sugar|glucose|glycemi\\w*|glycaemi\\w*|sucre|sokk?ar\\w*|سكر\\w*)[^\\d]{0,20}\\b(?:[4-9]\\d\\d|[1-9]\\d{3})\\b(?!\\s*(?:am|pm|h\\b))"},
-        {"regex": "(?:sugar|glucose|glycemi\\w*|glycaemi\\w*|sucre|sokk?ar\\w*|سكر\\w*)[^\\d]{0,20}\\b(?:[1-4]\\d|5[0-3])\\b\\s*(?:mg|g/l|mmol)?\\b(?!\\s*(?:am|pm|h\\b|ans|year))"},
+        {"all": [{"regex": "(?:(?<!\\w)diabet\\w*|(?<!\\w)sugar|(?<!\\w)glucose|(?<!\\w)glycemi\\w*|(?<!\\w)glycaemi\\w*|(?<!\\w)insulin\\w*|(?<!\\w)sucre|(?<!\\w)dka|<<سكري>>|<<سكر>>|<<السكر>>|<<انسولين>>|(?<!\\w)sokk?ar\\w*|(?<!\\w)sokari|(?<!\\w)dyab\\w*|diab\\\\w*|(?<!\\w)diabetic)"}, {"regex": "(?:(?<!\\w)foot|(?<!\\w)feet|(?<!\\w)toe|(?<!\\w)toes|(?<!\\w)ulcer|(?<!\\w)ulcere|(?<!\\w)pied|(?<!\\w)orteil|<<قدم>>|<<اصبع>>|<<رجل>>|(?<!\\w)sba3\\w*|(?<!\\w)rejl\\w*|(?<!\\w)sab3|(?<!\\w)sbou3)"}, {"regex": "(?:(?<!\\w)gangren\\w*|(?<!\\w)necros\\w*|black(?:ened)?|(?<!\\w)noir\\w*|(?<!\\w)dark purple|(?<!\\w)aswed|<<اسود>>|<<ازرق>>|<<اسودت>>|<<اسود>>|(?<!\\w)yeswed|(?<!\\w)tkahhal|<<كحل>>|<<نتن>>|<<رايحه كريهه>>)"}]},
+        {"all": [{"regex": "(?:(?<!\\w)diabetic|(?<!\\w)diabetique|(?<!\\w)diabete|(?<!\\w)diabetes|<<سكري>>|(?<!\\w)sokkar|(?<!\\w)sokari|(?<!\\w)sucre)"}, {"regex": "(?:(?<!\\w)gangren\\w*|black(?:ened)? (?:(?<!\\w)toe|(?<!\\w)foot)|(?<!\\w)noir)"}]},
+        {"regex": "(?:sugar|glucose|glycemi\\w*|glycaemi\\w*|sucre|sokk?ar\\w*|سكر\\w*)[^\\d]{0,20}\\b(?:[4-9]\\d\\d|[1-9]\\d{3})\\b(?!\\s*(?:(?<!\\w)am|(?<!\\w)pm|(?<!\\w)h\\b))"},
+        {"regex": "(?:sugar|glucose|glycemi\\w*|glycaemi\\w*|sucre|sokk?ar\\w*|سكر\\w*)[^\\d]{0,20}\\b(?:[1-4]\\d|5[0-3])\\b\\s*(?:(?<!\\w)mg|(?<!\\w)g/l|(?<!\\w)mmol)?\\b(?!\\s*(?:(?<!\\w)am|(?<!\\w)pm|(?<!\\w)h\\b|(?<!\\w)ans|(?<!\\w)year))"},
         {"regex": "(?:sugar|glucose|glycemi\\w*|sucre|sokk?ar\\w*|سكر\\w*)[^\\d]{0,20}\\b0[.,][1-4]\\d?\\b"},
-        {"all": [{"regex": "(?:diabet\\w*|sugar|glucose|glycemi\\w*|glycaemi\\w*|insulin\\w*|sucre|dka|سكري|سكر|السكر|انسولين|sokk?ar\\w*|sokari|dyab\\w*|diab\\\\w*|diabetic)"}, {"regex": "(?:shak\\w*|sweat\\w*|tremble\\w*|trembl\\w*|ra3cha|3ara9|confus\\w*|drowsy|unconscious|faint\\w*|dizzy|nawm|nes9|tremblement|sueurs|malaise|رعشه|عرق|ترتعش|نرعش|pale|pale)"}, {"regex": "(?:dropp\\w*|low|falling|baisse|bas|tombe|طاح|نزل|منخفض|hypo|nezel|nzel)"}]},
-        {"all": [{"regex": "(?:diabet\\w*|sugar|glucose|glycemi\\w*|glycaemi\\w*|insulin\\w*|sucre|dka|سكري|سكر|السكر|انسولين|sokk?ar\\w*|sokari|dyab\\w*|diab\\\\w*|diabetic)"}, {"regex": "(?:very high|tres eleve|tla3|طلع|مرتفع جدا|tres haut)"}, {"regex": "(?:vomit\\w*|drowsy|thirst\\w*|soif|nausea|abdominal|tire|تعب|عطش|تقيو|تقيا|غثيان|9ay|nes9|ta3ab|n3ass|nn3as)"}]}
+        {"all": [{"regex": "(?:(?<!\\w)diabet\\w*|(?<!\\w)sugar|(?<!\\w)glucose|(?<!\\w)glycemi\\w*|(?<!\\w)glycaemi\\w*|(?<!\\w)insulin\\w*|(?<!\\w)sucre|(?<!\\w)dka|<<سكري>>|<<سكر>>|<<السكر>>|<<انسولين>>|(?<!\\w)sokk?ar\\w*|(?<!\\w)sokari|(?<!\\w)dyab\\w*|diab\\\\w*|(?<!\\w)diabetic)"}, {"regex": "(?:(?<!\\w)shak\\w*|(?<!\\w)sweat\\w*|(?<!\\w)tremble\\w*|(?<!\\w)trembl\\w*|(?<!\\w)ra3cha|(?<!\\w)3ara9|(?<!\\w)confus\\w*|(?<!\\w)drowsy|(?<!\\w)unconscious|(?<!\\w)faint\\w*|(?<!\\w)dizzy|(?<!\\w)nawm|(?<!\\w)nes9|(?<!\\w)tremblement|(?<!\\w)sueurs|(?<!\\w)malaise|<<رعشه>>|<<عرق>>|<<ترتعش>>|<<نرعش>>|(?<!\\w)pale|(?<!\\w)pale)"}, {"regex": "(?:(?<!\\w)dropp\\w*|(?<!\\w)low|(?<!\\w)falling|(?<!\\w)baisse|(?<!\\w)bas|(?<!\\w)tombe|<<طاح>>|<<نزل>>|<<منخفض>>|(?<!\\w)hypo|(?<!\\w)nezel|(?<!\\w)nzel)"}]},
+        {"all": [{"regex": "(?:(?<!\\w)diabet\\w*|(?<!\\w)sugar|(?<!\\w)glucose|(?<!\\w)glycemi\\w*|(?<!\\w)glycaemi\\w*|(?<!\\w)insulin\\w*|(?<!\\w)sucre|(?<!\\w)dka|<<سكري>>|<<سكر>>|<<السكر>>|<<انسولين>>|(?<!\\w)sokk?ar\\w*|(?<!\\w)sokari|(?<!\\w)dyab\\w*|diab\\\\w*|(?<!\\w)diabetic)"}, {"regex": "(?:(?<!\\w)very high|(?<!\\w)tres eleve|(?<!\\w)tla3|<<طلع>>|<<مرتفع جدا>>|(?<!\\w)tres haut)"}, {"regex": "(?:(?<!\\w)vomit\\w*|(?<!\\w)drowsy|(?<!\\w)thirst\\w*|(?<!\\w)soif|(?<!\\w)nausea|(?<!\\w)abdominal|(?<!\\w)tire|<<تعب>>|<<عطش>>|<<تقيو>>|<<تقيا>>|<<غثيان>>|(?<!\\w)9ay|(?<!\\w)nes9|(?<!\\w)ta3ab|(?<!\\w)n3ass|(?<!\\w)nn3as)"}]}
       ]
     },
     {
@@ -897,8 +1002,8 @@
         "douleur fid",
         "fosse iliaque droite",
         "right iliac fossa",
-        {"all": [{"regex": "(?:abdom\\w*|belly|stomach|tummy|ventre|abdo|fosse iliaque|\\bfid\\b|epigastr\\w*|بطن|بطني|كرش|كرشي|معده|\\bbatn\\w*|\\bkre?sh\\w*|\\bkreb\\w*|\\bkarsh\\w*|right side|flanc).{0,30}(?:pain\\w*|ache|hurt\\w*|douleur\\w*|mal\\b|الم|وجع|وجيعه|يوجع|توجع|waj+a*3|yoja3|toja3|yo[9q]ros|cramp\\w*|crampes|تقطع)|(?:pain\\w*|ache|hurt\\w*|douleur\\w*|mal\\b|الم|وجع|وجيعه|يوجع|توجع|waj+a*3|yoja3|toja3|yo[9q]ros|cramp\\w*|crampes|تقطع).{0,30}(?:abdom\\w*|belly|stomach|tummy|ventre|abdo|fosse iliaque|\\bfid\\b|epigastr\\w*|بطن|بطني|كرش|كرشي|معده|\\bbatn\\w*|\\bkre?sh\\w*|\\bkreb\\w*|\\bkarsh\\w*|right side|flanc)"}, {"regex": "(?:severe|intense|atroce|violent\\w*|terrible|unbearable|excruciating|agoni\\w*|doubled over|double over|rigid|hard as|dur comme|defense|guarding|rebound|plie en deux|i can'?t stand|ca fait un mal|fait un mal de chien|قويه|قوي|شديد|شديده|حاد|حاده|برشا|كبير|تقطع|ما نجمش نوقف|barcha|9wi\\b|[9q]awi|kbir\\b|ma najjamch nwa99ef|yo9ros|mtaaleq|yabes)"}, {"regex": "(?:fever|febrile|fievre|temperature|\\btemp\\b|حمي|حراره|حرارت|سخانه|سخونه|سخانت|سخان|مسخن|جسمو سخون|s5[ao]?u?na|s5oun|skh[ao]u?na|sokhn\\w*|yaskhan|msakhn\\w*|\\bs7ana|burning up|brulant\\w*|\\b3[89](?:[.,]\\d)?\\b|\\b40(?:[.,]\\d)?\\b)"}]},
-        {"all": [{"regex": "(?:abdom\\w*|belly|stomach|tummy|ventre|abdo|fosse iliaque|\\bfid\\b|epigastr\\w*|بطن|بطني|كرش|كرشي|معده|\\bbatn\\w*|\\bkre?sh\\w*|\\bkreb\\w*|\\bkarsh\\w*|right side|flanc).{0,30}(?:pain\\w*|ache|hurt\\w*|douleur\\w*|mal\\b|الم|وجع|وجيعه|يوجع|توجع|waj+a*3|yoja3|toja3|yo[9q]ros)|(?:pain\\w*|ache|hurt\\w*|douleur\\w*|mal\\b|الم|وجع|وجيعه|يوجع|توجع|waj+a*3|yoja3|toja3|yo[9q]ros).{0,30}(?:abdom\\w*|belly|stomach|tummy|ventre|abdo|fosse iliaque|\\bfid\\b|epigastr\\w*|بطن|بطني|كرش|كرشي|معده|\\bbatn\\w*|\\bkre?sh\\w*|\\bkreb\\w*|\\bkarsh\\w*|right side|flanc)"}, {"regex": "(?:hard|rigid|dur\\b|bois|yabes|يابس|mtaaleq|متصلب)"}, {"regex": "(?:vomit\\w*|fever|fievre|chills|frissons|nausea|9ay|y9ay|تقيو|حمي|سخانه|s5ana)"}]}
+        {"all": [{"regex": "(?:(?<!\\w)abdom\\w*|(?<!\\w)belly|(?<!\\w)stomach|(?<!\\w)tummy|(?<!\\w)ventre|(?<!\\w)abdo|(?<!\\w)fosse iliaque|\\bfid\\b|(?<!\\w)epigastr\\w*|<<بطن>>|<<بطني>>|<<كرش>>|<<كرشي>>|<<معده>>|\\bbatn\\w*|\\bkre?sh\\w*|\\bkreb\\w*|\\bkarsh\\w*|(?<!\\w)right side|(?<!\\w)flanc).{0,30}(?:(?<!\\w)pain\\w*|(?<!\\w)ache|(?<!\\w)hurt\\w*|(?<!\\w)douleur\\w*|(?<!\\w)mal\\b|<<الم>>|<<وجع>>|<<وجيعه>>|<<يوجع>>|<<توجع>>|(?<!\\w)waj+a*3|(?<!\\w)yoja3|(?<!\\w)toja3|(?<!\\w)yo[9q]ros|(?<!\\w)cramp\\w*|(?<!\\w)crampes|<<تقطع>>)|(?:(?<!\\w)pain\\w*|(?<!\\w)ache|(?<!\\w)hurt\\w*|(?<!\\w)douleur\\w*|(?<!\\w)mal\\b|<<الم>>|<<وجع>>|<<وجيعه>>|<<يوجع>>|<<توجع>>|(?<!\\w)waj+a*3|(?<!\\w)yoja3|(?<!\\w)toja3|(?<!\\w)yo[9q]ros|(?<!\\w)cramp\\w*|(?<!\\w)crampes|<<تقطع>>).{0,30}(?:(?<!\\w)abdom\\w*|(?<!\\w)belly|(?<!\\w)stomach|(?<!\\w)tummy|(?<!\\w)ventre|(?<!\\w)abdo|(?<!\\w)fosse iliaque|\\bfid\\b|(?<!\\w)epigastr\\w*|<<بطن>>|<<بطني>>|<<كرش>>|<<كرشي>>|<<معده>>|\\bbatn\\w*|\\bkre?sh\\w*|\\bkreb\\w*|\\bkarsh\\w*|(?<!\\w)right side|(?<!\\w)flanc)"}, {"regex": "(?:(?<!\\w)severe|(?<!\\w)intense|(?<!\\w)atroce|(?<!\\w)violent\\w*|(?<!\\w)terrible|(?<!\\w)unbearable|(?<!\\w)excruciating|(?<!\\w)agoni\\w*|(?<!\\w)doubled over|(?<!\\w)double over|(?<!\\w)rigid|(?<!\\w)hard as|(?<!\\w)dur comme|(?<!\\w)defense|(?<!\\w)guarding|(?<!\\w)rebound|(?<!\\w)plie en deux|(?<!\\w)i can'?t stand|(?<!\\w)ca fait un mal|(?<!\\w)fait un mal de chien|<<قويه>>|<<قوي>>|<<شديد>>|<<شديده>>|<<حاد>>|<<حاده>>|<<برشا>>|<<كبير>>|<<تقطع>>|<<ما نجمش نوقف>>|(?<!\\w)barcha|(?<!\\w)9wi\\b|(?<!\\w)[9q]awi|(?<!\\w)kbir\\b|(?<!\\w)ma najjamch nwa99ef|(?<!\\w)yo9ros|(?<!\\w)mtaaleq|(?<!\\w)yabes)"}, {"regex": "(?:(?<!\\w)fever|(?<!\\w)febrile|(?<!\\w)fievre|(?<!\\w)temperature|\\btemp\\b|<<حمي>>|<<حراره>>|<<حرارت>>|<<سخانه>>|<<سخونه>>|<<سخانت>>|<<سخان>>|<<مسخن>>|<<جسمو سخون>>|(?<!\\w)s5[ao]?u?na|(?<!\\w)s5oun|(?<!\\w)skh[ao]u?na|(?<!\\w)sokhn\\w*|(?<!\\w)yaskhan|(?<!\\w)msakhn\\w*|\\bs7ana|(?<!\\w)burning up|(?<!\\w)brulant\\w*|\\b3[89](?:[.,]\\d)?\\b|\\b40(?:[.,]\\d)?\\b)"}]},
+        {"all": [{"regex": "(?:(?<!\\w)abdom\\w*|(?<!\\w)belly|(?<!\\w)stomach|(?<!\\w)tummy|(?<!\\w)ventre|(?<!\\w)abdo|(?<!\\w)fosse iliaque|\\bfid\\b|(?<!\\w)epigastr\\w*|<<بطن>>|<<بطني>>|<<كرش>>|<<كرشي>>|<<معده>>|\\bbatn\\w*|\\bkre?sh\\w*|\\bkreb\\w*|\\bkarsh\\w*|(?<!\\w)right side|(?<!\\w)flanc).{0,30}(?:(?<!\\w)pain\\w*|(?<!\\w)ache|(?<!\\w)hurt\\w*|(?<!\\w)douleur\\w*|(?<!\\w)mal\\b|<<الم>>|<<وجع>>|<<وجيعه>>|<<يوجع>>|<<توجع>>|(?<!\\w)waj+a*3|(?<!\\w)yoja3|(?<!\\w)toja3|(?<!\\w)yo[9q]ros)|(?:(?<!\\w)pain\\w*|(?<!\\w)ache|(?<!\\w)hurt\\w*|(?<!\\w)douleur\\w*|(?<!\\w)mal\\b|<<الم>>|<<وجع>>|<<وجيعه>>|<<يوجع>>|<<توجع>>|(?<!\\w)waj+a*3|(?<!\\w)yoja3|(?<!\\w)toja3|(?<!\\w)yo[9q]ros).{0,30}(?:(?<!\\w)abdom\\w*|(?<!\\w)belly|(?<!\\w)stomach|(?<!\\w)tummy|(?<!\\w)ventre|(?<!\\w)abdo|(?<!\\w)fosse iliaque|\\bfid\\b|(?<!\\w)epigastr\\w*|<<بطن>>|<<بطني>>|<<كرش>>|<<كرشي>>|<<معده>>|\\bbatn\\w*|\\bkre?sh\\w*|\\bkreb\\w*|\\bkarsh\\w*|(?<!\\w)right side|(?<!\\w)flanc)"}, {"regex": "(?:(?<!\\w)hard|(?<!\\w)rigid|(?<!\\w)dur\\b|(?<!\\w)bois|(?<!\\w)yabes|<<يابس>>|(?<!\\w)mtaaleq|<<متصلب>>)"}, {"regex": "(?:(?<!\\w)vomit\\w*|(?<!\\w)fever|(?<!\\w)fievre|(?<!\\w)chills|(?<!\\w)frissons|(?<!\\w)nausea|(?<!\\w)9ay|(?<!\\w)y9ay|<<تقيو>>|<<حمي>>|<<سخانه>>|(?<!\\w)s5ana)"}]}
       ]
     },
     {
@@ -907,7 +1012,7 @@
       "provisional": true,
       "note": "Illustrative family added for the prototype. The keywords and the minimum urgency are placeholders to be confirmed by the hospital's doctors.",
       "keywords": [
-        {"all": [{"regex": "(?:head|skull|scalp|forehead|tete|crane|front|cuir chevelu|راس|راس|راسو|راسها|راسي|الراس|الراس|\\bras\\w*|\\brass\\w*).{0,40}(?:hit\\b|struck|bump\\w*|knock\\w*|blow|trauma\\w*|fell\\b|fall\\w*|tombe\\w*|chute|choc|coup|cogne\\w*|frappe\\w*|fracture|accident|ضربه|صدمه|طاح|سقط|سقوط|تضرب|اصطدم|ydharb|dharb\\w*|tdharb\\w*|ydhrab|wa93\\w*|ta7\\w*|traumatisme)|(?:hit\\b|struck|bump\\w*|knock\\w*|blow|trauma\\w*|fell\\b|fall\\w*|tombe\\w*|chute|choc|coup|cogne\\w*|frappe\\w*|fracture|accident|ضربه|صدمه|طاح|سقط|سقوط|تضرب|اصطدم|ydharb|dharb\\w*|tdharb\\w*|ydhrab|wa93\\w*|ta7\\w*|traumatisme).{0,40}(?:head|skull|scalp|forehead|tete|crane|front|cuir chevelu|راس|راس|راسو|راسها|راسي|الراس|الراس|\\bras\\w*|\\brass\\w*)"}, {"regex": "(?:vomit\\w*|sick\\b|threw up|throwing up|drows\\w*|sleepy|confus\\w*|blood thinner|anticoag\\w*|warfarin|apixaban|eliquis|xarelto|clopidogrel|plavix|coumadin|aspirin|aspirine|loss of consciousness|\\bloc\\b|gcs|seizure|bleeding|swelling|large swelling|vomi\\w*|somnol\\w*|endormi\\w*|anticoagulant\\w*|sintrom|kardegic|plavix|perte de connaissance|saign\\w*|قيء|تقيا|يتقيا|نعاس|ناعس|مميع|سيوله|سيرومبي|كلوبيدوغريل|اسبرين|نزيف|ينزف|دوخه|9ay\\w*|y9ay|ta9ay|sintrom|yestafragh|yetfa9ra|mazel yestafragh|yakhou sintrom|ya9ta3|nom|dowkha|ynezef)"}]},
+        {"all": [{"regex": "(?:(?<!\\w)head|(?<!\\w)skull|(?<!\\w)scalp|(?<!\\w)forehead|(?<!\\w)tete|(?<!\\w)crane|(?<!\\w)front|(?<!\\w)cuir chevelu|<<راس>>|<<راس>>|<<راسو>>|<<راسها>>|<<راسي>>|<<الراس>>|<<الراس>>|\\bras\\w*|\\brass\\w*).{0,40}(?:(?<!\\w)hit\\b|(?<!\\w)struck|(?<!\\w)bump\\w*|(?<!\\w)knock\\w*|(?<!\\w)blow|(?<!\\w)trauma\\w*|(?<!\\w)fell\\b|(?<!\\w)fall\\w*|(?<!\\w)tombe\\w*|(?<!\\w)chute|(?<!\\w)choc|(?<!\\w)coup|(?<!\\w)cogne\\w*|(?<!\\w)frappe\\w*|(?<!\\w)fracture|(?<!\\w)accident|<<ضربه>>|<<صدمه>>|<<طاح>>|<<سقط>>|<<سقوط>>|<<تضرب>>|<<اصطدم>>|(?<!\\w)ydharb|(?<!\\w)dharb\\w*|(?<!\\w)tdharb\\w*|(?<!\\w)ydhrab|(?<!\\w)wa93\\w*|(?<!\\w)ta7\\w*|(?<!\\w)traumatisme)|(?:(?<!\\w)hit\\b|(?<!\\w)struck|(?<!\\w)bump\\w*|(?<!\\w)knock\\w*|(?<!\\w)blow|(?<!\\w)trauma\\w*|(?<!\\w)fell\\b|(?<!\\w)fall\\w*|(?<!\\w)tombe\\w*|(?<!\\w)chute|(?<!\\w)choc|(?<!\\w)coup|(?<!\\w)cogne\\w*|(?<!\\w)frappe\\w*|(?<!\\w)fracture|(?<!\\w)accident|<<ضربه>>|<<صدمه>>|<<طاح>>|<<سقط>>|<<سقوط>>|<<تضرب>>|<<اصطدم>>|(?<!\\w)ydharb|(?<!\\w)dharb\\w*|(?<!\\w)tdharb\\w*|(?<!\\w)ydhrab|(?<!\\w)wa93\\w*|(?<!\\w)ta7\\w*|(?<!\\w)traumatisme).{0,40}(?:(?<!\\w)head|(?<!\\w)skull|(?<!\\w)scalp|(?<!\\w)forehead|(?<!\\w)tete|(?<!\\w)crane|(?<!\\w)front|(?<!\\w)cuir chevelu|<<راس>>|<<راس>>|<<راسو>>|<<راسها>>|<<راسي>>|<<الراس>>|<<الراس>>|\\bras\\w*|\\brass\\w*)"}, {"regex": "(?:(?<!\\w)vomit\\w*|(?<!\\w)sick\\b|(?<!\\w)threw up|(?<!\\w)throwing up|(?<!\\w)drows\\w*|(?<!\\w)sleepy|(?<!\\w)confus\\w*|(?<!\\w)blood thinner|(?<!\\w)anticoag\\w*|(?<!\\w)warfarin|(?<!\\w)apixaban|(?<!\\w)eliquis|(?<!\\w)xarelto|(?<!\\w)clopidogrel|(?<!\\w)plavix|(?<!\\w)coumadin|(?<!\\w)aspirin|(?<!\\w)aspirine|(?<!\\w)loss of consciousness|\\bloc\\b|(?<!\\w)gcs|(?<!\\w)seizure|(?<!\\w)bleeding|(?<!\\w)swelling|(?<!\\w)large swelling|(?<!\\w)vomi\\w*|(?<!\\w)somnol\\w*|(?<!\\w)endormi\\w*|(?<!\\w)anticoagulant\\w*|(?<!\\w)sintrom|(?<!\\w)kardegic|(?<!\\w)plavix|(?<!\\w)perte de connaissance|(?<!\\w)saign\\w*|<<قيء>>|<<تتقيا>>|<<ورم>>|<<تقيا>>|<<يتقيا>>|<<نعاس>>|<<ناعس>>|<<مميع>>|<<سيوله>>|<<سيرومبي>>|<<كلوبيدوغريل>>|<<اسبرين>>|<<نزيف>>|<<ينزف>>|<<دوخه>>|(?<!\\w)9ay\\w*|(?<!\\w)y9ay|(?<!\\w)ta9ay|(?<!\\w)sintrom|(?<!\\w)yestafragh|(?<!\\w)yetfa9ra|(?<!\\w)mazel yestafragh|(?<!\\w)yakhou sintrom|(?<!\\w)ya9ta3|(?<!\\w)nom|(?<!\\w)dowkha|(?<!\\w)ynezef)"}]},
         "head injury",
         "head trauma",
         "traumatisme cranien",
@@ -924,8 +1029,8 @@
       "note": "Illustrative family added for the prototype. The keywords and the minimum urgency are placeholders to be confirmed by the hospital's doctors.",
       "keywords": [
         "sepsis",
-        "septic",
-        "septicemie",
+        "septic*",
+        "septicemie*",
         "septicaemia",
         "septic shock",
         "choc septique",
@@ -937,8 +1042,8 @@
         "qsofa 3",
         "حمى مع هبوط",
         "حمى وارتباك",
-        {"all": [{"regex": "(?:fever|febrile|fievre|temperature|\\btemp\\b|حمي|حراره|حرارت|سخانه|سخونه|سخانت|سخان|مسخن|جسمو سخون|s5[ao]?u?na|s5oun|skh[ao]u?na|sokhn\\w*|yaskhan|msakhn\\w*|\\bs7ana|burning up|brulant\\w*|\\b3[89](?:[.,]\\d)?\\b|\\b40(?:[.,]\\d)?\\b)"}, {"regex": "(?:confus\\w*|disorient\\w*|rambling|delir\\w*|mottled|clammy|low (?:bp|blood pressure)|hypotens\\w*|breathing fast|fast breathing|rapid breathing|tachypn\\w*|tachycard\\w*|hr 1[2-9]\\d|heart racing|rigors|shaking chills|qsofa|no urine|hasn'?t passed urine|pas d'urine|n'a pas urine|ne repond|somnolent|ne reagit|pus|pulse is racing|fast heart|cant think straight|can'?t think straight|ضغط منخفض|هبوط في الضغط|هبوط الضغط|ضغطو طايح|ضغطها طايح|ارتباك|مخلط|مشوش|تشوش|نفس سريع|تنفس سريع|نبض سريع|ارتجاف|قشعريره|ما نفهمش|nafass sari3|nafas sari3|nafass sri3|tension tayha|ma nafhamch|mchaw\\w*|ma yfi9ch|ma yfi9|nes9 sari3|9albi ydhrab|tachycardie|fr 2[5-9]|fr 3\\d|ra3cha|yatnaffes sri3)"}]},
-        {"all": [{"regex": "(?:high fever|fievre elevee|fievre importante|fievre forte|حمي شديده|حمي مرتفعه|حراره مرتفعه|سخانه عاليه|سخانه كبيره|حمي عاليه|s5ana 3alya|s5ana kbira|s5ana barcha|(?:fever|fievre|temp\\w*|temperature|حمي|حراره|سخانه|سخانه|s5ana|skhana)[^\\d]{0,12}\\b(?:39|40|41)(?:[.,]\\d)?\\b)"}, {"context": "elderly"}]}
+        {"all": [{"regex": "(?:(?<!\\w)fever|(?<!\\w)febrile|(?<!\\w)fievre|(?<!\\w)temperature|\\btemp\\b|<<حمي>>|<<حراره>>|<<حرارت>>|<<سخانه>>|<<سخونه>>|<<سخانت>>|<<سخان>>|<<مسخن>>|<<جسمو سخون>>|(?<!\\w)s5[ao]?u?na|(?<!\\w)s5oun|(?<!\\w)skh[ao]u?na|(?<!\\w)sokhn\\w*|(?<!\\w)yaskhan|(?<!\\w)msakhn\\w*|\\bs7ana|(?<!\\w)burning up|(?<!\\w)brulant\\w*|\\b3[89](?:[.,]\\d)?\\b|\\b40(?:[.,]\\d)?\\b)"}, {"regex": "(?:(?<!\\w)confus\\w*|(?<!\\w)disorient\\w*|(?<!\\w)rambling|(?<!\\w)delir\\w*|(?<!\\w)mottled|(?<!\\w)clammy|low (?:(?<!\\w)bp|(?<!\\w)blood pressure)|(?<!\\w)hypotens\\w*|(?<!\\w)breathing fast|(?<!\\w)fast breathing|(?<!\\w)rapid breathing|(?<!\\w)tachypn\\w*|(?<!\\w)tachycard\\w*|(?<!\\w)hr 1[2-9]\\d|(?<!\\w)heart racing|(?<!\\w)rigors|(?<!\\w)shaking chills|(?<!\\w)qsofa|(?<!\\w)no urine|(?<!\\w)hasn'?t passed urine|(?<!\\w)pas d'urine|(?<!\\w)n'a pas urine|(?<!\\w)ne repond|(?<!\\w)somnolent|(?<!\\w)ne reagit|(?<!\\w)pus|(?<!\\w)pulse is racing|(?<!\\w)fast heart|(?<!\\w)cant think straight|(?<!\\w)can'?t think straight|<<ضغط منخفض>>|<<هبوط في الضغط>>|<<هبوط الضغط>>|<<ضغطو طايح>>|<<ضغطها طايح>>|<<ارتباك>>|<<مخلط>>|<<مشوش>>|<<تشوش>>|<<نفس سريع>>|<<تنفس سريع>>|<<نبض سريع>>|<<ارتجاف>>|<<قشعريره>>|<<ما نفهمش>>|(?<!\\w)nafass sari3|(?<!\\w)nafas sari3|(?<!\\w)nafass sri3|(?<!\\w)tension tayha|(?<!\\w)ma nafhamch|(?<!\\w)mchaw\\w*|(?<!\\w)ma yfi9ch|(?<!\\w)ma yfi9|(?<!\\w)nes9 sari3|(?<!\\w)9albi ydhrab|(?<!\\w)tachycardie|(?<!\\w)fr 2[5-9]|(?<!\\w)fr 3\\d|(?<!\\w)ra3cha|(?<!\\w)yatnaffes sri3)"}]},
+        {"all": [{"regex": "(?:(?<!\\w)high fever|(?<!\\w)fievre elevee|(?<!\\w)fievre importante|(?<!\\w)fievre forte|<<حمي شديده>>|<<حمي مرتفعه>>|<<حراره مرتفعه>>|<<سخانه عاليه>>|<<سخانه كبيره>>|<<حمي عاليه>>|(?<!\\w)s5ana 3alya|(?<!\\w)s5ana kbira|(?<!\\w)s5ana barcha|(?:fever|fievre|temp\\w*|temperature|حمي|حراره|سخانه|سخانه|s5ana|skhana)[^\\d]{0,12}\\b(?:39|40|41)(?:[.,]\\d)?\\b)"}, {"context": "elderly"}]}
       ]
     }
   ]
