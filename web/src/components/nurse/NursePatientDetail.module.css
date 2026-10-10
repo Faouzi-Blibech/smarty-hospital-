@@ -356,7 +356,7 @@
   width: 120px;
   font-size: 14px;
   color: var(--muted);
-  text-align: right;
+  text-align: end;
 }
 
 .skelCard {

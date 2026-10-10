@@ -1,7 +1,11 @@
 import { Suspense } from "react";
+import { getT } from "@/i18n/server";
 import { NursePatientDetail } from "@/components/nurse/NursePatientDetail";
 
-export const metadata = { title: "Patient · Ward" };
+export async function generateMetadata() {
+  const { t } = await getT();
+  return { title: `${t("nurse.metaPatient")} · Ward` };
+}
 
 export default async function NursePatientPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

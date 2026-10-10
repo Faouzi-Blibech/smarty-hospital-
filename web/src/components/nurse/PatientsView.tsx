@@ -3,6 +3,7 @@
 // /nurse/patients — the design has no dedicated screen: the ward's patients as bed
 // cards (same component as the board), in bed order. Each card opens the detail.
 import { useCallback, useEffect, useState } from "react";
+import { useT } from "@/i18n/I18nProvider";
 import { pausedAt, USE_MOCKS } from "@/lib/time";
 import { LiveBanner } from "@/components/LiveBanner";
 import { ErrorCard } from "@/components/shared/ErrorCard";
@@ -16,6 +17,7 @@ import { useWardAlerts } from "./useWardAlerts";
 import styles from "./NursePage.module.css";
 
 export function PatientsView() {
+  const { t } = useT();
   const flags = useDemoFlags();
   const { tick } = useLiveTick(flags.live && USE_MOCKS);
   const { alerts } = useWardAlerts();
@@ -38,12 +40,12 @@ export function PatientsView() {
   return (
     <div className={styles.page}>
       {!flags.live ? (
-        <LiveBanner className={styles.banner}>Values frozen at {pausedAt()}. Check patients in person if this lasts.</LiveBanner>
+        <LiveBanner className={styles.banner}>{t("nurse.frozen", { time: pausedAt() })}</LiveBanner>
       ) : null}
       <div className={styles.head}>
-        <h2 className={styles.title}>Patients</h2>
+        <h2 className={styles.title}>{t("nurse.patients")}</h2>
         <span className={styles.sub}>
-          {[wardLabel((beds ?? []).map((b) => b.patient?.ward)), beds && !state ? `${beds.length} patients · by bed` : null]
+          {[wardLabel(t, (beds ?? []).map((b) => b.patient?.ward)), beds && !state ? t("nurse.patientsBy", { n: beds.length }) : null]
             .filter(Boolean)
             .join(" · ")}
         </span>
@@ -51,8 +53,8 @@ export function PatientsView() {
       {state === "error" ? (
         <ErrorCard
           variant="box"
-          title="Couldn’t load the ward."
-          message="Check patients in person until the board is back."
+          title={t("nurse.loadWardTitle")}
+          message={t("nurse.checkInPerson")}
           onRetry={load}
           className={styles.error}
         />

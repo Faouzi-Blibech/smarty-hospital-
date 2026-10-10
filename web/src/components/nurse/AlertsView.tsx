@@ -1,6 +1,7 @@
 "use client";
 
 // /nurse/alerts — the design has no dedicated screen: the board's alerts panel as a page.
+import { useT } from "@/i18n/I18nProvider";
 import { pausedAt } from "@/lib/time";
 import { LiveBanner } from "@/components/LiveBanner";
 import { ErrorCard } from "@/components/shared/ErrorCard";
@@ -12,31 +13,32 @@ import { useWardAlerts } from "./useWardAlerts";
 import styles from "./NursePage.module.css";
 
 export function AlertsView() {
+  const { t } = useT();
   const flags = useDemoFlags();
   const { alerts, failed, reload, ack, busy, notes, notice } = useWardAlerts();
   const forceEmpty = flags.state === "empty";
   const state = flags.state === "error" || failed ? "error" : flags.state === "loading" || !alerts ? "loading" : null;
-  const ward = wardLabel();
+  const ward = wardLabel(t);
   const openCount = forceEmpty ? 0 : (alerts ?? []).filter((a) => !a.acked_by).length;
 
   return (
     <div className={styles.page}>
       {!flags.live ? (
-        <LiveBanner className={styles.banner}>Values frozen at {pausedAt()}. Check patients in person if this lasts.</LiveBanner>
+        <LiveBanner className={styles.banner}>{t("nurse.frozen", { time: pausedAt() })}</LiveBanner>
       ) : null}
       <div className={styles.head}>
-        <h2 className={styles.title}>Alerts</h2>
+        <h2 className={styles.title}>{t("nurse.alerts")}</h2>
         <span className={styles.sub}>
           {/* Alerts carry no ward: real mode leaves the ward out rather than guess it. */}
-          {[ward, state ? null : `${openCount} open · newest first`].filter(Boolean).join(" · ")}
+          {[ward, state ? null : t("nurse.openNewest", { n: openCount })].filter(Boolean).join(" · ")}
         </span>
       </div>
       <div className={styles.list}>
         {state === "error" ? (
           <ErrorCard
             variant="box"
-            title="Couldn’t load alerts."
-            message="Check patients in person until the board is back."
+            title={t("nurse.loadAlertsTitle")}
+            message={t("nurse.checkInPerson")}
             onRetry={reload}
           />
         ) : state === "loading" || !alerts ? (

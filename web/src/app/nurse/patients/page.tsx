@@ -1,7 +1,11 @@
 import { Suspense } from "react";
+import { getT } from "@/i18n/server";
 import { PatientsView } from "@/components/nurse/PatientsView";
 
-export const metadata = { title: "Patients · Ward" };
+export async function generateMetadata() {
+  const { t } = await getT();
+  return { title: `${t("nurse.metaPatients")} · Ward` };
+}
 
 export default function NursePatientsPage() {
   return (

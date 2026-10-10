@@ -4,6 +4,7 @@
 // load, acknowledge (with "on my way" notes) and a warning toast when a call fails.
 import { useCallback, useEffect, useState } from "react";
 import { useToast } from "@/components/Toast";
+import { useT } from "@/i18n/I18nProvider";
 import { ackAlert, getAlerts } from "@/lib/api";
 import type { Alert } from "@/lib/types";
 import { NURSE_ID } from "./nurse";
@@ -21,6 +22,7 @@ export interface WardAlerts {
 }
 
 export function useWardAlerts(): WardAlerts {
+  const { t } = useT();
   const [alerts, setAlerts] = useState<Alert[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState<ReadonlySet<string>>(new Set());
@@ -45,7 +47,7 @@ export function useWardAlerts(): WardAlerts {
         if (note) setNotes((n) => ({ ...n, [id]: note }));
         return true;
       } catch {
-        showNotice("Couldn’t acknowledge the alert. Try again, or check the patient in person.");
+        showNotice(t("nurse.ackFailed"));
         return false;
       } finally {
         setBusy((b) => {
@@ -55,7 +57,7 @@ export function useWardAlerts(): WardAlerts {
         });
       }
     },
-    [showNotice],
+    [showNotice, t],
   );
 
   return { alerts, failed, reload, ack, busy, notes, notice };

@@ -1,20 +1,18 @@
 // Nurse view helpers: NEWS2 sub-scores, alert labels, dose statuses and sparklines.
 // UI-derived values only (computed from the contract records, never stored in fixtures).
+import type { Key, TFn } from "@/i18n/messages";
 import { tunisTime, USE_MOCKS } from "@/lib/time";
 import type { Alert, AlertKind, Dose, Prescription, WardBed } from "@/lib/types";
 
 /** The signed-in nurse in the mock demo (Nurse Ines). Real mode names the user from GET /me; the real API takes the actor from the JWT. */
 export const NURSE_ID = "u-0002";
 export const NURSE_NAME = "Nurse Ines";
-/** The ward the nurse is on (design: "Ward C"). */
-export const WARD_LABEL = "Ward C";
-
 /**
  * The ward named on nurse screens: the design's "Ward C" in mock mode; in real mode the
  * ward from the data (the patients' `ward`, e.g. "Cardiology"), or null when the data has none.
  */
-export function wardLabel(wards: (string | null | undefined)[] = []): string | null {
-  if (USE_MOCKS) return WARD_LABEL;
+export function wardLabel(t: TFn, wards: (string | null | undefined)[] = []): string | null {
+  if (USE_MOCKS) return t("nurse.wardC");
   return wards.find((w): w is string => !!w) ?? null;
 }
 
@@ -84,26 +82,26 @@ export const byBed = (a: WardBed, b: WardBed) => a.bed.localeCompare(b.bed, unde
 
 // ── Alerts ──────────────────────────────────────────────────────────────────
 
-export const KIND_LABEL: Record<AlertKind, string> = {
-  call_nurse: "Call nurse",
-  news2: "NEWS2",
-  device_offline: "Device offline",
-  trend: "Trend",
-  dose_missed: "Missed dose",
+export const KIND_LABEL: Record<AlertKind, Key> = {
+  call_nurse: "nurse.kindCall",
+  news2: "nurse.kindNews2",
+  device_offline: "nurse.kindOffline",
+  trend: "nurse.kindTrend",
+  dose_missed: "nurse.kindMissed",
 };
 
 /** Severity pill: word and [bg, fg] (design `SEV`). A call-nurse alert shows "Call". */
-export function severityPill(a: Alert): { word: string; bg: string; fg: string } {
-  if (a.kind === "call_nurse") return { word: "Call", bg: "var(--danger)", fg: "var(--paper)" };
+export function severityPill(a: Alert, t: TFn): { word: string; bg: string; fg: string } {
+  if (a.kind === "call_nurse") return { word: t("nurse.sevCall"), bg: "var(--danger)", fg: "var(--paper)" };
   switch (a.severity) {
     case "critical":
-      return { word: "Critical", bg: "var(--news-crit-edge)", fg: "var(--paper)" };
+      return { word: t("nurse.sevCritical"), bg: "var(--news-crit-edge)", fg: "var(--paper)" };
     case "high":
-      return { word: "High", bg: "var(--news-high-bg)", fg: "var(--news-high-fg)" };
+      return { word: t("nurse.sevHigh"), bg: "var(--news-high-bg)", fg: "var(--news-high-fg)" };
     case "medium":
-      return { word: "Medium", bg: "var(--news-low-bg)", fg: "var(--news-low-fg)" };
+      return { word: t("nurse.sevMedium"), bg: "var(--news-low-bg)", fg: "var(--news-low-fg)" };
     default:
-      return { word: "Low", bg: "var(--disabled)", fg: "var(--text)" };
+      return { word: t("nurse.sevLow"), bg: "var(--disabled)", fg: "var(--text)" };
   }
 }
 
@@ -115,6 +113,16 @@ export function alertOrder(alerts: Alert[]): Alert[] {
 // ── Doses (med round and nurse patient detail) ─────────────────────────────
 
 export type NurseDoseStatus = "Missed" | "Given" | "Taken" | "Dispensed" | "Due" | "Scheduled";
+
+/** Message keys for the status words. */
+export const DOSE_WORD: Record<NurseDoseStatus, Key> = {
+  Missed: "nurse.doseMissed",
+  Given: "nurse.doseGiven",
+  Taken: "nurse.doseTaken",
+  Dispensed: "nurse.doseDispensed",
+  Due: "nurse.doseDue",
+  Scheduled: "nurse.doseScheduled",
+};
 
 /** Status pill colours (design `ST`): [bg, fg, border]. */
 export const DOSE_PILL: Record<NurseDoseStatus, [string, string, string]> = {
@@ -159,6 +167,7 @@ export interface DoseView {
 
 export interface DoseContext {
   ref: Date;
+  t: TFn;
   /** Prescriptions by id (for the allergy override note). */
   prescriptions?: Map<string, Prescription>;
   /** Alerts for the "· alert sent 08:30" note on missed doses. */
@@ -175,18 +184,19 @@ function subOf(d: Dose, ctx: DoseContext): { sub: string; subAlert: boolean } {
   switch (d.status) {
     case "missed": {
       const alert = missedAlert(d, ctx.alerts);
-      const base = d.slot != null ? `Not marked taken by ${tunisTime(d.updated_at)}` : "Not given by hand";
-      return { sub: alert ? `${base} · alert sent ${tunisTime(alert.created_at)}` : base, subAlert: false };
+      const { t } = ctx;
+      const base = d.slot != null ? t("nurse.notMarkedBy", { time: tunisTime(d.updated_at) }) : t("nurse.notGivenByHand");
+      return { sub: alert ? `${base} · ${t("nurse.alertSent", { time: tunisTime(alert.created_at) })}` : base, subAlert: false };
     }
     case "dispensed":
-      return { sub: `Dispensed ${tunisTime(d.updated_at)} · waiting to be marked taken`, subAlert: false };
+      return { sub: ctx.t("nurse.dispensedWaiting", { time: tunisTime(d.updated_at) }), subAlert: false };
     case "taken":
-      if (d.given_by) return { sub: d.instructions ?? "Give by hand", subAlert: false };
-      return { sub: `Dispensed ${tunisTime(d.scheduled_at)}`, subAlert: false };
+      if (d.given_by) return { sub: d.instructions ?? ctx.t("nurse.giveByHand"), subAlert: false };
+      return { sub: ctx.t("nurse.dispensedAt", { time: tunisTime(d.scheduled_at) }), subAlert: false };
     default: {
       if (ctx.prescriptions?.get(d.prescription_id)?.allergy_override)
-        return { sub: "Allergy conflict · doctor override logged", subAlert: true };
-      return { sub: d.instructions ?? (d.slot != null ? "Dispense from unit" : "Give by hand"), subAlert: false };
+        return { sub: ctx.t("nurse.allergyConflict"), subAlert: true };
+      return { sub: d.instructions ?? ctx.t(d.slot != null ? "nurse.dispenseFromUnit" : "nurse.giveByHand"), subAlert: false };
     }
   }
 }
@@ -199,20 +209,21 @@ export function doseView(dose: Dose, ctx: DoseContext, original: Dose = dose): D
   const status = nurseStatus(dose, ctx.ref);
   const done = status === "Given" || status === "Taken";
   const mins = Math.ceil((Date.parse(dose.scheduled_at) - ctx.ref.getTime()) / 60_000);
-  const statusText = status === "Due" ? (mins > 0 ? `Due in ${mins} min` : "Due now") : status;
+  const { t } = ctx;
+  const statusText = status === "Due" ? (mins > 0 ? t("nurse.dueIn", { n: mins }) : t("nurse.dueNow")) : t(DOSE_WORD[status]);
   const at = dose.taken_at ? tunisTime(dose.taken_at) : "";
   const by =
     status === "Given"
       ? `${dose.given_by_name ?? dose.given_by} · ${at}`
       : status === "Taken"
-        ? `Marked taken ${at}`.trim()
-        : "Not yet due";
+        ? t("nurse.markedTaken", { time: at }).trim()
+        : t("nurse.notYetDue");
   return {
     id: dose.id,
     time: tunisTime(dose.scheduled_at),
     med: dose.meds.join(" + "),
     ...subOf(original, ctx),
-    slot: dose.slot != null ? `Slot ${dose.slot}` : "Reminder only",
+    slot: dose.slot != null ? t("nurse.slot", { n: dose.slot }) : t("nurse.reminderOnly"),
     status,
     statusText,
     canGive: !done && status !== "Scheduled",
@@ -221,10 +232,10 @@ export function doseView(dose: Dose, ctx: DoseContext, original: Dose = dose): D
 }
 
 /** "penicillin" → "Allergy · Penicillin"; none → "No known allergies". */
-export function allergyLabel(allergies: string[]): string {
-  if (!allergies.length) return "No known allergies";
+export function allergyLabel(allergies: string[], t: TFn): string {
+  if (!allergies.length) return t("nurse.noAllergies");
   const s = allergies.join(", ");
-  return `Allergy · ${s.charAt(0).toUpperCase()}${s.slice(1)}`;
+  return t("nurse.allergy", { a: `${s.charAt(0).toUpperCase()}${s.slice(1)}` });
 }
 
 // ── Sparkline (design `spark`, viewBox 0 0 100 28) ──────────────────────────

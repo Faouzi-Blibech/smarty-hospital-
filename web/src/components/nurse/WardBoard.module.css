@@ -81,7 +81,7 @@
   width: 344px;
   flex: none;
   background: var(--paper);
-  border-left: 1px solid var(--line);
+  border-inline-start: 1px solid var(--line);
   padding: 28px 22px;
   display: flex;
   flex-direction: column;
@@ -131,7 +131,7 @@
 .call {
   position: absolute;
   top: 24px;
-  left: 144px;
+  inset-inline-start: 144px;
   width: 560px;
   display: flex;
   flex-direction: column;
@@ -232,7 +232,7 @@
 .critToast {
   position: absolute;
   top: 20px;
-  right: 20px;
+  inset-inline-end: 20px;
   width: 380px;
   flex-direction: column;
   gap: 12px;
@@ -368,7 +368,7 @@
   .aside {
     position: fixed;
     top: 0;
-    right: 0;
+    inset-inline-end: 0;
     bottom: 0;
     overflow-y: auto;
     z-index: 50;
@@ -380,7 +380,12 @@
       visibility 0.25s;
   }
 
-  .drawerOpen {
+  :global([dir="rtl"]) .aside {
+    transform: translateX(-100%);
+  }
+
+  .drawerOpen,
+  :global([dir="rtl"]) .drawerOpen {
     transform: none;
     visibility: visible;
   }
