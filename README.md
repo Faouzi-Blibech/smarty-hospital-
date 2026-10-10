@@ -128,12 +128,20 @@ WARD_TLS=internal            # or an email address for Let's Encrypt
 WEB_ORIGIN=https://ward.example.com
 NEXT_PUBLIC_API_URL=https://ward.example.com/api
 NEXT_PUBLIC_USE_MOCKS=0
+WARD_ENV_FILE=.env.internet  # makes the api/worker containers load this file (default: .env)
+MQTT_BIND=192.168.1.10       # LAN interface IP or 127.0.0.1; see warning below
 WARD_ENV=prod                # refuses the demo secrets; set real ones
 ```
 
 ```bash
 docker compose -f infra/docker-compose.yml --env-file .env.internet --profile internet up -d --build
 ```
+
+`WARD_ENV_FILE=.env.internet` is required: `--env-file` alone only fills in compose variables, so without it the
+containers would not see `WARD_ENV=prod` or your real secrets.
+
+**Warning:** MQTT port 1883 binds `0.0.0.0` by default (the LAN demo and devices need that) and uses plaintext logins.
+On a host with a public IP, set `MQTT_BIND` to the LAN interface IP or `127.0.0.1`, or firewall port 1883.
 
 For real Let's Encrypt certificates you need a public domain whose DNS points at the host, with ports 80 and 443
 reachable from the internet. `WARD_TLS=internal` uses Caddy's own CA (browsers show a warning once), fine for a LAN
