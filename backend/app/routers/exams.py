@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.ai.exams import catalogue
-from app.auth.deps import check_patient_access, require_roles, staff_ward
+from app.auth.deps import can_see_appointment, check_appointment_access, check_patient_access, require_roles, staff_ward
 from app.db import get_db
 from app.errors import ApiError, forbidden, not_found
 from app.ids import new_id
@@ -64,7 +64,7 @@ def appointment_exams(appointment_id: str, request: Request,
     a = db.get(Appointment, appointment_id)
     if a is None:
         raise not_found("appointment")
-    if user.role == "patient" and user.patient_id != a.patient_id:
+    if not can_see_appointment(db, user, a):
         raise forbidden("not your appointment")
     rows = _visible(db, user, db.scalars(select(ExamOrder).where(ExamOrder.appointment_id == a.id)
                                          .order_by(ExamOrder.id)).all())
@@ -101,11 +101,12 @@ def worklist(request: Request, status: str | None = None, user: User = Depends(r
 
 
 @router.post("/appointments/{appointment_id}/exams/order")
-def order_selected(appointment_id: str, body: OrderIn, user: User = Depends(require_roles("doctor")),
-                   db: Session = Depends(get_db)) -> list[dict]:
+def order_selected(appointment_id: str, body: OrderIn, request: Request,
+                   user: User = Depends(require_roles("doctor")), db: Session = Depends(get_db)) -> list[dict]:
     a = db.get(Appointment, appointment_id)
     if a is None:
         raise not_found("appointment")
+    check_appointment_access(db, user, a, write=True, resource="exam_order", ip=_ip(request))
     rows = db.scalars(select(ExamOrder).where(ExamOrder.appointment_id == a.id).order_by(ExamOrder.id)).all()
     by_id = {o.id: o for o in rows}
     if any(i not in by_id for i in body.exam_ids):
@@ -132,7 +133,8 @@ def order_selected(appointment_id: str, body: OrderIn, user: User = Depends(requ
 
 
 @router.post("/exams", status_code=201)
-def add_exam(body: ExamIn, user: User = Depends(require_roles("doctor")), db: Session = Depends(get_db)) -> dict:
+def add_exam(body: ExamIn, request: Request, user: User = Depends(require_roles("doctor")),
+             db: Session = Depends(get_db)) -> dict:
     item = catalogue().get(body.code)
     if item is None:
         raise ApiError(422, "invalid", "code: not in the exam catalogue")
@@ -143,6 +145,8 @@ def add_exam(body: ExamIn, user: User = Depends(require_roles("doctor")), db: Se
         a = db.get(Appointment, body.appointment_id)
         if a is None or a.patient_id != p.id:
             raise ApiError(422, "invalid", "appointment_id: not this patient's appointment")
+        if not can_see_appointment(db, user, a):
+            raise forbidden("not your appointment")
     elif p.attending_doctor_id != user.id:
         raise forbidden("not your patient")
     o = ExamOrder(id=new_id(db, "ex"), patient_id=p.id, appointment_id=body.appointment_id, code=body.code,
@@ -151,6 +155,7 @@ def add_exam(body: ExamIn, user: User = Depends(require_roles("doctor")), db: Se
     db.add(o)
     db.flush()
     db.refresh(o)
+    audit(db, user, "create", "exam", o.id, patient_id=p.id, ip=_ip(request))
     event = E.ordered_event(p, body.appointment_id, [o])
     out = E.to_out(db, o, user)
     db.commit()
@@ -159,14 +164,17 @@ def add_exam(body: ExamIn, user: User = Depends(require_roles("doctor")), db: Se
 
 
 @router.post("/exams/{exam_id}/cancel")
-def cancel_exam(exam_id: str, user: User = Depends(require_roles("doctor")), db: Session = Depends(get_db)) -> dict:
+def cancel_exam(exam_id: str, request: Request, user: User = Depends(require_roles("doctor")),
+                db: Session = Depends(get_db)) -> dict:
     o = _exam(db, exam_id)
-    if not E.can_read(db, user, o):
+    allowed = E.can_read(db, user, o) if o.status == "suggested" else E.can_read_results(db, user, o)
+    if not allowed:
         raise forbidden("not your patient")
     try:
         E.cancel(o)
     except E.BadStatus as e:
         raise _bad_status(e) from e
+    audit(db, user, "update", "exam", o.id, patient_id=o.patient_id, ip=_ip(request))
     db.flush()
     out = E.to_out(db, o, user)
     db.commit()
@@ -212,7 +220,7 @@ def result_file(result_id: str, request: Request, user: User = Depends(require_r
     r = db.get(ExamResult, result_id)
     if r is None:
         raise not_found("result")
-    if not E.can_read(db, user, db.get(ExamOrder, r.exam_order_id)):
+    if not E.can_read_results(db, user, db.get(ExamOrder, r.exam_order_id)):
         raise forbidden("not your patient")
     audit(db, user, "read", "exam_result", r.id, patient_id=r.patient_id, ip=_ip(request))
     db.commit()

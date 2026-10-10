@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.auth.security import decode_token
 from app.db import get_db
 from app.errors import ApiError, forbidden, not_found
-from app.models import Patient, Staff, User
+from app.models import Appointment, Patient, Staff, User
 from app.services.audit import audit
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
@@ -50,6 +50,30 @@ def can_access(db: Session, user: User, patient: Patient) -> bool:
     if user.role == "patient":
         return user.patient_id == patient.id
     return False  # admin: summary fields only, through GET /patients
+
+
+def can_see_appointment(db: Session, user: User, a: Appointment) -> bool:
+    """Who may see/act on an appointment. A doctor reaches a patient who is not theirs only through a pending
+    request (`requested`), plus appointments they are booked on and their own patients' appointments.
+    Admin handles scheduling. Nurses have no appointment access."""
+    if user.role == "admin":
+        return True
+    if user.role == "patient":
+        return user.patient_id == a.patient_id
+    if user.role == "doctor":
+        if a.status == "requested" or a.doctor_id == user.id:
+            return True
+        p = db.get(Patient, a.patient_id)
+        return p is not None and p.attending_doctor_id == user.id
+    return False
+
+
+def check_appointment_access(db: Session, user: User, a: Appointment, write: bool = False,
+                             resource: str = "appointment", ip: str = "") -> None:
+    """403 unless `user` may see this appointment; on success writes the audit row (patient_id = its patient)."""
+    if not can_see_appointment(db, user, a) or (write and user.role == "patient"):
+        raise forbidden("not your appointment")
+    audit(db, user, "update" if write else "read", resource, a.id, patient_id=a.patient_id, ip=ip)
 
 
 def check_patient_access(db: Session, user: User, patient_id: str, write: bool = False,
