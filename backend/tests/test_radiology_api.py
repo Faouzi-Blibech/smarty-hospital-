@@ -1,6 +1,8 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
 
-from app.models import AuditLog, ExamResult, RadiographReading
+from app.models import AuditLog, ExamResult, PatientAccess, RadiographReading
 from tests.helpers import login, make_user
 
 CHEST = {"patient_id": "p-0001", "referral_text": "douleur thoracique depuis ce matin", "symptoms": ["chest pain"]}
@@ -86,6 +88,22 @@ def test_confirm_reading(client, db, stored):
                       json={"final_text": "x"}).status_code == 403
     assert client.put(f"/exam-results/{rid}/reading", headers=doc, json={"final_text": ""}).status_code == 422
     assert client.put(f"/exam-results/{rid}/reading", headers=doc, json={"final_text": "   "}).status_code == 422
+
+
+def test_sharing_grant_reads_but_cannot_confirm(client, db, stored):
+    out, doc = _xray_result(client)
+    rid = out["results"][0]["id"]
+    doc2 = make_user(db, "doc2.g@ward.tn", role="doctor", ward="Cardiology")
+    now = datetime.now(UTC)
+    db.add(PatientAccess(id="pa-8001", patient_id="p-0001", user_id=doc2.id, granted_by="u-0001",
+                         created_at=now, expires_at=now + timedelta(days=7)))
+    db.flush()
+    h2 = login(client, "doc2.g@ward.tn")
+    assert client.get(f"/exam-results/{rid}/reading", headers=h2).status_code == 200
+    assert client.put(f"/exam-results/{rid}/reading", headers=h2, json={"final_text": "x"}).status_code == 403
+    db.expire_all()
+    assert db.query(RadiographReading).one().final_text is None
+    assert client.put(f"/exam-results/{rid}/reading", headers=doc, json={"final_text": "ok"}).status_code == 200
 
 
 def test_outside_radiograph_upload(client, db, stored):

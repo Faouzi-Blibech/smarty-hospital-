@@ -30,11 +30,11 @@ def _ip(request: Request) -> str:
     return request.client.host if request.client else ""
 
 
-def _load(db: Session, user: User, result_id: str) -> tuple[ExamResult, RadiographReading]:
+def _load(db: Session, user: User, result_id: str, write: bool = False) -> tuple[ExamResult, RadiographReading]:
     res = db.get(ExamResult, result_id)
     if res is None:
         raise not_found("result")
-    if not E.can_read_results(db, user, db.get(ExamOrder, res.exam_order_id)):
+    if not E.can_read_results(db, user, db.get(ExamOrder, res.exam_order_id), write=write):
         raise forbidden("not your patient")
     r = db.scalar(select(RadiographReading).where(RadiographReading.exam_result_id == res.id))
     if r is None:
@@ -59,7 +59,7 @@ def confirm_reading(result_id: str, body: ConfirmIn, request: Request,
     text = body.final_text.strip()
     if not text:
         raise ApiError(422, "invalid", "final_text: must not be empty")
-    _, r = _load(db, user, result_id)
+    _, r = _load(db, user, result_id, write=True)  # a read-only sharing grant never confirms
     R.confirm(db, r, user, text, datetime.now(UTC))
     audit(db, user, "update", "radiograph_reading", r.id, patient_id=r.patient_id, ip=_ip(request))
     out = R.to_out(db, r, user)

@@ -23,6 +23,7 @@ def test_reading_roundtrip(db, seeded):
 
 from datetime import UTC, datetime  # noqa: E402
 
+from app.iot.ingest import scope_for  # noqa: E402
 from app.services import radiology as R  # noqa: E402
 from tests.helpers import make_user  # noqa: E402
 
@@ -45,7 +46,9 @@ def test_enqueue_claim_process(db, seeded, monkeypatch):
     frame = R.process(db, got, get=lambda key: b"img")
     assert got.status == "ready" and got.ai_suggested["model"] == "m" and got.finished_at
     assert frame == {"type": "radiograph_reading", "reading_id": r.id, "exam_result_id": res.id,
-                     "patient_id": "p-0001", "status": "ready"}
+                     "patient_id": "p-0001", "status": "ready",
+                     "scope": scope_for(db, "p-0001")}
+    assert frame["scope"]["doctor_id"] == "u-0001" and frame["scope"]["patient_id"] == "p-0001"
 
 
 def test_missing_file_fails_softly(db, seeded):

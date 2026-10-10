@@ -13,6 +13,7 @@ from app.config import get_settings
 from app.db import SessionLocal
 from app.ids import new_id
 from app.iot import publisher
+from app.iot.ingest import scope_for
 from app.models import ExamResult, RadiographReading, User
 from app.schemas import iso
 from app.services import storage
@@ -63,7 +64,7 @@ def process(db: Session, r: RadiographReading, get=None) -> dict:
     r.status, r.ai_suggested, r.finished_at = status, ai, datetime.now(UTC)
     db.commit()
     return {"type": "radiograph_reading", "reading_id": r.id, "exam_result_id": r.exam_result_id,
-            "patient_id": r.patient_id, "status": r.status}
+            "patient_id": r.patient_id, "status": r.status, "scope": scope_for(db, r.patient_id)}
 
 
 def recover(db: Session) -> int:

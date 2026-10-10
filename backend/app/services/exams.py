@@ -52,13 +52,14 @@ def counts(orders: list) -> dict:
             "exams_suggested": s.count("suggested")}
 
 
-def can_read_results(db: Session, user: User, o) -> bool:
+def can_read_results(db: Session, user: User, o, write: bool = False) -> bool:
     """Exam RESULTS (report text, files). Doctors: the orderer, the attending doctor or the appointment's booked
-    doctor, never the pending-request pool. Nurses: their department or ward. Patients and admin: never."""
+    doctor, never the pending-request pool; a read-only sharing grant counts for reads, never for `write`.
+    Nurses: their department or ward. Patients and admin: never."""
     if user.role == "doctor":
         p = db.get(Patient, o.patient_id)
         a = db.get(Appointment, o.appointment_id) if o.appointment_id else None
-        return (p is not None and (p.attending_doctor_id == user.id or has_grant(db, user.id, p.id))) or (
+        return (p is not None and (p.attending_doctor_id == user.id or (not write and has_grant(db, user.id, p.id)))) or (
             o.human_confirmed_by == user.id) or (
             a is not None and a.doctor_id == user.id)
     if user.role == "nurse":

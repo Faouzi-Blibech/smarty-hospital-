@@ -264,7 +264,7 @@ An AI draft report per radiograph image (JPEG/PNG of exam codes `chest_xray`, `x
 | Endpoint | Who | Notes |
 |---|---|---|
 | `GET /exam-results/{result_id}/reading` | doctor, nurse with result access | doctor: full reading (audit `read radiograph_reading`); nurse: `{id, exam_result_id, status}`; 404 when the result has no reading |
-| `PUT /exam-results/{result_id}/reading` | doctor with result access | `{"final_text": "1..20000 chars"}` → sets `final_text`, `human_confirmed_by`, `confirmed_at`; copies the text into `exam_results.report_text`; audit `update`; re-confirming edits it. Allowed in any status (a doctor may write before the AI finishes; the worker never overwrites `final_text`) |
+| `PUT /exam-results/{result_id}/reading` | doctor with result access (not a sharing grant) | `{"final_text": "1..20000 chars"}` → sets `final_text`, `human_confirmed_by`, `confirmed_at`; copies the text into `exam_results.report_text`; audit `update`; re-confirming edits it. Allowed in any status (a doctor may write before the AI finishes; the worker never overwrites `final_text`). A read-only sharing grant cannot confirm (403): write access is the attending doctor, the orderer or the appointment's booked doctor |
 | `POST /patients/{patient_id}/radiographs` | doctor with write access | multipart `file` (JPEG/PNG ≤ 15 MB), `title` (default "Outside X-ray") → creates a done `Imaging` exam `xray_outside` + result + queued reading → `ExamOrder` (201) |
 
 `ExamOrder.results[]` gains `reading: {"id","status","confirmed"} | null`. New exam codes `xray` and `xray_outside` (department `Imaging`); `chest_xray` is also read. Uploading a radiograph through `POST /exams/{id}/results` enqueues a reading.
