@@ -5,7 +5,6 @@ from collections import Counter
 
 import pytest
 
-from app.ai import assistant as A
 from scripts import eval_ai
 from tests.test_eval_leakage import _jsonl, leaks
 
